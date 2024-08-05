@@ -10,8 +10,8 @@ namespace UEExtractor
         {
 
             Console.WriteLine("UEExtractor | Solicen");
-            Console.WriteLine("This tool will collect and extract the .locres file from the resources of your Unreal Engine game folder."); Thread.Sleep(100);
-            Console.WriteLine("Usage: Drag and drop the game folder obtained during extraction '.pak' or '.ucas|.utoc' file."); Thread.Sleep(100);
+            Console.WriteLine("This tool will collect and extract the .locres file from the resources of your Unreal Engine game folder.");
+            Console.WriteLine("Usage: Drag and drop the game folder obtained during extraction '.pak' or '.ucas|.utoc' file."); 
             Thread.Sleep(100);
             Stopwatch stopwatch = new Stopwatch(); stopwatch.Start();
             TimeSpan timeTaken = new TimeSpan();
