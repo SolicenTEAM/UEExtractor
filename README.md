@@ -26,7 +26,7 @@ key,source,Translation
 * Or use `UEExtractor.exe` in command line to parse directory.
 
 ### UEExtractor - Unreal Engine (Text) Extractor
-* You can simply drag and drop directory with Unreal resoucres onto `UEExtractor.exe` to parse directory and get `<dir_name>.csv`. 
+* You can simply drag and drop directory with Unreal resources onto `UEExtractor.exe` to parse directory and get `<dir_name>.csv`. 
 * Or use more advanced options with CMD.
 
 ```cmd
