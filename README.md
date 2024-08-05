@@ -43,4 +43,4 @@ UEExtractor.exe <dir_path> <output_csv>
 
 ## Contributions:
 * You can create your own fork of this project and contribute to its development.
-* You can also contribute via the [Issues](https://github.com/SolicenTEAM/RPAExtractorCSharp/issues) and [Pull Request](https://github.com/SolicenTEAM/RPAExtractorCSharp/pulls) tabs by suggesting your code changes. And further development of the project. 
+* You can also contribute via the [Issues](https://github.com/SolicenTEAM/UEExtractor/issues) and [Pull Request](https://github.com/SolicenTEAM/UEExtractor/pulls) tabs by suggesting your code changes. And further development of the project. 
