@@ -34,7 +34,7 @@ UEExtractor.exe <dir_path> <output_csv>
 ```
 | Argument | Description |
 |----------|-------------|
-| --skipuexp, --skipasset | skips `.uexp` or `.uassets` files during the process.
+| --skipuexp, --skipasset | skips `.uexp` or `.uasset` files during the process.
 | --underscore | do not skips lines with underscores.
 | --noparallel | disable parallel processing, slower, may output additional data.
 | --invalid | include invalid data in the output.
