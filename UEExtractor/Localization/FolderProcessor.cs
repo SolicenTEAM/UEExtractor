@@ -12,6 +12,7 @@ namespace Solicen.Localization.UE4
             new Argument("--skipuexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
             new Argument("--skipasset", "skip files with `.uassets` during the process", () => UnrealLocres.SkipUassetFile = true),
             new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
+            new Argument("--upperupper", "do not skip lines with upperupper.", () => UnrealUepx.SkipUpperUpper = false),
             new Argument("--noparallel", "disable parallel processing, slower, may output additional data.", () => UnrealUasset.parallelProcessing = false),
             new Argument("--invalid", "include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
             new Argument("--qmarks", "forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),

@@ -12,10 +12,6 @@ namespace Solicen.Localization.UE4
 {
     public class UnrealUepx
     {
-        public string fileTextFilter = "All localizations files|*.uasset;*.locres;*.umap|Uasset File|*.uasset|Locres File|*.locres|Umap File|*.umap";
-        public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
-        public static bool parallelProcessing = true;
-
         #region Console Settings
         public static bool SkipUpperUpper = true;
         public static bool SkipUnderscore = true;

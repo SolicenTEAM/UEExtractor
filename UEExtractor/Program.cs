@@ -21,7 +21,6 @@ namespace UEExtractor
                 stopwatch.Stop(); timeTaken = stopwatch.Elapsed;
             });
             backgroundThread.Start(); backgroundThread.Join();
-            Thread.Sleep(500);
             Console.WriteLine($"Operation completed in: {timeTaken.TotalSeconds} seconds");
             Console.ReadLine();
         }
