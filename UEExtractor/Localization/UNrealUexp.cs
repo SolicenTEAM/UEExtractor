@@ -148,7 +148,12 @@ namespace Solicen.Localization.UE4
 
                     try
                     {
-                        stringDecoded = Encoding.UTF8.GetString(stringData);
+                        stringDecoded = Encoding.UTF8.GetString(stringData)
+                            .Replace("\n\n", "\\n\\n") // Экранирование двойного переноса
+                            .Replace("\n", "\\n")      // Экранирование переноса строки
+                            .Replace("\r", "\\r")      // Экранирование возврата каретки
+                            .Replace("\t", "\\t");     // Экранирование табуляции
+
                         if (IsValidDecode(stringDecoded))
                         {
                             decodedSuccessfully = true;

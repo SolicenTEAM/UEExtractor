@@ -44,7 +44,7 @@ namespace Solicen.Localization.UE4
         public static bool ForceQmarksOutput = false;
         #endregion
 
-        public static bool SolicenSeparator = false;
+        public static bool TableSeparator = false;
         public static bool ContainsUpperUpper(string input)
         {
             // Регулярное выражение для поиска последовательностей заглавных букв
@@ -111,12 +111,12 @@ namespace Solicen.Localization.UE4
                 // Write the header comments
                 writer.WriteLine("# UnrealEngine .locres asset");
 
-                if (!SolicenSeparator) 
+                if (!TableSeparator) 
                     writer.WriteLine("key,source,Translation"); // Write the column headers
 
                 // Write the data rows
 
-                var separator = SolicenSeparator ? "|!|" : ",";
+                var separator = TableSeparator ? "|" : ",";
 
                 foreach (var result in results.Values)
                 {

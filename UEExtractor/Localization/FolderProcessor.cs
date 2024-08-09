@@ -17,7 +17,7 @@ namespace Solicen.Localization.UE4
 			new Argument("--noparallel", "disable parallel processing, slower, may output additional data.", () => UnrealUasset.parallelProcessing = false),
 			new Argument("--invalid", "include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
 			new Argument("--qmarks", "forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
-			new Argument("--solicen", "replace standard separator , symbol to |!| ", () => UnrealLocres.SolicenSeparator = true),
+			new Argument("--tableformat", "replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 			new Argument("--autoexit", "Exit automatically after execution", () => _autoExit = true),
 			new Argument("--help", "Show help information", () => ShowHelp(arguments))
 		};

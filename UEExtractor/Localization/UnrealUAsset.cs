@@ -134,7 +134,11 @@ namespace Solicen.Localization.UE4
 
                 if (separatorIndex != -1)
                 {
-                    string decodedString = Encoding.UTF8.GetString(chunk, stringStartIndex, separatorIndex - stringStartIndex);
+                    string decodedString = Encoding.UTF8.GetString(chunk, stringStartIndex, separatorIndex - stringStartIndex)
+                            .Replace("\n\n", "\\n\\n") // Экранирование двойного переноса
+                            .Replace("\n", "\\n")      // Экранирование переноса строки
+                            .Replace("\r", "\\r")      // Экранирование возврата каретки
+                            .Replace("\t", "\\t");     // Экранирование табуляции;
 
                     int hashStartIndex = separatorIndex + SeparatorSequence.Length;
                     int hashEndIndex = hashStartIndex + HashLength;
