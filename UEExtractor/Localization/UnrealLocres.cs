@@ -44,6 +44,7 @@ namespace Solicen.Localization.UE4
         public static bool ForceQmarksOutput = false;
         #endregion
 
+        public static bool SolicenSeparator = false;
         public static bool ContainsUpperUpper(string input)
         {
             // Регулярное выражение для поиска последовательностей заглавных букв
@@ -110,16 +111,19 @@ namespace Solicen.Localization.UE4
                 // Write the header comments
                 writer.WriteLine("# UnrealEngine .locres asset");
 
-                // Write the column headers
-                writer.WriteLine("key,source,Translation");
+                if (!SolicenSeparator) 
+                    writer.WriteLine("key,source,Translation"); // Write the column headers
 
                 // Write the data rows
+
+                var separator = SolicenSeparator ? "|!|" : ",";
+
                 foreach (var result in results.Values)
                 {
                     if (ForceQmarksOutput)
-                        writer.WriteLine($"{EscapeCsvField(result.Key)},\"{EscapeCsvField(result.Source)}\",{EscapeCsvField(result.Translation)}");
+                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}\"{EscapeCsvField(result.Source)}\"{separator}{EscapeCsvField(result.Translation)}");
                     else
-                        writer.WriteLine($"{EscapeCsvField(result.Key)},{EscapeCsvField(result.Source)},{EscapeCsvField(result.Translation)}");
+                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}{EscapeCsvField(result.Source)}{separator}{EscapeCsvField(result.Translation)}");
                 }
 
                 // Write the footer comments
@@ -130,11 +134,13 @@ namespace Solicen.Localization.UE4
 
         private static string EscapeCsvField(string field)
         {
+            /*
             if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
             {
                 field = field.Replace("\"", "\"\"");
                 field = $"\"{field}\"";
             }
+            */
             return field;
         }
 
