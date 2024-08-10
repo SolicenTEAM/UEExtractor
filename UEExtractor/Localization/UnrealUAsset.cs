@@ -143,20 +143,21 @@ namespace Solicen.Localization.UE4
                     int hashStartIndex = separatorIndex + SeparatorSequence.Length;
                     int hashEndIndex = hashStartIndex + HashLength;
 
-                    if (hashEndIndex <= chunk.Length && IsValidHash(chunk, hashStartIndex, hashEndIndex))
+                    string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
+                    if (IsValidHash(decodedHash))
                     {
-                        string hash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
-                        results.Add(new LocresResult(hash, decodedString));
+                        results.Add(new LocresResult(decodedHash, decodedString));
                         i = hashEndIndex + SeparatorSequence.Length;
                         continue;
                     }
+
                 }
 
                 i = startIndex + 1;
             }
 
+            // Handle remainder data
             byte[] remainder = new byte[chunk.Length - i];
-            Array.Copy(chunk, i, remainder, 0, remainder.Length);
 
             // Explicitly clear chunk array
             Array.Clear(chunk, 0, chunk.Length);
@@ -164,18 +165,15 @@ namespace Solicen.Localization.UE4
             return new ChunkResult(results, remainder);
         }
 
-        private static bool IsValidHash(byte[] chunk, int start, int end)
+        static bool IsValidHash(string hash)
         {
-            if (end - start != HashLength) return false; // Ensure the hash length is 16 bytes (32 hex characters)
-
-            for (int i = start; i < end; i++)
+            if (hash.Length != 32) return false;
+            if (hash.All(c => char.IsDigit(c))) return false;
+            foreach (char c in hash)
             {
-                if (!((chunk[i] >= '0' && chunk[i] <= '9') || (chunk[i] >= 'A' && chunk[i] <= 'F')))
-                {
+                if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
                     return false;
-                }
             }
-
             return true;
         }
 

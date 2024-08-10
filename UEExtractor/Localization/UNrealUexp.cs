@@ -64,7 +64,12 @@ namespace Solicen.Localization.UE4
                     Array.Clear(buffer, 0, buffer.Length);
                     Array.Clear(chunk, 0, chunk.Length);
                 }
+                if (remainder.Length > 0)
+                {
+                    ProcessChunk(remainder, remainder.Length, allowedChars, results, IncludeInvalidData, out remainder);
+                }
             }
+
             // Force garbage collection to free memory
             GC.Collect();
 
@@ -107,7 +112,7 @@ namespace Solicen.Localization.UE4
                 }
 
                 byte[] hashCandidate = new byte[32];
-                Array.Copy(buffer, i, hashCandidate, 0, 32);
+                Array.Copy(buffer, i, hashCandidate, 0, 32);               
 
                 if (!hashCandidate.All(c => allowedChars.Contains(c)))
                 {
@@ -139,6 +144,7 @@ namespace Solicen.Localization.UE4
                     string hashDecoded = Encoding.UTF8.GetString(hashCandidate).Trim();
                     if (!IsValidHash(hashDecoded))
                     {
+                        Console.WriteLine($"SKIP: {hashDecoded}:NULL | InvalidHash");
                         i = endPos;
                         continue;
                     }
@@ -160,15 +166,24 @@ namespace Solicen.Localization.UE4
                         }
                         else
                         {
+                            Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | InvalidDecode");
                             i = endPos;
                             continue;
                         }
 
                     }
-                    catch (DecoderFallbackException) { }
+                    catch (DecoderFallbackException) 
+                    {
+                        Console.WriteLine($"DecoderFallbackException: Unable to decode string at position {i}");
+                    }
+                
 
-                    if (ContainsUpperUpper(stringDecoded) && SkipUpperUpper) { i = endPos; continue; }
-                    if (stringDecoded.Contains("_") && SkipUnderscore) { i = endPos; continue; }
+                    if (ContainsUpperUpper(stringDecoded) && SkipUpperUpper) {
+                        Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | UpperUpper");
+                        i = endPos; continue; }
+                    if (stringDecoded.Contains("_") && SkipUnderscore) {
+                        Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | Underscore");
+                        i = endPos; continue; }
                     if (decodedSuccessfully)
                     {
                         if (includeInvalidData || !results.Any(r => r.Key == hashDecoded))

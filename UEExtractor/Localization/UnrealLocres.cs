@@ -79,8 +79,15 @@ namespace Solicen.Localization.UE4
                 List<LocresResult> fileResults = new List<LocresResult>();
                 string file = files[i]; string filePATH = file.Replace(directory, "..");
                 Console.WriteLine(filePATH);
-
+                
                 fileResults = UnrealUepx.ExtractDataFromFile(file);
+
+                if (file.EndsWith(".uexp"))
+                {
+                    var newResult = UE4.UnrealUasset.ExtractDataFromFile(file);
+                    fileResults.AddRange(newResult);
+                }
+
                 if (file.EndsWith(".uasset"))
                 {
                     var newResult = UE4.UnrealUasset.ExtractDataFromFile(file).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
