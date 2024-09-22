@@ -128,7 +128,7 @@ namespace Solicen.Localization.UE4
                 foreach (var result in results.Values)
                 {
                     if (ForceQmarksOutput)
-                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}\"{EscapeCsvField(result.Source)}\"{separator}{EscapeCsvField(result.Translation)}");
+                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
                     else
                         writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}{EscapeCsvField(result.Source)}{separator}{EscapeCsvField(result.Translation)}");
                 }
@@ -141,13 +141,7 @@ namespace Solicen.Localization.UE4
 
         private static string EscapeCsvField(string field)
         {
-            /*
-            if (field.Contains(",") || field.Contains("\"") || field.Contains("\n"))
-            {
-                field = field.Replace("\"", "\"\"");
-                field = $"\"{field}\"";
-            }
-            */
+            if (field.Contains(",")) field = $"\"{field}\"";          
             return field;
         }
 
