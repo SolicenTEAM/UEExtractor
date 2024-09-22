@@ -181,7 +181,7 @@ namespace Solicen.Localization.UE4
                     if (ContainsUpperUpper(stringDecoded) && SkipUpperUpper) {
                         Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | UpperUpper");
                         i = endPos; continue; }
-                    if (stringDecoded.Contains("_") && SkipUnderscore) {
+                    if (stringDecoded.Contains('_') && SkipUnderscore) {
                         Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | Underscore");
                         i = endPos; continue; }
                     if (decodedSuccessfully)
