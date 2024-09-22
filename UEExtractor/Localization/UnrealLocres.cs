@@ -42,6 +42,10 @@ namespace Solicen.Localization.UE4
         /// Enable force qmarks chars around strings in output.
         /// </summary>
         public static bool ForceQmarksOutput = false;
+        /// <summary>
+        /// Enable comms header and footer of the csv.
+        /// </summary>
+        public static bool ForceMark = false;
         #endregion
 
         public static bool TableSeparator = false;
@@ -116,7 +120,7 @@ namespace Solicen.Localization.UE4
             using (var writer = new StreamWriter(outputCsv, false, Encoding.UTF8))
             {
                 // Write the header comments
-                writer.WriteLine("# UnrealEngine .locres asset");
+                if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
 
                 if (!TableSeparator) 
                     writer.WriteLine("key,source,Translation"); // Write the column headers
@@ -135,7 +139,7 @@ namespace Solicen.Localization.UE4
 
                 // Write the footer comments
                 var programName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-                writer.WriteLine($"# Extracted with {programName} & Solicen Translation Tool");
+                if (ForceMark) writer.WriteLine($"# Extracted with {programName} & Solicen");
             }
         }
 
