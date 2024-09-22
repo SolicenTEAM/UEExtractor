@@ -100,7 +100,7 @@ namespace Solicen.Localization.UE4
         static void ProcessChunk(byte[] buffer, int bytesRead, HashSet<byte> allowedChars, ConcurrentBag<LocresResult> results, bool includeInvalidData, out byte[] remainder)
         {
             int i = 0;
-            remainder = new byte[0];
+            remainder = Array.Empty<byte>();
 
             while (i < bytesRead - 37)
             {
