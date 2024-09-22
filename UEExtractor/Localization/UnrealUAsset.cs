@@ -29,8 +29,8 @@ namespace Solicen.Localization.UE4
             {
                 byte[] buffer = new byte[chunkSize];
                 long position = 0;
-                byte[] remainder = new byte[0];
-                
+                byte[] remainder = Array.Empty<byte>();
+
                 if (parallelProcessing)
                 {
                     // Parallel processing setup
@@ -40,10 +40,7 @@ namespace Solicen.Localization.UE4
                     for (int chunkIndex = 0; chunkIndex < chunkCount; chunkIndex++)
                     {
                         int currentChunkIndex = chunkIndex; // Capture the index for the lambda expression
-                        tasks.Add(Task.Run(() =>
-                        {
-                            ProcessChunk(filePath, currentChunkIndex, chunkSize, results);
-                        }));
+                        tasks.Add(Task.Run(() => ProcessChunk(filePath, currentChunkIndex, chunkSize, results)));
                     }
                     Task.WaitAll(tasks.ToArray());
 
@@ -168,7 +165,7 @@ namespace Solicen.Localization.UE4
         static bool IsValidHash(string hash)
         {
             if (hash.Length != 32) return false;
-            if (hash.All(c => char.IsDigit(c))) return false;
+            if (hash.All(char.IsDigit)) return false;
             foreach (char c in hash)
             {
                 if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))

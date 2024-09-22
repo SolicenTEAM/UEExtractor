@@ -52,7 +52,7 @@ namespace Solicen.Localization.UE4
         public static bool ContainsUpperUpper(string input)
         {
             var s = string.Join("", input.Where(x => x != ' '));
-            return s.All(c => char.IsUpper(c));
+            return s.All(char.IsUpper);
         }
 
         static bool ContainsAsciiOrNumbers(string s)
@@ -137,14 +137,14 @@ namespace Solicen.Localization.UE4
                 }
 
                 // Write the footer comments
-                var programName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+                var programName = typeof(UnrealLocres).Assembly.GetName().Name;
                 if (ForceMark) writer.WriteLine($"# Extracted with {programName} & Solicen");
             }
         }
 
         private static string EscapeCsvField(string field)
         {
-            if (field.Contains(",")) field = $"\"{field}\"";          
+            if (field.Contains(',')) field = $"\"{field}\"";          
             return field;
         }
 

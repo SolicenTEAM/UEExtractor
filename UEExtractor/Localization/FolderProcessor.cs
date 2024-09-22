@@ -113,7 +113,7 @@ namespace Solicen.Localization.UE4
 		}
 		public static void ProcessFolder(string folderPath, string fileName = "")
 		{
-			var exePath = new FileInfo(Assembly.GetExecutingAssembly().Location).Directory;
+			var exePath = new FileInfo(typeof(FolderProcessor).Assembly.Location).Directory;
 			var csvPath = string.IsNullOrWhiteSpace(fileName)
 				? $"{Path.GetFileName(folderPath)}_locres.csv"
 				: $"{fileName.Replace(".csv", "")}.csv";

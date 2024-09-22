@@ -21,7 +21,7 @@ namespace Solicen.Localization.UE4
         static bool ContainsUpperUpper(string input)
         {
             var s = string.Join("",input.Where(x => x != ' '));
-            return s.All(c => char.IsUpper(c));
+            return s.All(char.IsUpper);
         }
 
         static HashSet<byte> allowedChars = new HashSet<byte>(Enumerable.Range(48, 10).Concat(Enumerable.Range(65, 6)).Concat(Enumerable.Range(97, 6)).Select(x => (byte)x));
@@ -37,7 +37,7 @@ namespace Solicen.Localization.UE4
             {
                 byte[] buffer = new byte[chunkSize];
                 long position = 0;
-                byte[] remainder = new byte[0];
+                byte[] remainder = Array.Empty<byte>();
 
                 while (position < fileLength)
                 {
@@ -79,7 +79,7 @@ namespace Solicen.Localization.UE4
         static bool IsValidHash(string hash)
         {
             if (hash.Length != 32) return false;
-            if (hash.All(c => char.IsDigit(c))) return false;
+            if (hash.All(char.IsDigit)) return false;
             foreach (char c in hash)
             {
                 if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
@@ -114,7 +114,7 @@ namespace Solicen.Localization.UE4
                 byte[] hashCandidate = new byte[32];
                 Array.Copy(buffer, i, hashCandidate, 0, 32);               
 
-                if (!hashCandidate.All(c => allowedChars.Contains(c)))
+                if (!hashCandidate.All(allowedChars.Contains))
                 {
                     i++;
                     continue;
