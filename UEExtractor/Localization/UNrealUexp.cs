@@ -20,8 +20,8 @@ namespace Solicen.Localization.UE4
 
         static bool ContainsUpperUpper(string input)
         {
-            string pattern = @"([A-Z]\w*[A-Z])";
-            return Regex.IsMatch(input, pattern);
+            var s = string.Join("",input.Where(x => x != ' '));
+            return s.All(c => char.IsUpper(c));
         }
 
         static HashSet<byte> allowedChars = new HashSet<byte>(Enumerable.Range(48, 10).Concat(Enumerable.Range(65, 6)).Concat(Enumerable.Range(97, 6)).Select(x => (byte)x));

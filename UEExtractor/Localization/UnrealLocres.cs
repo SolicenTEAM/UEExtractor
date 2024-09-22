@@ -51,9 +51,8 @@ namespace Solicen.Localization.UE4
         public static bool TableSeparator = false;
         public static bool ContainsUpperUpper(string input)
         {
-            // Регулярное выражение для поиска последовательностей заглавных букв
-            string pattern = @"([A-Z]\w*[A-Z])";
-            return Regex.IsMatch(input, pattern);
+            var s = string.Join("", input.Where(x => x != ' '));
+            return s.All(c => char.IsUpper(c));
         }
 
         static bool ContainsAsciiOrNumbers(string s)
