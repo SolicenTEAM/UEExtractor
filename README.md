@@ -39,6 +39,7 @@ UEExtractor.exe <dir_path> <output_csv>
 | --noparallel | disable parallel processing, slower, may output additional data.
 | --invalid | include invalid data in the output.
 | --qmarks | forcibly adds quotation marks between text strings.
+| --hash | inculde hash for locres: [key][hash],string,
 | --help | Show help information.
 
 ## Contributions:
