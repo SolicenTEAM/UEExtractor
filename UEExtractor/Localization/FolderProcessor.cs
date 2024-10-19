@@ -11,6 +11,7 @@ namespace Solicen.Localization.UE4
 		static List<Argument> arguments = new List<Argument>
 		{
             new Argument("--comms", "comms header and footer of the csv.", () => UnrealLocres.ForceMark = true),
+            new Argument("--hash", "inculde hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue()),
             new Argument("--skipuexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 			new Argument("--skipasset", "skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 			new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),

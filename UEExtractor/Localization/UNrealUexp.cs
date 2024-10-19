@@ -16,6 +16,7 @@ namespace Solicen.Localization.UE4
         public static bool SkipUpperUpper = true;
         public static bool SkipUnderscore = true;
         public static bool IncludeInvalidData = false;
+        public static bool InculdeHashInKeyValue = false;
         #endregion
 
         static bool ContainsUpperUpper(string input)
@@ -188,6 +189,7 @@ namespace Solicen.Localization.UE4
                     {
                         if (includeInvalidData || !results.Any(r => r.Key == hashDecoded))
                         {
+                            hashDecoded = InculdeHashInKeyValue ? $"[{hashDecoded}][{LocresSharp.Crc.StrCrc32(stringDecoded)}]" : hashDecoded;
                             results.Add(new LocresResult(hashDecoded, stringDecoded));
                         }
                     }

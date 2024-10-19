@@ -16,6 +16,7 @@ namespace Solicen.Localization.UE4
         private const int HashLength = 32; // 32 hex characters
 
         public static bool parallelProcessing = true;
+        public static bool InculdeHashInKeyValue = false;
 
         public static List<LocresResult> ExtractDataFromFile(string filePath, bool includeInvalidData = false)
         {
@@ -143,6 +144,7 @@ namespace Solicen.Localization.UE4
                     string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
                     if (IsValidHash(decodedHash))
                     {
+                        decodedHash = InculdeHashInKeyValue ? $"[{decodedHash}][{LocresSharp.Crc.StrCrc32(decodedString)}]" : decodedHash;
                         results.Add(new LocresResult(decodedHash, decodedString));
                         i = hashEndIndex + SeparatorSequence.Length;
                         continue;

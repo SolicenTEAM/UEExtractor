@@ -48,6 +48,14 @@ namespace Solicen.Localization.UE4
         public static bool ForceMark = false;
         #endregion
 
+        private static bool hashInKey = false;
+        public static void IncludeHashInKeyValue()
+        {
+            UnrealUasset.InculdeHashInKeyValue = true; 
+            UnrealUepx.InculdeHashInKeyValue = true;
+            hashInKey = true;
+        }
+
         public static bool TableSeparator = false;
         public static bool ContainsUpperUpper(string input)
         {
@@ -121,8 +129,9 @@ namespace Solicen.Localization.UE4
                 // Write the header comments
                 if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
 
+                var keyHeader = hashInKey ? "[key][hash]" : "key";
                 if (!TableSeparator) 
-                    writer.WriteLine("key,source,Translation"); // Write the column headers
+                    writer.WriteLine($"{keyHeader},source,Translation"); // Write the column headers
 
                 // Write the data rows
 
