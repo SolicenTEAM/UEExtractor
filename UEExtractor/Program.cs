@@ -6,7 +6,7 @@ namespace UEExtractor
 {
     class Program
     {
-        private static readonly string title = "UEExtractor by Solicen : https://github.com/SolicenTEAM/UEExtractor";
+        const string title = "UEExtractor by Solicen : https://github.com/SolicenTEAM/UEExtractor";
         static void Main(string[] args)
         {
             Console.WriteLine($"{title}\n");
