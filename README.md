@@ -53,4 +53,4 @@ UEExtractor.exe <csv_path> <output_locres>
 
 ## Thanks:
 - [Ambi]() for his original script and idea to research.
-- [Saipan]() for help in researching the creation of a locres file.
+- [Saipan](https://github.com/Saipan0) for help in researching the creation of a locres file.
