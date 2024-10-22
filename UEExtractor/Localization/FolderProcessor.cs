@@ -12,6 +12,7 @@ namespace Solicen.Localization.UE4
 		{
             new Argument("--comms", "comms header and footer of the csv.", () => UnrealLocres.ForceMark = true),
             new Argument("--hash", "inculde hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue()),
+            new Argument("--locres", "write .locres file.", () => UnrealLocres.WriteLocres = true),
             new Argument("--skipuexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 			new Argument("--skipasset", "skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 			new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
@@ -71,48 +72,49 @@ namespace Solicen.Localization.UE4
 		{
 			if (args.Length > 0)
 			{
-				if (args[0].Contains(".csv")) // Обработка для получения .locres файла
+                string locres = null;
+                if (args[0].Contains(".csv")) // Обработка для получения .locres файла
 				{					
 					// TO DO - Сделать обработчик для csv => locres
 					// И наоборот.
 					string LocresCSV = args[0];
-					string locres = null;
 					if (args.Length > 1)
 					{
-						if (args[1].Contains(".locres"))
-						{
-							locres = args[1];
-						}
-					}
+                        locres = args.FirstOrDefault(x => x.Contains(".locres"));
+                    }
 					else
 					{
 						Console.WriteLine("Drag & Drop original .locres file.");
 						locres = Console.ReadLine();
-					}                  
+					}
 					if (!string.IsNullOrEmpty(locres))
 					{
-						// Обработка locres файла и считывание заголовока из него
-					}
+                        var Result = new LocresHelper().LoadCSV(LocresCSV);
+                        UnrealLocres.WriteToLocres(Result, locres);
+                    }
 				}
 				else // Обычная обработка папки для получения LocresCSV
 				{
-					string folderPath = args[0];
-					string fileName = "";
+					string folderPath = args[0]; string fileName = "";
+					locres = args.FirstOrDefault(x => x.Contains(".locres"));
+
 					if (args.Length > 1)
 					{
-						fileName = !args[1].Contains("--") ? args[1] : "";
+						fileName = !args[1].Contains("--") && args[1] != locres ? args[1] : "";
 					}
+
 					ProcessArgs(args);
 					if (Directory.Exists(folderPath) && !string.IsNullOrEmpty(args[0]))
 					{
-						FolderProcessor.ProcessFolder(folderPath, fileName);
+						FolderProcessor.ProcessFolder(folderPath, fileName, locres);
 					}
+
 				}
 
 
 			}
 		}
-		public static void ProcessFolder(string folderPath, string fileName = "")
+		public static void ProcessFolder(string folderPath, string fileName = "", string locresPath = "")
 		{
 			var exePath = new FileInfo(typeof(FolderProcessor).Assembly.Location).Directory;
 			var csvPath = string.IsNullOrWhiteSpace(fileName)
@@ -123,7 +125,12 @@ namespace Solicen.Localization.UE4
 			var Result = UnrealLocres.ProcessDirectory(folderPath);
 
 			UnrealLocres.WriteToCsv(Result, csvPath);
-			Console.WriteLine($"\nCompleted! File saved to: {csvPath}\n");
+			Console.WriteLine($"\nCompleted! File saved to: {csvPath}");
+
+			if (UnrealLocres.WriteLocres && locresPath != null)
+			{
+				UnrealLocres.WriteToLocres(Result, locresPath);
+            }
 
 			if (_autoExit) Environment.Exit(0);
 		}

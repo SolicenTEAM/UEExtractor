@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанные с этой сборкой.
 [assembly: AssemblyTitle("UEExtractor")]
-[assembly: AssemblyDescription("Extract Locres from UEngine games.")]
+[assembly: AssemblyDescription("Extract Locres from Unreal Engine build games.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Solicen")]
 [assembly: AssemblyProduct("UEExtractor")]
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Номер сборки
 //      Номер редакции
 //
-[assembly: AssemblyVersion("1.0.3.2")]
-[assembly: AssemblyFileVersion("1.0.3.2")]
+[assembly: AssemblyVersion("1.0.4.0")]
+[assembly: AssemblyFileVersion("1.0.4.0")]

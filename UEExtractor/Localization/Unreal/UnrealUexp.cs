@@ -155,12 +155,7 @@ namespace Solicen.Localization.UE4
 
                     try
                     {
-                        stringDecoded = Encoding.UTF8.GetString(stringData)
-                            .Replace("\n\n", "\\n\\n") // Экранирование двойного переноса
-                            .Replace("\n", "\\n")      // Экранирование переноса строки
-                            .Replace("\r", "\\r")      // Экранирование возврата каретки
-                            .Replace("\t", "\\t");     // Экранирование табуляции
-
+                        stringDecoded = LocresHelper.EscapeKey(Encoding.UTF8.GetString(stringData));
                         if (IsValidDecode(stringDecoded))
                         {
                             decodedSuccessfully = true;

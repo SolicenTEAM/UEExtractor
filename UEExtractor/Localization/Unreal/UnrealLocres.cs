@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime;
+using LocresSharp;
 
 namespace Solicen.Localization.UE4
 {
@@ -17,10 +18,11 @@ namespace Solicen.Localization.UE4
         public string Source { get; set; }
         public string Translation { get; set; } = string.Empty;
 
-        public LocresResult(string key, string source)
+        public LocresResult(string key, string source, string translation = null)
         {
             Key = key;
             Source = source;
+            Translation = translation;
         }
 
     }
@@ -46,6 +48,8 @@ namespace Solicen.Localization.UE4
         /// Enable comms header and footer of the csv.
         /// </summary>
         public static bool ForceMark = false;
+
+        public static bool WriteLocres = false;
         #endregion
 
         private static bool hashInKey = false;
@@ -122,6 +126,17 @@ namespace Solicen.Localization.UE4
             return sortedConcurrentResults;
         }
 
+        public static void WriteToLocres(LocresResult[] results, string outputLocres)
+        {
+            LocresWriter locres = new LocresWriter(outputLocres, "");
+            locres.Write(results);
+        }
+        public static void WriteToLocres(ConcurrentDictionary<string, LocresResult> results, string outputLocres)
+        {
+            var result = results.Select(x => x.Value).ToArray();
+            WriteToLocres(result, outputLocres);
+        }
+
         public static void WriteToCsv(ConcurrentDictionary<string, LocresResult> results, string outputCsv)
         {
             using (var writer = new StreamWriter(outputCsv, false, Encoding.UTF8))
@@ -153,6 +168,7 @@ namespace Solicen.Localization.UE4
 
         private static string EscapeCsvField(string field)
         {
+            if (field == null) return field;
             if (field.Contains(',')) field = $"\"{field}\"";          
             return field;
         }

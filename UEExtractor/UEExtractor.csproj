@@ -25,6 +25,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -34,6 +35,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>unreal.ico</ApplicationIcon>
@@ -45,6 +47,7 @@
     <Reference Include="Microsoft.Build.Framework" />
     <Reference Include="Microsoft.Build.Utilities.v4.0" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -55,9 +58,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Localization\FolderProcessor.cs" />
-    <Compile Include="Localization\UnrealLocres.cs" />
-    <Compile Include="Localization\UnrealUAsset.cs" />
-    <Compile Include="Localization\UNrealUexp.cs" />
+    <Compile Include="Localization\Locres\LocresHelper.cs" />
+    <Compile Include="Localization\Locres\IO\Crc.cs" />
+    <Compile Include="Localization\Locres\LocresTest.cs" />
+    <Compile Include="Localization\Locres\LocresWriter.cs" />
+    <Compile Include="Localization\Unreal\UnrealLocres.cs" />
+    <Compile Include="Localization\Unreal\UnrealUAsset.cs" />
+    <Compile Include="Localization\Unreal\UnrealUexp.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
