@@ -52,5 +52,5 @@ UEExtractor.exe <csv_path> <output_locres>
 * You can also contribute via the [Issues](https://github.com/SolicenTEAM/UEExtractor/issues) and [Pull Request](https://github.com/SolicenTEAM/UEExtractor/pulls) tabs by suggesting your code changes. And further development of the project. 
 
 ## Thanks:
-- [Ambi]() for his original script and idea to research.
+- [Ambi](https://github.com/JunkBeat) for his original script and idea to research.
 - [Saipan](https://github.com/Saipan0) for help in researching the creation of a locres file.
