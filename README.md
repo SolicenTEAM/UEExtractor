@@ -4,7 +4,7 @@
 
 Made with ❤️ for **all** translators and translation developers.
 
-This a script/tool to extract `LocresCSV` from unpacked directory from the **`.pak` or (`.utoc`|`.ucas`)** archive format from the [Unreal Enigne](https://www.unrealengine.com/). 
+This a script/tool to extract `LocresCSV` from unpacked directory from the **`.pak` or (`.utoc`|`.ucas`)** archive format from the [Unreal Enigne](https://www.unrealengine.com/) (4 - 5.0). 
 
 With it, you will receive a `LocresCSV` file for localization of the game based on its resources. However, `LocresCSV` is not a special format, and this name is only used to separate from the regular CSV file, which it is anyway.
 
