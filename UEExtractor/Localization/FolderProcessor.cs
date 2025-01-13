@@ -76,8 +76,6 @@ namespace Solicen.Localization.UE4
                 string locres = null;
                 if (args[0].Contains(".csv")) // Обработка для получения .locres файла
 				{					
-					// TO DO - Сделать обработчик для csv => locres
-					// И наоборот.
 					string LocresCSV = args[0];
 					if (args.Length > 1)
 					{
@@ -111,8 +109,6 @@ namespace Solicen.Localization.UE4
 					}
 
 				}
-
-
 			}
 		}
 		public static void ProcessFolder(string folderPath, string fileName = "", string locresPath = "")
