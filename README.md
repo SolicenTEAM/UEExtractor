@@ -4,9 +4,9 @@
 
 Made with ❤️ for **all** translators and translation developers.
 
-This a script/tool to extract `LocresCSV` from unpacked directory from the **`.pak` or (`.utoc`|`.ucas`)** archive format from the [Unreal Enigne](https://www.unrealengine.com/) (4 - 5.0). 
+This a script/tool to extract `locresCSV` from unpacked directory from the **`.pak` or `.ucas`** archive format [Unreal Enigne](https://www.unrealengine.com/) (4.0 - 5.1). 
 
-With it, you will receive a `LocresCSV` file for localization of the game based on its resources. However, `LocresCSV` is not a special format, and this name is only used to separate from the regular CSV file, which it is anyway.
+With it, you will receive a `locresCSV` file for localization of the game based on its resources. However, `locresCSV` is not a special format, and this name is only used to separate from the regular CSV file, which it is anyway.
 
 ## LocresCSV Structure:
 Will be imported or converted to `.locres` file.
@@ -39,13 +39,17 @@ UEExtractor.exe <csv_path> <output_locres>
 
 | Argument | Description |
 |----------|-------------|
-| --skipuexp, --skipasset | skips `.uexp` or `.uasset` files during the process.
+| --skip-uexp, --skip-uasset | skip `.uexp` or `.uasset` files during the process.
 | --locres | write .locres file after parsing.
-| --underscore | do not skips lines with underscores.
-| --noparallel | disable parallel processing, slower, may output additional data.
+| --underscore | do not skip line with underscores: **ex_string**
+| --upper-upper | do not skip line with upperupper: **EXAMPLE**.
+| --no-parallel | disable parallel processing, slower, may output additional data.
+| --headmark | include header and footer of the `csv`.
 | --invalid | include invalid data in the output.
 | --qmarks | forcibly adds quotation marks between text strings.
-| --help | Show help information.
+| --hash | inculde hash of string for locres ex: [key][hash],[string].
+| --url | include path to file, example: [url][key],[string].
+| --help | show help information.
 
 ## Contributions:
 * You can create your own fork of this project and contribute to its development.
