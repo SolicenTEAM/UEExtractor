@@ -16,7 +16,8 @@ namespace Solicen.Localization.UE4
         public static bool SkipUpperUpper = true;
         public static bool SkipUnderscore = true;
         public static bool IncludeInvalidData = false;
-        public static bool InculdeHashInKeyValue = false;
+        public static bool IncludeHashInKeyValue = false;
+        public static bool IncludeUrlInKeyValue = false;
         #endregion
 
         static bool ContainsUpperUpper(string input)
@@ -73,7 +74,14 @@ namespace Solicen.Localization.UE4
 
             // Force garbage collection to free memory
             GC.Collect();
-
+            if (UnrealLocres.IncludeUrlInKeyValue)
+            {
+                var path = UnrealLocres.FilePATH;
+                foreach(var result in results)
+                {
+                    result.Url = path;
+                }
+            }
             return results.ToList();
         }
 
@@ -184,8 +192,9 @@ namespace Solicen.Localization.UE4
                     {
                         if (includeInvalidData || !results.Any(r => r.Key == hashDecoded))
                         {
-                            hashDecoded = InculdeHashInKeyValue ? $"[{hashDecoded}][{LocresSharp.Crc.StrCrc32(stringDecoded)}]" : hashDecoded;
-                            results.Add(new LocresResult(hashDecoded, stringDecoded));
+                            var res = new LocresResult(hashDecoded, stringDecoded);
+                            if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(stringDecoded).ToString();
+                            results.Add(res);
                         }
                     }
 

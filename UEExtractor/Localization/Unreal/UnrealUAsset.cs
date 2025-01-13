@@ -17,6 +17,7 @@ namespace Solicen.Localization.UE4
 
         public static bool parallelProcessing = true;
         public static bool InculdeHashInKeyValue = false;
+        public static bool IncludeUrlInKeyValue = false;
 
         public static List<LocresResult> ExtractDataFromFile(string filePath, bool includeInvalidData = false)
         {
@@ -110,6 +111,7 @@ namespace Solicen.Localization.UE4
                     var chunkResult = ExtractFromChunk(buffer.Take(bytesRead).ToArray());
                     foreach (var result in chunkResult.Results)
                     {
+                        if (UnrealLocres.IncludeUrlInKeyValue) result.Url = filePath;
                         results.Add(result);
                     }
                 }
@@ -139,8 +141,10 @@ namespace Solicen.Localization.UE4
                     string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
                     if (IsValidHash(decodedHash))
                     {
-                        decodedHash = InculdeHashInKeyValue ? $"[{decodedHash}][{LocresSharp.Crc.StrCrc32(decodedString)}]" : decodedHash;
-                        results.Add(new LocresResult(decodedHash, decodedString));
+                        var res = new LocresResult(decodedHash, decodedString);
+                        if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
+                        results.Add(res);
+
                         i = hashEndIndex + SeparatorSequence.Length;
                         continue;
                     }

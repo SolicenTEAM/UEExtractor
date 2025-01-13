@@ -9,11 +9,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime;
 using LocresSharp;
+using Solicen.Localization.UE5.ZenLoader;
 
 namespace Solicen.Localization.UE4
 {
     public class LocresResult
     {
+        public string Url  { get; set; }
+        public string Hash { get; set; }
+
         public string Key { get; set; }
         public string Source { get; set; }
         public string Translation { get; set; } = string.Empty;
@@ -30,6 +34,7 @@ namespace Solicen.Localization.UE4
     {
         public string fileTextFilter = "All localizations files|*.uasset;*.locres;*.umap|Uasset File|*.uasset|Locres File|*.locres|Umap File|*.umap";
         public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
+        public static string FilePATH = string.Empty;
 
         #region LocresCSV file Setup
         /// <summary>
@@ -52,14 +57,9 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
-        private static bool hashInKey = false;
-        public static void IncludeHashInKeyValue()
-        {
-            UnrealUasset.InculdeHashInKeyValue = true; 
-            UnrealUepx.InculdeHashInKeyValue = true;
-            hashInKey = true;
-        }
-
+        public static bool IncludeUrlInKeyValue  = false;
+        public static bool IncludeHashInKeyValue = false;
+        public static string pDirectory = string.Empty;
         public static bool TableSeparator = false;
         public static bool ContainsUpperUpper(string input)
         {
@@ -83,17 +83,18 @@ namespace Solicen.Localization.UE4
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
             var filesExtensions = new[] { "*.uexp", "*.uasset" };
-
+            pDirectory = directory;
             var files = filesExtensions.SelectMany(ext => Directory.GetFiles(directory, ext, SearchOption.AllDirectories)).ToArray();
 
             files = SkipUassetFile ? files.Where(x => !x.EndsWith(".uasset")).ToArray() : files;
             files = SkipUexpFile   ? files.Where(x => !x.EndsWith(".uexp")).ToArray()   : files;
+            files = files.Where(x => File.Exists(x)).ToArray(); // Иначе происходит сбой для некоторых файлов, хотя...я без понятия как это возможно вообще.
 
             Parallel.For(0, files.Length, i =>
-            {         
+            {
                 List<LocresResult> fileResults = new List<LocresResult>();
-                string file = files[i]; string filePATH = file.Replace(directory, "..");
-                Console.WriteLine(filePATH);
+                string file = $@"{files[i]}"; string filePATH = file.Replace(directory, "..");
+                Console.WriteLine(filePATH); FilePATH = filePATH;
                 
                 fileResults = UnrealUepx.ExtractDataFromFile(file);
 
@@ -108,21 +109,53 @@ namespace Solicen.Localization.UE4
                     var newResult = UE4.UnrealUasset.ExtractDataFromFile(file).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
                     fileResults.AddRange(newResult);
                 }
+
+                #region Zen Loader Zone
+                /* TO DO: REPLACE THIS TO NORMAL UE5 Zen Loader Processor
+                // Если ни один из методов выше не привел к результату, то пробуем Zen Loader структуру.
+                if (fileResults.Count == 0)
+                {
+                    var taskResult = Task.Run(() => UE5.ZenLoader.ZenParser.Parse(file));
+                    taskResult.Wait();
+
+                    var newResult =  taskResult.Result;
+                    if (newResult != null)
+                        fileResults.AddRange(newResult);
+                }
+                */
+                #endregion
+                #region Zero Data
+                if (fileResults.Count == 0)
+                {
+                    Console.WriteLine(
+                        "\nThe extracted data is equal to: 0.\n" +
+                        "This is strange, it looks like a bug or something that needs to be solved.\n" +
+                        "Contact me using my contacts here : (https://github.com/SolicenTEAM ) and I will try to solve your problem.\n" +
+                        "You can also open a 'Issue' here  : (https://github.com/SolicenTEAM/UEExtractor/issues) I'll notice it.\n" +
+                        "Thank you in advance, and thank you for your patience!\n");
+                }
+                #endregion
+
                 foreach (var result in fileResults)
                 {
-                    Console.WriteLine($"{result.Key} | {result.Source} |");
+                    if (result == null) continue;
+                    if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
+                    if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
+
+                    Console.WriteLine($" - {result.Key} | {result.Source} |");
                     allResults[result.Key] = result;
                 }
             });
-
+     
             // Сортируем результаты по длине строки Source
             var sortedResults = allResults
                 .OrderBy(result => result.Value.Source.Length)  // Сначала по длине строки
                 .ThenBy(result => result.Value.Source)  // Затем по алфавиту (для одинаковой длины)
                 .ToDictionary(result => result.Key, result => result.Value);
+            
 
             // Преобразуем отсортированный словарь обратно в ConcurrentDictionary
-            var sortedConcurrentResults = new ConcurrentDictionary<string, LocresResult>(sortedResults);
+            var sortedConcurrentResults = new ConcurrentDictionary<string, LocresResult>(allResults);
             return sortedConcurrentResults;
         }
 
@@ -144,14 +177,14 @@ namespace Solicen.Localization.UE4
                 // Write the header comments
                 if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
 
-                var keyHeader = hashInKey ? "[key][hash]" : "key";
+                var keyHeader = IncludeHashInKeyValue ? "[key][hash]" : "key";
+                keyHeader = IncludeUrlInKeyValue ? $"[url]{keyHeader}" : keyHeader;
+
                 if (!TableSeparator) 
                     writer.WriteLine($"{keyHeader},source,Translation"); // Write the column headers
 
                 // Write the data rows
-
                 var separator = TableSeparator ? "|" : ",";
-
                 foreach (var result in results.Values)
                 {
                     if (ForceQmarksOutput)
