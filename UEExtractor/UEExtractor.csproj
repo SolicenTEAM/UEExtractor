@@ -60,7 +60,6 @@
     <Compile Include="Localization\FolderProcessor.cs" />
     <Compile Include="Localization\Locres\LocresHelper.cs" />
     <Compile Include="Localization\Locres\IO\Crc.cs" />
-    <Compile Include="Localization\Locres\LocresTest.cs" />
     <Compile Include="Localization\Locres\LocresWriter.cs" />
     <Compile Include="Localization\Unreal\UnrealLocres.cs" />
     <Compile Include="Localization\Unreal\UnrealUAsset.cs" />
