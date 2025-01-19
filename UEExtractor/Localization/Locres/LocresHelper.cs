@@ -34,7 +34,14 @@ namespace Solicen.Localization.UE4
                 if (line.StartsWith("#") || line.StartsWith("key,source")) continue;
                 var key = line.Split(',')[0];
                 var source = line.Split(',')[1];
-                var translation = line.Split(',').FirstOrDefault(x => x != source && x != key);
+
+                #region Translation Column
+                // It will slow down the creation of the locres file a little,
+                // but otherwise we will not read the translation column normally if it contains commas.
+                var translation = Regex.Split(line, @",(?=(?:[^""]*""[^""]*"")*[^""]*$)")
+                    .FirstOrDefault(x => x != source && x != key);
+                #endregion
+
                 results.Add(new LocresResult(key, source, translation));
                 index++;
             }
