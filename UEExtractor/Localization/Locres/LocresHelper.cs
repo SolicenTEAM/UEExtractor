@@ -75,7 +75,7 @@ namespace Solicen.Localization.UE4
             int patternIndex = FindPatternIndex(data, searchPattern);
             if (patternIndex == -1)
             {
-                throw new InvalidOperationException("Шаблон не найден в данных.");
+                throw new InvalidOperationException("Locres pattern not found in data.");
             }
             int X = patternIndex - 8;
             return X;
@@ -83,8 +83,8 @@ namespace Solicen.Localization.UE4
 
         public static byte[] WriteNewOffset(byte[] data, int offset)
         {
-            byte[] locresOffset = BitConverter.GetBytes((UInt16)offset);
-            Array.Copy(locresOffset, 0, data, 17, 2);
+            byte[] locresOffset = BitConverter.GetBytes((UInt32)offset);
+            Array.Copy(locresOffset, 0, data, 17, 4);
             return data;
         }
 
@@ -130,7 +130,7 @@ namespace Solicen.Localization.UE4
 
             // Запись числа stringsAll в байты с 33 по 34 (uint)
             byte[] stringsAllBytes = BitConverter.GetBytes((uint)stringsAll);
-            Array.Copy(stringsAllBytes, 0, buffer, 33, 2);
+            Array.Copy(stringsAllBytes, 0, buffer, 33, 4);
 
             // Возвращаем измененный буфер
             return buffer;
