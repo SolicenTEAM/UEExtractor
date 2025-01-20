@@ -48,6 +48,7 @@ UEExtractor.exe <csv_path> <output_locres>
 | --invalid | include invalid data in the output.
 | --qmarks | forcibly adds quotation marks between text strings.
 | --hash | inculde hash of string for locres ex: [key][hash],[string].
+| --picky | picky mode, displays more annoying information.
 | --url | include path to file, example: [url][key],[string].
 | --help | show help information.
 

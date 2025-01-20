@@ -10,11 +10,12 @@ namespace Solicen.Localization.UE4
 	{
 		static List<Argument> arguments = new List<Argument>
 		{
+			new Argument("--picky", "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
 			new Argument("--url", "include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
-            new Argument("--headmark", "include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
-            new Argument("--hash", "inculde hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
-            new Argument("--locres", "write .locres file.", () => UnrealLocres.WriteLocres = true),
-            new Argument("--skip-uexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
+			new Argument("--headmark", "include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
+			new Argument("--hash", "inculde hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
+			new Argument("--locres", "write .locres file.", () => UnrealLocres.WriteLocres = true),
+			new Argument("--skip-uexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 			new Argument("--skip-uasset", "skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 			new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
 			new Argument("--upper-upper", "do not skip lines with upperupper.", () => UnrealUepx.SkipUpperUpper = false),

@@ -165,9 +165,11 @@ namespace Solicen.Localization.UE4
 
         static bool IsValidHash(string hash)
         {
-            if (hash.Length != 32) return false;
-            if (hash.All(char.IsDigit)) return false;
-            foreach (char c in hash)
+            if (hash.Length != 32) return false;           // Если длина хеш строки не равна 32 символам
+            if (hash.All(char.IsDigit)) return false;      // Если все символы это только цифры
+            if (hash.All(x => x == hash[0])) return false; // Если все символы одинаковые, пример: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+
+            foreach (char c in hash)                       // Проверка, только разрешенные символы для хеш строки
             {
                 if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
                     return false;

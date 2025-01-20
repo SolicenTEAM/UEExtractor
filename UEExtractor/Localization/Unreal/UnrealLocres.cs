@@ -56,6 +56,7 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
+        public static bool PickyMode = false;
         public static bool IncludeUrlInKeyValue  = false;
         public static bool IncludeHashInKeyValue = false;
         public static string pDirectory = string.Empty;
@@ -124,15 +125,7 @@ namespace Solicen.Localization.UE4
                 */
                 #endregion
                 #region Zero Data
-                if (fileResults.Count == 0)
-                {
-                    Console.WriteLine(
-                        "\nThe extracted data is equal to: 0.\n" +
-                        "This is strange, it looks like a bug or something that needs to be solved.\n" +
-                        "Contact me using my contacts here : (https://github.com/SolicenTEAM ) and I will try to solve your problem.\n" +
-                        "You can also open a 'Issue' here  : (https://github.com/SolicenTEAM/UEExtractor/issues) I'll notice it.\n" +
-                        "Thank you in advance, and thank you for your patience!\n");
-                }
+                if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
                 #endregion
 
                 foreach (var result in fileResults)
@@ -145,7 +138,11 @@ namespace Solicen.Localization.UE4
                     allResults[result.Key] = result;
                 }
             });
-     
+
+            #region Zero Data All
+            if (allResults.Count == 0) ZeroDataMessage();
+            #endregion
+
             // Сортируем результаты по длине строки Source
             var sortedResults = allResults
                 .OrderBy(result => result.Value.Source.Length)  // Сначала по длине строки
@@ -272,5 +269,17 @@ namespace Solicen.Localization.UE4
                 }
             }
         }
+
+        #region Output messages
+        private static void ZeroDataMessage()
+        {
+            Console.WriteLine(
+            "\nThe extracted data is equal to: 0.\n" +
+            "This is strange, it looks like a bug or something that needs to be solved.\n" +
+            "Contact me using my contacts here : (https://github.com/SolicenTEAM ) and I will try to solve your problem.\n" +
+            "You can also open a 'Issue' here  : (https://github.com/SolicenTEAM/UEExtractor/issues) I'll notice it.\n" +
+            "Thank you in advance, and thank you for your patience!\n");
+        }
+        #endregion
     }
 }
