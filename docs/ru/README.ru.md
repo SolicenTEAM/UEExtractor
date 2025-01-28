@@ -1,6 +1,6 @@
 # Solicen.UEExtractor
 
-[**Englsih**](/README.md) | [**Русский**](./docs/ru/README.ru.md)
+[**English**](/README.md) | [**Русский**](./docs/ru/README.ru.md)
 
 Сделано с ❤️ для **всех** переводчиков и разработчиков переводов.
 
