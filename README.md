@@ -44,7 +44,9 @@ UEExtractor.exe <csv_path> <output_locres>
 | --underscore | do not skip line with underscores: **ex_string**
 | --upper-upper | do not skip line with upperupper: **EXAMPLE**.
 | --no-parallel | disable parallel processing, slower, may output additional data.
+| --table-format | replace standard separator **`,`** symbol to **`\|`**
 | --headmark | include header and footer in the `csv`.
+| --autoexit | automatically exit after execution all processes.
 | --invalid | include invalid data in the output.
 | --qmarks | forcibly adds quotation marks between text strings.
 | --hash | inculde hash of string for locres ex: [key][hash],[string].
