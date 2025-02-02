@@ -8,6 +8,9 @@ This a script/tool to extract `locresCSV` from unpacked directory from the **`.p
 
 With it, you will receive a `locresCSV` file for localization of the game based on its resources. However, `locresCSV` is not a special format, and this name is only used to separate from the regular CSV file, which it is anyway.
 
+> [!CAUTION]
+> You will not be able to get strings from files that contain a **DataTable** structure and operate on these strings via `.locres`. Do not open a *issue* to solve this problem, I will not be able to solve it. Thank you for understanding.
+
 ## LocresCSV Structure:
 Will be imported or converted to `.locres` file.
 - key = unique string of 32 characters.
