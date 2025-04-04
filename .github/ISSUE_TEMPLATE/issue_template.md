@@ -1,5 +1,5 @@
 ---
-name: "Issue or Bug"
+name: "Issue or Bug | Проблема или Баг"
 about: "Report an issue you have encountered"
 title: "[BUG] Describe the issue"
 labels: bug
