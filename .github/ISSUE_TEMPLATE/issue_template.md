@@ -1,5 +1,5 @@
 ---
-name: "Issue or Bug | Проблема или Баг"
+name: "Issue or Bug | Проблема или баг"
 about: "Report an issue you have encountered"
 title: "[BUG] Describe the issue"
 labels: bug
@@ -11,3 +11,6 @@ Briefly describe what the issue is.
 
 ## Additional information
 Any other details that might help us understand and resolve the issue.
+
+## Additional files
+Please provide any additional files with which you receive an error, bug, or something else.
