@@ -13,4 +13,5 @@ Briefly describe what the issue is.
 Any other details that might help us understand and resolve the issue.
 
 ## Additional files
-Please provide any additional files with which you receive an error, bug, or something else.
+Please always, if possible, attach additional files with which you have an error,
+bug or something else, with which I can quickly simulate your situation and solve the problem.
