@@ -25,20 +25,26 @@ namespace Solicen.Localization.UE4
 {
     internal class LocresHelper
     {
+        public char Separator = ','; 
         public LocresResult[] LoadCSV(string csvPath)
         {
             List<LocresResult> results = new List<LocresResult>();
             var lines = System.IO.File.ReadAllLines(csvPath); int index = 0; lines.Reverse();
             foreach (var line in lines)
             {
-                if (line.StartsWith("#") || line.StartsWith("key,source")) continue;
-                var key = line.Split(',')[0];
-                var source = line.Split(',')[1];
+                if (line.StartsWith("#") || Regex.IsMatch(line, @"key.*source")) continue;
+
+                // Separate Values by Regex
+                var separateBy = $@"[{Separator}](?=(?:[^""]*""[^""]*"")*[^""]*$)";
+                var allValues = Regex.Split(line, separateBy);
+
+                var key = allValues[0];
+                var source = allValues[1];
 
                 #region Translation Column
                 // It will slow down the creation of the locres file a little,
                 // but otherwise we will not read the translation column normally if it contains commas.
-                var translation = Regex.Split(line, @",(?=(?:[^""]*""[^""]*"")*[^""]*$)")
+                var translation = Regex.Split(line, separateBy)
                     .FirstOrDefault(x => x != source && x != key);
                 #endregion
 

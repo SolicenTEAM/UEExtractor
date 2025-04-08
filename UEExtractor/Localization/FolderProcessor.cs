@@ -87,10 +87,19 @@ namespace Solicen.Localization.UE4
 						Console.WriteLine("Drag & Drop original .locres file.");
 						locres = Console.ReadLine();
 					}
-					if (!string.IsNullOrEmpty(locres))
+					if (!string.IsNullOrEmpty(locres)) // Если .locres
 					{
-                        var Result = new LocresHelper().LoadCSV(LocresCSV);
-                        UnrealLocres.WriteToLocres(Result, locres);
+                        // Учитывать дополнительные аргументы при сборке
+                        ProcessArgs(args); 
+
+						// Инициализируем новый экземпляр Хелпера
+                        var lHelper = new LocresHelper();
+						if (UnrealLocres.TableSeparator)                       
+                            lHelper.Separator = '|'; // Если TableFormat,
+													 // установить другой разделитель.
+
+                        var Result = lHelper.LoadCSV(LocresCSV); // Прочитать результат из LocresCSV
+                        UnrealLocres.WriteToLocres(Result, locres); // Записать .locres файл
                     }
 				}
 				else // Обычная обработка папки для получения LocresCSV
