@@ -197,8 +197,9 @@ namespace Solicen.Localization.UE4
 
         private static string EscapeCsvField(string field)
         {
-            if (field == null) return field;
-            if (field.Contains(',')) field = $"\"{field}\"";          
+            if (field == null) return field;                 // Return empty string
+            if (TableSeparator) return field;                // Don't write a QMarks between | string | 
+            if (field.Contains(',')) field = $"\"{field}\""; // Return QMarks between " string " if detect comma symbol in line.          
             return field;
         }
 

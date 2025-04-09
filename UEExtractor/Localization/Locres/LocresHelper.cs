@@ -39,19 +39,28 @@ namespace Solicen.Localization.UE4
                 var allValues = Regex.Split(line, separateBy);
 
                 var key = allValues[0];
-                var source = allValues[1];
+                var source = SimplifyQMarksInStr(allValues[1]);
 
                 #region Translation Column
                 // It will slow down the creation of the locres file a little,
                 // but otherwise we will not read the translation column normally if it contains commas.
-                var translation = Regex.Split(line, separateBy)
-                    .FirstOrDefault(x => x != source && x != key);
+                var translation = SimplifyQMarksInStr(allValues.FirstOrDefault(x => x != source && x != key));
                 #endregion
 
                 results.Add(new LocresResult(key, source, translation));
                 index++;
             }
             return results.ToArray();
+        }
+
+        /// <summary>
+        /// Simplified string between quotation marks.
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
+        public static string SimplifyQMarksInStr(string str)
+        {
+            return str.StartsWith("\"") && str.EndsWith("\"") ? str.Trim('\"') : str;
         }
 
         public static string EscapeKey(string str)
