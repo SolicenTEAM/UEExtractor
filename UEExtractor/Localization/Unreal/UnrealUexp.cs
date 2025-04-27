@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static Solicen.Localization.UE4.UnrealLocres;
 
 namespace Solicen.Localization.UE4
 {

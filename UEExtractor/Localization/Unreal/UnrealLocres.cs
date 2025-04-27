@@ -4,11 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime;
-using LocresSharp;
 
 namespace Solicen.Localization.UE4
 {
@@ -111,16 +107,22 @@ namespace Solicen.Localization.UE4
                 }
 
                 #region Zen Loader Zone
-                /* TO DO: REPLACE THIS TO NORMAL UE5 Zen Loader Processor
+                // TO DO: REPLACE THIS TO NORMAL UE5 Zen Loader Processor
                 // Если ни один из методов выше не привел к результату, то пробуем Zen Loader структуру.
+                /*
                 if (fileResults.Count == 0)
                 {
-                    var taskResult = Task.Run(() => UE5.ZenLoader.ZenParser.Parse(file));
-                    taskResult.Wait();
 
-                    var newResult =  taskResult.Result;
-                    if (newResult != null)
-                        fileResults.AddRange(newResult);
+                    var taskResult = new Thread(() =>
+                    {
+                        var res = UE5.ZenLoader.ZenParser.ZenMerged(file);
+                        if (res != null)
+                            fileResults.AddRange(res);
+
+                    });
+
+                    taskResult.Start(); taskResult.Join();
+
                 }
                 */
                 #endregion
@@ -154,6 +156,24 @@ namespace Solicen.Localization.UE4
             var sortedConcurrentResults = new ConcurrentDictionary<string, LocresResult>(allResults);
             return sortedConcurrentResults;
         }
+
+        /*
+        public static void LocresMerge(string locresFile1, string locresFile2)
+        {
+            var result = new List<LocresResult>();
+            var _tempL1 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile1));
+            Console.WriteLine($"Total lines in locres1: {_tempL1.Count}");
+            var _tempL2 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile2));
+            Console.WriteLine($"Total lines in locres2: {_tempL1.Count}");
+
+            result.AddRange(_tempL1);
+            result.AddRange(_tempL2.Where(x => result.Any(key => key.Key != x.Key))); // Добавляем только без дубликатов
+
+            var filePath = $"{AppDomain.CurrentDomain}\\{Path.GetFileNameWithoutExtension(locresFile1)}_NEW.locres";
+            Console.WriteLine($"New locres has been merged to: {filePath}");
+            WriteToLocres(result.ToArray(), filePath);
+        }
+        */
 
         public static void WriteToLocres(LocresResult[] results, string outputLocres)
         {
