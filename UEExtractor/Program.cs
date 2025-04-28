@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 
 namespace UEExtractor
 {
     class Program
     {
-        const string title = "UEExtractor : https://github.com/SolicenTEAM/UEExtractor";
+        string title = $"UEExtractor VER : https://github.com/SolicenTEAM/UEExtractor";
         static void Main(string[] args)
         {
+            var Version = $"{FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion}";
             Console.Title = "UEExtractor • Solicen";
-            Console.WriteLine($"{title}");
+            Console.WriteLine($"{title.Replace("VER", Version)}");
             Console.WriteLine("Author: Denis Solicen : https://github.com/DenisSolicen\n\n" +
                 "This cool tool will collect and extract the .locres file from the resources of your Unreal Engine game folder.");
             Console.WriteLine("Usage: Drag and drop whole the game folder that contain unreal archives: '.pak' or '.utoc' files.");
