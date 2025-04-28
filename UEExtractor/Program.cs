@@ -13,7 +13,7 @@ namespace UEExtractor
             Console.WriteLine($"{title}");
             Console.WriteLine("Author: Denis Solicen : https://github.com/DenisSolicen\n\n" +
                 "This cool tool will collect and extract the .locres file from the resources of your Unreal Engine game folder.");
-            Console.WriteLine("Usage: Drag and drop the game folder obtained during extraction '.pak' or '.ucas|.utoc' file."); 
+            Console.WriteLine("Usage: Drag and drop whole the game folder that contain unreal archives: '.pak' or '.utoc' files.");
             Thread.Sleep(100);
             Stopwatch stopwatch = new Stopwatch(); stopwatch.Start();
             TimeSpan timeTaken = new TimeSpan();

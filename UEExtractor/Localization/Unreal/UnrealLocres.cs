@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Runtime;
 using LocresSharp;
+using System.Diagnostics;
 
 namespace Solicen.Localization.UE4
 {
@@ -34,8 +35,15 @@ namespace Solicen.Localization.UE4
         public string fileTextFilter = "All localizations files|*.uasset;*.locres;*.umap|Uasset File|*.uasset|Locres File|*.locres|Umap File|*.umap";
         public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
         public static string FilePATH = string.Empty;
+        public static string UEVersion = "5_3";
+        public static string AES = string.Empty;
 
         #region LocresCSV file Setup
+        public static bool WriteSkippedCSV = false;
+        /// <summary>
+        /// CSVWritter for skipped lines;
+        /// </summary>
+        public static CSVWriter SkippedCSV = new CSVWriter(string.Empty);
         /// <summary>
         /// Skip all .uasset files.
         /// </summary>
@@ -84,46 +92,29 @@ namespace Solicen.Localization.UE4
             var allResults = new ConcurrentDictionary<string, LocresResult>();
             var filesExtensions = new[] { "*.uexp", "*.uasset" };
             pDirectory = directory;
-            var files = filesExtensions.SelectMany(ext => Directory.GetFiles(directory, ext, SearchOption.AllDirectories)).ToArray();
 
-            files = SkipUassetFile ? files.Where(x => !x.EndsWith(".uasset")).ToArray() : files;
-            files = SkipUexpFile   ? files.Where(x => !x.EndsWith(".uexp")).ToArray()   : files;
-            files = files.Where(x => File.Exists(x)).ToArray(); // Иначе происходит сбой для некоторых файлов, хотя...я без понятия как это возможно вообще.
-
-            Parallel.For(0, files.Length, i =>
+            using var reader = new UnrealArchiveReader(directory);
+            reader.ProcessAllAssets((path, stream) =>
             {
+                if (SkipUassetFile && path.EndsWith(".uasset")) return;
+                if (SkipUexpFile && path.EndsWith(".uexp")) return;
+
                 List<LocresResult> fileResults = new List<LocresResult>();
-                string file = $@"{files[i]}"; string filePATH = file.Replace(directory, "..");
-                Console.WriteLine(filePATH); FilePATH = filePATH;
-                
-                fileResults = UnrealUepx.ExtractDataFromFile(file);
-
-                if (file.EndsWith(".uexp"))
+                using (stream)
                 {
-                    var newResult = UE4.UnrealUasset.ExtractDataFromFile(file);
-                    fileResults.AddRange(newResult);
-                }
-
-                if (file.EndsWith(".uasset"))
-                {
-                    var newResult = UE4.UnrealUasset.ExtractDataFromFile(file).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
-                    fileResults.AddRange(newResult);
-                }
-
-                #region Zen Loader Zone
-                /* TO DO: REPLACE THIS TO NORMAL UE5 Zen Loader Processor
-                // Если ни один из методов выше не привел к результату, то пробуем Zen Loader структуру.
-                if (fileResults.Count == 0)
-                {
-                    var taskResult = Task.Run(() => UE5.ZenLoader.ZenParser.Parse(file));
-                    taskResult.Wait();
-
-                    var newResult =  taskResult.Result;
-                    if (newResult != null)
+                    fileResults = UnrealUepx.ExtractDataFromStream(stream);
+                    if (path.EndsWith(".uexp"))
+                    {
+                        var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path);
                         fileResults.AddRange(newResult);
+                    }
+                    if (path.EndsWith(".uasset"))
+                    {
+                        var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
+                        fileResults.AddRange(newResult);
+                    }
                 }
-                */
-                #endregion
+
                 #region Zero Data
                 if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
                 #endregion
@@ -152,8 +143,28 @@ namespace Solicen.Localization.UE4
 
             // Преобразуем отсортированный словарь обратно в ConcurrentDictionary
             var sortedConcurrentResults = new ConcurrentDictionary<string, LocresResult>(allResults);
+
+            GC.Collect();
             return sortedConcurrentResults;
         }
+
+        /*
+        public static void LocresMerge(string locresFile1, string locresFile2)
+        {
+            var result = new List<LocresResult>();
+            var _tempL1 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile1));
+            Console.WriteLine($"Total lines in locres1: {_tempL1.Count}");
+            var _tempL2 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile2));
+            Console.WriteLine($"Total lines in locres2: {_tempL1.Count}");
+
+            result.AddRange(_tempL1);
+            result.AddRange(_tempL2.Where(x => result.Any(key => key.Key != x.Key))); // Добавляем только без дубликатов
+
+            var filePath = $"{AppDomain.CurrentDomain}\\{Path.GetFileNameWithoutExtension(locresFile1)}_NEW.locres";
+            Console.WriteLine($"New locres has been merged to: {filePath}");
+            WriteToLocres(result.ToArray(), filePath);
+        }
+        */
 
         public static void WriteToLocres(LocresResult[] results, string outputLocres)
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Solicen.Localization.UE4
 {
@@ -60,6 +61,8 @@ namespace Solicen.Localization.UE4
             byteStream // Добавление записи о количестве строк
                 .Append(BitConverter.GetBytes(locres.Length));
 
+            List<string> memoryLocres = new List<string>();
+
             #region Запись всех строк | Write all strings
             for (int i = 0; i < locres.Length; i++)
             {
@@ -77,6 +80,7 @@ namespace Solicen.Localization.UE4
             var offset                      // Получаем новое смещение для массива
                 = LocresHelper.GetLocresOffset(data, locres.FirstOrDefault().Source);
             data = LocresHelper.WriteNewOffset(data, offset); // Записываем новое смещение в массив 
+
             File.WriteAllBytes(outputPath, data); // Записываем сам файл
 
             var info = new FileInfo(outputPath).FullName; // Опционально: получаем полный путь до файла

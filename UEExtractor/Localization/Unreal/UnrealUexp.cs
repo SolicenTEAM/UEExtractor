@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Org.BouncyCastle.Utilities;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -28,48 +29,45 @@ namespace Solicen.Localization.UE4
 
         static HashSet<byte> allowedChars = new HashSet<byte>(Enumerable.Range(48, 10).Concat(Enumerable.Range(65, 6)).Concat(Enumerable.Range(97, 6)).Select(x => (byte)x));
 
-        public static List<LocresResult> ExtractDataFromFile(string filePath)
+        public static List<LocresResult> ExtractDataFromStream(Stream fileStream)
         {
             var results = new ConcurrentBag<LocresResult>();
             const int chunkSize = 40480; // Define a reasonable chunk size
-            var fileInfo = new FileInfo(filePath);
-            long fileLength = fileInfo.Length;
+            long fileLength = fileStream.Length;
+            fileStream.Position = 0;
 
-            using (var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            byte[] buffer = new byte[chunkSize];
+            long position = 0;
+            byte[] remainder = Array.Empty<byte>();
+
+            while (position < fileLength)
             {
-                byte[] buffer = new byte[chunkSize];
-                long position = 0;
-                byte[] remainder = Array.Empty<byte>();
+                int bytesRead = fileStream.Read(buffer, 0, chunkSize);
+                if (bytesRead == 0) break;
 
-                while (position < fileLength)
-                {
-                    int bytesRead = fileStream.Read(buffer, 0, chunkSize);
-                    if (bytesRead == 0) break;
-
-                    byte[] chunk;
-                    if (remainder.Length > 0)
-                    {
-                        chunk = new byte[remainder.Length + bytesRead];
-                        Array.Copy(remainder, 0, chunk, 0, remainder.Length);
-                        Array.Copy(buffer, 0, chunk, remainder.Length, bytesRead);
-                    }
-                    else
-                    {
-                        chunk = new byte[bytesRead];
-                        Array.Copy(buffer, 0, chunk, 0, bytesRead);
-                    }
-
-                    ProcessChunk(chunk, chunk.Length, allowedChars, results, IncludeInvalidData, out remainder);
-                    position += bytesRead;
-
-                    // Explicitly clear buffer and chunk arrays
-                    Array.Clear(buffer, 0, buffer.Length);
-                    Array.Clear(chunk, 0, chunk.Length);
-                }
+                byte[] chunk;
                 if (remainder.Length > 0)
                 {
-                    ProcessChunk(remainder, remainder.Length, allowedChars, results, IncludeInvalidData, out remainder);
+                    chunk = new byte[remainder.Length + bytesRead];
+                    Array.Copy(remainder, 0, chunk, 0, remainder.Length);
+                    Array.Copy(buffer, 0, chunk, remainder.Length, bytesRead);
                 }
+                else
+                {
+                    chunk = new byte[bytesRead];
+                    Array.Copy(buffer, 0, chunk, 0, bytesRead);
+                }
+
+                ProcessChunk(chunk, chunk.Length, allowedChars, results, IncludeInvalidData, out remainder);
+                position += bytesRead;
+
+                // Explicitly clear buffer and chunk arrays
+                Array.Clear(buffer, 0, buffer.Length);
+                Array.Clear(chunk, 0, chunk.Length);
+            }
+            if (remainder.Length > 0)
+            {
+                ProcessChunk(remainder, remainder.Length, allowedChars, results, IncludeInvalidData, out remainder);
             }
 
             // Force garbage collection to free memory
@@ -82,6 +80,7 @@ namespace Solicen.Localization.UE4
                     result.Url = path;
                 }
             }
+
             return results.ToList();
         }
 
@@ -100,12 +99,19 @@ namespace Solicen.Localization.UE4
             return true;
         }
 
+        static string ToHex(string input)
+        {
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var hex = BitConverter.ToString(bytes);
+            return hex.ToString();
+        }
+
         static bool IsValidDecode(string decode)
         {
-            if (decode.StartsWith("\x00\x00\x00") || 
-                decode.StartsWith("\x00\x16\x0F\x00")) 
+            // Because it's not need anymore.
+            var hex = ToHex(decode);
+            if (hex.StartsWith("00-00-00"))
                 return false;
-
             return true;
         }
 
@@ -157,6 +163,7 @@ namespace Solicen.Localization.UE4
                     if (!IsValidHash(hashDecoded))
                     {
                         Console.WriteLine($"SKIP: {hashDecoded}:NULL | InvalidHash");
+                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},");
                         i = endPos;
                         continue;
                     }
@@ -174,6 +181,7 @@ namespace Solicen.Localization.UE4
                         else
                         {
                             Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | InvalidDecode");
+                            UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
                             i = endPos;
                             continue;
                         }
@@ -187,9 +195,11 @@ namespace Solicen.Localization.UE4
 
                     if (ContainsUpperUpper(stringDecoded) && SkipUpperUpper) {
                         Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | UpperUpper");
+                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
                         i = endPos; continue; }
                     if (stringDecoded.Contains('_') && SkipUnderscore) {
                         Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | Underscore");
+                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
                         i = endPos; continue; }
                     if (decodedSuccessfully)
                     {
