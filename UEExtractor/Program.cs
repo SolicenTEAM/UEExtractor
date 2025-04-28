@@ -7,7 +7,7 @@ namespace UEExtractor
 {
     class Program
     {
-        string title = $"UEExtractor VER : https://github.com/SolicenTEAM/UEExtractor";
+        const string title = $"UEExtractor VER : https://github.com/SolicenTEAM/UEExtractor";
         static void Main(string[] args)
         {
             var Version = $"{FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion}";
