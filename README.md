@@ -6,10 +6,11 @@ Made with ❤️ for **all** translators and translation developers.
 
 This a tool on **.NET 8.0** to extract text from any game on [Unreal Enigne](https://www.unrealengine.com/) (4.0 - 5.1).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
 
-With it, you will receive a `locresCSV` file for localization of the game based on its resources. However,`locresCSV` is not a special format, and this name is only used to separate from the regular CSV file.
+With it, you will receive a `locresCSV` file for localization of the game based on its resources.
 
 > [!CAUTION]
-> You will not be able to get strings from files that contain a **DataTable** structure and operate on these strings via `.locres`. 
+> You will not be able to get strings from files that contain a **DataTable** structure.
+> - I can *get* strings, but *you* can't operate these via `.locres`. 
 > - Do not open a *issue* to solve this problem, I will not be able to solve it. 
 > - It's not my fault, thank you for understanding.
 
