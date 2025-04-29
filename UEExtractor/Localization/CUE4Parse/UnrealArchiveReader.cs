@@ -219,14 +219,18 @@ public class UnrealArchiveReader : IDisposable
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
 
-        foreach (var assetPath in assets) 
+        // Очищение: работаем только с файлами не из Engine папки.
+        var gameAssets = assets.Where(x => !x.Contains("Engine/")).ToList();
+        int totalAssets = gameAssets.Count; int currentIndex = 1;
+        
+        foreach (var assetPath in gameAssets)
         {
-            if (assetPath.Contains("Engine/")) continue;
             try
             {
                 var byteArray = _provider.SaveAsset(assetPath);
                 using var stream = new MemoryStream(byteArray);
-                Console.WriteLine($"..{assetPath}");
+                Console.WriteLine($"[{currentIndex}/{totalAssets}] ..{assetPath}");
+                currentIndex++;
                 processor(assetPath, stream);
             }
             catch (Exception ex)
