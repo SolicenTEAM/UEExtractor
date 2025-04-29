@@ -4,7 +4,7 @@
 
 Сделано с ❤️ для **всех** переводчиков и разработчиков переводов.
 
-Это скрипт/инструмент на **NET 8.0** для извлечения `locresCSV` из **`.pak` или `.utoc`** файлов архивов [Unreal Enigne](https://www.unrealengine.com/).<br>Используется [CUE4Parse](https://github.com/FabianFG/CUE4Parse) для работы с Unreal Engine архивами. 
+Это скрипт на **.NET 8.0** для извлечения текста из любой игры на [Unreal Enigne](https://www.unrealengine.com/) (4.0 - 5.1).<br>Используется [CUE4Parse](https://github.com/FabianFG/CUE4Parse) для работы с Unreal Engine архивами **`.pak`** и **`.utoc`** 
 
 С его помощью вы получите файл `locresCSV` для локализации игры на основе ее ресурсов. Однако `locresCSV` не является специальным форматом, и это название используется только для отделения от обычного файла CSV, которым он и является.
 
