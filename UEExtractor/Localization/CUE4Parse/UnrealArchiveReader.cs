@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -192,7 +193,10 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
-    public void ProcessAllAssets(Action<string, Stream> processor)
+    public void ProcessAllAssets(
+        Action<string, Stream> processor,
+        IEnumerable<string>? searchStrings = null,
+        bool deepParse = true)
     {
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
@@ -222,8 +226,11 @@ public class UnrealArchiveReader : IDisposable
         // Очищение: работаем только с файлами не из Engine папки.
         var gameAssets = assets.Where(x => !x.Contains("Engine/")).ToList();
         int totalAssets = gameAssets.Count; int currentIndex = 1;
-        
-        foreach (var assetPath in gameAssets)
+
+        // Возвращение: возвращение параллельной обработки для ускорения.
+        // Может быть незаметно на маленьких играх, но отлично ускоряет обработку на больших
+        var partitioner = Partitioner.Create(gameAssets, EnumerablePartitionerOptions.NoBuffering);
+        Parallel.ForEach(partitioner, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 }, assetPath =>
         {
             try
             {
@@ -239,7 +246,7 @@ public class UnrealArchiveReader : IDisposable
                 if (ex is System.Security.SecurityException)
                     Console.WriteLine(">> Possible encryption issue!");
             }
-        }
+        });
     }
 
     public byte[]? GetFileBytes(string filePath)
