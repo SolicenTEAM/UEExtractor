@@ -8,10 +8,14 @@ using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports;
+using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.VirtualFileSystem;
 using CUE4Parse.Utils;
 using OodleDotNet;
+using Solicen.Localization.UE4;
 using static CUE4Parse.UE4.Objects.StructUtils.FInstancedPropertyBag;
 
 public class UnrealArchiveReader : IDisposable
@@ -23,8 +27,9 @@ public class UnrealArchiveReader : IDisposable
     private bool _hasValidFiles;
     private bool _isEncrypted;
 
-    public UnrealArchiveReader(string gameDirectory, string UEVersion = "", string AES = "")
+    public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
     {
+        UE_VER = VER;
         gameDirectory = Path.GetFullPath(gameDirectory);
         Console.WriteLine($"Loading from: {gameDirectory}");
 
@@ -83,7 +88,7 @@ public class UnrealArchiveReader : IDisposable
 
     private EGame ParseVersion(string UEVersion)
     {
-        if (Enum.TryParse<EGame>(UEVersion, out EGame result)) 
+        if (Enum.TryParse<EGame>(UEVersion, out EGame result))
         {
             return result;
         }
@@ -193,6 +198,26 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
+    public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
+    {
+        if (path.EndsWith(".uasset"))
+        {
+            var packageid = Path.ChangeExtension(path, null);
+            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var table))
+            {
+                Dictionary<string, string> keys = new Dictionary<string, string>();
+                foreach (var entry in table.StringTable.KeysToEntries)
+                {
+                    keys.Add(entry.Key, entry.Value);
+                }
+                processor(table.StringTable.TableNamespace, keys);
+            }
+
+        }
+    }
+
+
+
     public void ProcessAllAssets(
         Action<string, Stream> processor,
         IEnumerable<string>? searchStrings = null,
@@ -249,14 +274,17 @@ public class UnrealArchiveReader : IDisposable
         });
     }
 
+    public MemoryStream LoadAsset(string assetPath)
+    {
+        var byteArray = _provider.SaveAsset(assetPath);
+        return new MemoryStream(byteArray);
+    }
+
     public byte[]? GetFileBytes(string filePath)
     {
         if (_provider.Files.TryGetValue(filePath, out _))
         {
-            try
-            {
-                return _provider.SaveAsset(filePath);
-            }
+            try { return _provider.SaveAsset(filePath); }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error reading file {filePath}: {ex.Message}");
