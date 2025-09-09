@@ -10,20 +10,21 @@ namespace Solicen.Localization.UE4
 	{
 		static List<Argument> arguments = new List<Argument>
 		{
-			new Argument("--picky", "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
+            new Argument("--all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
+            new Argument("--picky", "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
 			new Argument("--url", "include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
 			new Argument("--headmark", "include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
-			new Argument("--hash", "inculde hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
+			new Argument("--hash", "include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
 			new Argument("--locres", "write .locres file.", () => UnrealLocres.WriteLocres = true),
-			new Argument("--skip-uexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
+            new Argument("--skip-uexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 			new Argument("--skip-uasset", "skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 			new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
-			new Argument("--upper-upper", "do not skip lines with upperupper.", () => UnrealUepx.SkipUpperUpper = false),
+			new Argument("--upper-upper", "do not skip lines with UpperUpper.", () => UnrealUepx.SkipUpperUpper = false),
 			new Argument("--no-parallel", "disable parallel processing, slower, may output additional data.", () => UnrealUasset.parallelProcessing = false),
 			new Argument("--invalid", "include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
 			new Argument("--qmarks", "forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
 			new Argument("--table-format", "replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
-			new Argument("--autoexit", "Exit automatically after execution", () => _autoExit = true),
+			new Argument("--auto-exit", "Exit automatically after execution", () => _autoExit = true),
 			new Argument("--help", "Show help information", () => ShowHelp(arguments))
 		};
 
@@ -41,7 +42,7 @@ namespace Solicen.Localization.UE4
 			}
 		}
 
-		static void ShowHelp(System.Collections.Generic.List<Argument> arguments)
+		static void ShowHelp(List<Argument> arguments)
 		{
 			Console.WriteLine("Available arguments:");
 			foreach (var argument in arguments)
@@ -100,7 +101,7 @@ namespace Solicen.Localization.UE4
 		{
 			if (args.Length > 0)
 			{
-                string locres = null;
+                string? locres = null;
                 if (args[0].Contains(".csv")) // Обработка для получения .locres файла
 				{					
 					string LocresCSV = args[0];
@@ -132,8 +133,8 @@ namespace Solicen.Localization.UE4
 						fileName = !args[1].StartsWith("-") && args[1] != locres ? args[1] : "";
 					}
 
-					ProcessArgs(args);
-					ProcessVersion(args);
+                    ProcessArgs(args);
+                    ProcessVersion(args);
 					ProcessAES(args);
 
 					if (Directory.Exists(folderPath) && !string.IsNullOrEmpty(args[0]))
@@ -148,12 +149,12 @@ namespace Solicen.Localization.UE4
 			var exePath = new FileInfo(typeof(FolderProcessor).Assembly.Location).Directory;
 			var csvPath = string.IsNullOrWhiteSpace(fileName)
 				? $"{Path.GetFileName(folderPath)}_locres.csv"
-				: $"{fileName.Replace(".csv", "")}.csv";
+				: $"{Path.ChangeExtension(fileName, ".csv")}";
 
 			csvPath =  Path.Combine(exePath + "\\", csvPath);
 
 			// CSV for skipped_lines during parsing lines to locresCSV.
-			UnrealLocres.SkippedCSV = new CSVWriter(csvPath.Replace(".csv", "") + "_skipped_lines.csv");
+			UnrealLocres.SkippedCSV = new CSVWriter(Path.ChangeExtension(csvPath,"_skipped_lines.csv"));
 
 			// Parsing and his result
 			var Result = UnrealLocres.ProcessDirectory(folderPath);
@@ -161,9 +162,8 @@ namespace Solicen.Localization.UE4
 			UnrealLocres.WriteToCsv(Result, csvPath);
 			Console.WriteLine($"\nCompleted! File saved to: {csvPath}");
 
-			if (UnrealLocres.WriteLocres && locresPath != null)
-				UnrealLocres.WriteToLocres(Result, locresPath);
-            
+			if (UnrealLocres.WriteLocres && locresPath != null) 
+				UnrealLocres.WriteToLocres(Result, locresPath);   
 			if (_autoExit) Environment.Exit(0);
 		}
 
