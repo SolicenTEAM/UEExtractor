@@ -15,18 +15,20 @@ namespace Solicen.Localization.UE4
 {
     public class LocresResult
     {
-        public string Url  { get; set; }
-        public string Hash { get; set; }
+        public string Url  { get; set; } = string.Empty;
+        public string Hash { get; set; } = string.Empty;
 
-        public string Key { get; set; }
-        public string Source { get; set; }
+        public string Namespace   { get; set; } = string.Empty;
+        public string Key         { get; set; } 
+        public string Source      { get; set; }
         public string Translation { get; set; } = string.Empty;
 
-        public LocresResult(string key, string source, string translation = null)
+        public LocresResult(string Key, string Source, string Translation = null, string Namespace = "")
         {
-            Key = key;
-            Source = source;
-            Translation = translation;
+            this.Key = Key;
+            this.Source = Source;
+            this.Translation = Translation;
+            this.Namespace = Namespace;
         }
 
     }
@@ -35,7 +37,7 @@ namespace Solicen.Localization.UE4
         public string fileTextFilter = "All localizations files|*.uasset;*.locres;*.umap|Uasset File|*.uasset|Locres File|*.locres|Umap File|*.umap";
         public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
         public static string FilePATH = string.Empty;
-        public static string UEVersion = "5_3";
+        public static string UEVersion = "4_24";
         public static string AES = string.Empty;
 
         #region LocresCSV file Setup
@@ -64,6 +66,8 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
+        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", };
+        public static bool AllFolders = false;
         public static bool PickyMode = false;
         public static bool IncludeUrlInKeyValue  = false;
         public static bool IncludeHashInKeyValue = false;
@@ -91,29 +95,45 @@ namespace Solicen.Localization.UE4
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
             var filesExtensions = new[] { "*.uexp", "*.uasset" };
+            var excludeTypes = new[] { "Texture2D", "StaticMesh", "ParticleSystem", "LevelSequence" };
             pDirectory = directory;
 
-            using var reader = new UnrealArchiveReader(directory);
+            using var reader = new UnrealArchiveReader(directory, UEVersion);
             reader.ProcessAllAssets((path, stream) =>
             {
+                if (!AllFolders && ExcludePath.Any(x => path.ToLower().Contains(x))) return;
                 if (SkipUassetFile && path.EndsWith(".uasset")) return;
                 if (SkipUexpFile && path.EndsWith(".uexp")) return;
 
                 List<LocresResult> fileResults = new List<LocresResult>();
-                using (stream)
+
+                if (path.Contains("StringTable") || path.Contains("DataTable"))
                 {
-                    fileResults = UnrealUepx.ExtractDataFromStream(stream);
-                    if (path.EndsWith(".uexp"))
+                    reader.LoadStringTable(path, (TableNamespace, Keys) =>
                     {
-                        var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path);
+                        var newResult = TableToLocres(TableNamespace, Keys);
                         fileResults.AddRange(newResult);
-                    }
-                    if (path.EndsWith(".uasset"))
+                    });
+                }
+                else
+                {
+                    using (stream)
                     {
-                        var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
-                        fileResults.AddRange(newResult);
+                        fileResults = UnrealUepx.ExtractDataFromStream(stream);
+                        if (path.EndsWith(".uexp"))
+                        {
+                            var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path);
+                            fileResults.AddRange(newResult);
+                        }
+                        if (path.EndsWith(".uasset"))
+                        {
+                            var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
+                            fileResults.AddRange(newResult);
+                        }
                     }
                 }
+
+
 
                 #region Zero Data
                 if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
@@ -136,7 +156,8 @@ namespace Solicen.Localization.UE4
 
             // Сортируем результаты по длине строки Source
             var sortedResults = allResults
-                .OrderBy(result => result.Value.Source.Length)  // Сначала по длине строки
+                .OrderBy(result => result.Key, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(result => result.Value.Source.Length) // Сначала по длине строки
                 .ThenBy(result => result.Value.Source)  // Затем по алфавиту (для одинаковой длины)
                 .ToDictionary(result => result.Key, result => result.Value);
             
@@ -166,6 +187,16 @@ namespace Solicen.Localization.UE4
         }
         */
 
+        public static LocresResult[] TableToLocres(string TableNamespace, Dictionary<string,string> keys)
+        {
+            List<LocresResult> result = new List<LocresResult>();
+            foreach (var key in keys)
+            {
+                result.Add(new LocresResult($"{key.Key}", LocresHelper.EscapeKey(key.Value), Namespace: TableNamespace));
+            }
+            return result.ToArray();
+        }
+
         public static void WriteToLocres(LocresResult[] results, string outputLocres)
         {
             LocresWriter locres = new LocresWriter(outputLocres, "");
@@ -194,10 +225,12 @@ namespace Solicen.Localization.UE4
                 var separator = TableSeparator ? "|" : ",";
                 foreach (var result in results.Values)
                 {
+                    var line = result.Namespace != string.Empty ? $"{result.Namespace}::" : "";
                     if (ForceQmarksOutput)
-                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
+                       line += ($"{EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
                     else
-                        writer.WriteLine($"{EscapeCsvField(result.Key)}{separator}{EscapeCsvField(result.Source)}{separator}{EscapeCsvField(result.Translation)}");
+                       line += ($"{EscapeCsvField(result.Key)}{separator}{EscapeCsvField(result.Source)}{separator}{EscapeCsvField(result.Translation)}");
+                    writer.WriteLine(line);
                 }
 
                 // Write the footer comments
