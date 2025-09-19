@@ -10,11 +10,12 @@
     <Authors>Solicen</Authors>
     <Company>Solicen</Company>
     <Copyright>Solicen</Copyright>
-    <Version>1.0.6.1</Version>
+    <Version>1.0.6.3</Version>
     <RepositoryUrl>https://github.com/SolicenTEAM/UEExtractor</RepositoryUrl>
     <PackageIcon>unreal.ico</PackageIcon>
     <PackageIconUrl />
     <Description>Extract Locres from Unreal Engine build games.</Description>
+    <PackageProjectUrl>https://github.com/SolicenTEAM/UEExtractor</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
