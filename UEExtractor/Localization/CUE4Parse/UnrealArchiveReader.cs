@@ -1,22 +1,12 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
 using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
-using CUE4Parse.UE4.Assets;
-using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Versions;
-using CUE4Parse.UE4.VirtualFileSystem;
-using CUE4Parse.Utils;
-using OodleDotNet;
 using Solicen.Localization.UE4;
-using static CUE4Parse.UE4.Objects.StructUtils.FInstancedPropertyBag;
 
 public class UnrealArchiveReader : IDisposable
 {
@@ -40,14 +30,16 @@ public class UnrealArchiveReader : IDisposable
         var files = Directory.GetFiles(gameDirectory, "*.*", SearchOption.AllDirectories)
             .Where(x => x.EndsWith(".pak") || x.EndsWith(".ucas") || x.EndsWith(".utoc"))
             .Where(x => x.Contains("\\Content\\Paks")).ToArray();
+
+        EGame UE = LoadEngineVersion(gameDirectory);
+        Console.WriteLine($"UE Version: {UE}");
         Console.WriteLine($"Found {files.Length} files:");
         foreach (var file in files.Take(10))
             Console.WriteLine($"- {Path.GetFileName(file)}");
         if (files.Length > 10) Console.WriteLine("... and more");
-
         try
         {
-            EGame UE = LoadEngineVersion(gameDirectory);
+            
             _provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, new VersionContainer(UE));
 
             LoadCompression();
@@ -203,16 +195,17 @@ public class UnrealArchiveReader : IDisposable
         if (path.EndsWith(".uasset"))
         {
             var packageid = Path.ChangeExtension(path, null);
-            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var table))
+            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var st))
             {
                 Dictionary<string, string> keys = new Dictionary<string, string>();
-                foreach (var entry in table.StringTable.KeysToEntries)
+                foreach (var entry in st.StringTable.KeysToEntries)
                 {
+                    Console.WriteLine($" - {st.StringTable.TableNamespace}::{entry.Key} | {LocresHelper.EscapeKey(entry.Value)} | ");
                     keys.Add(entry.Key, entry.Value);
                 }
-                processor(table.StringTable.TableNamespace, keys);
-            }
 
+                processor(st.StringTable.TableNamespace, keys);
+            }
         }
     }
 
