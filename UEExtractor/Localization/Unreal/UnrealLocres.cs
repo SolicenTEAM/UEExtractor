@@ -1,15 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Runtime;
-using LocresSharp;
-using System.Diagnostics;
 
 namespace Solicen.Localization.UE4
 {
@@ -34,7 +24,6 @@ namespace Solicen.Localization.UE4
     }
     public class UnrealLocres
     {
-        public string fileTextFilter = "All localizations files|*.uasset;*.locres;*.umap|Uasset File|*.uasset|Locres File|*.locres|Umap File|*.umap";
         public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
         public static string FilePATH = string.Empty;
         public static string UEVersion = "4_24";
@@ -45,7 +34,7 @@ namespace Solicen.Localization.UE4
         /// <summary>
         /// CSVWritter for skipped lines;
         /// </summary>
-        public static CSVWriter SkippedCSV = new CSVWriter(string.Empty);
+        public static CSV.Writer SkippedCSV = new CSV.Writer(string.Empty);
         /// <summary>
         /// Skip all .uasset files.
         /// </summary>
@@ -66,7 +55,8 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
-        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", };
+        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", "animation", "/fx/", "/vfx/" };
+        public static bool ExtractLocres = false;
         public static bool AllFolders = false;
         public static bool PickyMode = false;
         public static bool IncludeUrlInKeyValue  = false;
@@ -101,13 +91,19 @@ namespace Solicen.Localization.UE4
             using var reader = new UnrealArchiveReader(directory, UEVersion);
             reader.ProcessAllAssets((path, stream) =>
             {
+                if (ExtractLocres && path.Contains("/Localization/") && path.EndsWith("Game.locres"))
+                {
+                    var _fileName = Path.GetFileName(path);
+                    var _saveDirectory = Path.GetDirectoryName(SkippedCSV.FilePath);
+                    File.WriteAllBytes($"{_saveDirectory}\\{_fileName}", reader.LoadAsset(path).GetBuffer());
+                }
                 if (!AllFolders && ExcludePath.Any(x => path.ToLower().Contains(x))) return;
                 if (SkipUassetFile && path.EndsWith(".uasset")) return;
                 if (SkipUexpFile && path.EndsWith(".uexp")) return;
 
                 List<LocresResult> fileResults = new List<LocresResult>();
 
-                if (path.Contains("StringTable") || path.Contains("DataTable"))
+                if (path.Contains("StringTable") || path.Contains("DataTable") || path.Contains("/ST_"))
                 {
                     reader.LoadStringTable(path, (TableNamespace, Keys) =>
                     {
@@ -237,6 +233,32 @@ namespace Solicen.Localization.UE4
                 var programName = typeof(UnrealLocres).Assembly.GetName().Name;
                 if (ForceMark) writer.WriteLine($"# Extracted with {programName} & Solicen");
             }
+        }
+
+        public static LocresResult[] LoadFromCSV(string path)
+        {
+            var result = new List<LocresResult>();
+            var delimiter = TableSeparator ? "|" : ",";
+            CSV.Parse(path, (row) =>
+            {
+                if (row.TryGetColumn(2, out string value) && value == "Translation") { }
+                else
+                {
+                    var _keyNamespace = row.Columns[0];
+
+                    var _Namespace = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[0] : string.Empty;
+                    var _Key = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[1] : _keyNamespace;
+
+                    var _Source = row.Columns[1];
+                    var _Translation = row.Columns[2];
+
+                    var res = new LocresResult(_Key, _Source, _Translation, _Namespace);
+                    result.Add(res);
+                }
+                
+
+            });       
+            return result.ToArray();
         }
 
         private static string EscapeCsvField(string field)
