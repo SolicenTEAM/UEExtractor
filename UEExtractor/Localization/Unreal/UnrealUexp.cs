@@ -162,7 +162,9 @@ namespace Solicen.Localization.UE4
                     string hashDecoded = Encoding.UTF8.GetString(hashCandidate).Trim();
                     if (!IsValidHash(hashDecoded))
                     {
+                        Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine($"SKIP: {hashDecoded}:NULL | InvalidHash");
+                        Console.ForegroundColor = ConsoleColor.White;
                         UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},");
                         i = endPos;
                         continue;
