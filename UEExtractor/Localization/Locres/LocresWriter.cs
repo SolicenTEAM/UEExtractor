@@ -36,24 +36,39 @@ namespace Solicen.Localization.UE4
             // опять нулим до 33 и на 34 байт устанавливаем количество строк в .locres файле.
             #endregion 
 
+            LocresVersion version = locres.Any(x => x.Namespace != string.Empty) ? LocresVersion.Optimized : LocresVersion.Compact;
             var locresHeader // Получаем читаемый заголовок locres файла версии Compact
-                = LocresHelper.GetReadablyHeader(locres.Length, locresPath);
+                = LocresHelper.GetReadablyHeader(locres.Length, locresPath, version);
 
             byteStream.Append(locresHeader); // Добавляем сам заголовок | Add Locres header 
 
             #region Запись Ключей/Хешей | Write All KeyHash 
             for (int i = 0; i < locres.Length; i++)
             {
-                byteStream.Append(separatorHeader);
-                var key = locres[i].Key;
-                var source = LocresHelper.UnEscapeKey(locres[i].Source);
-                var hash = LocresSharp.Crc.StrCrc32(source);
-
-                byteStream.Append(Encoding.UTF8.GetBytes(key));
-                byteStream.Append(new byte[] { 0x00 });
-                byteStream.Append(BitConverter.GetBytes(hash));
-
                 byte[] indexOf = BitConverter.GetBytes(i);
+                if (locres[i].Namespace != string.Empty)
+                {
+                    var _namespace = locres[i].Namespace;
+                    var _namespaceHash = LocresSharp.Crc.StrCrc32(_namespace);
+
+                    byteStream.Append(Encoding.UTF8.GetBytes(_namespace));
+                    byteStream.Append(new byte[] { 0x00 });
+                    byteStream.Append(BitConverter.GetBytes(_namespaceHash));
+                    indexOf = BitConverter.GetBytes(i);
+                    byteStream.Append(indexOf);
+ 
+                }
+                byteStream.Append(separatorHeader);
+
+                var _key = locres[i].Key;
+                var _source = LocresHelper.UnEscapeKey(locres[i].Source);
+                var _hash = LocresSharp.Crc.StrCrc32(_source);
+
+                byteStream.Append(Encoding.UTF8.GetBytes(_key));
+                byteStream.Append(new byte[] { 0x00 });
+                byteStream.Append(BitConverter.GetBytes(_hash));
+
+                indexOf = BitConverter.GetBytes(i);
                 byteStream.Append(indexOf);
             }
             #endregion
