@@ -4,15 +4,12 @@
 
 Made with ❤️ for **all** translators and translation developers.
 
-This a tool on **.NET 8.0** to extract text from any game on [Unreal Enigne](https://www.unrealengine.com/) (4.0 - 5.1).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
+This a tool on **.NET 8.0** to extract text from any game on [Unreal Enigne](https://www.unrealengine.com/) (4.0 - 5.6).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
 
-With it, you will receive a `locresCSV` file for localization of the game based on its resources.
+With it, you will receive a `locresCSV` file for localization of the game based on its resources, base `.locres` not needed.
 
-> [!CAUTION]
-> You will not be able to get strings from files that contain a **DataTable** structure.
-> - I can *get* strings, but *you* can't operate these via `.locres`. 
-> - Do not open a *issue* to solve this problem, I will not be able to solve it. 
-> - It's not my fault, thank you for understanding.
+> [!IMPORTANT]
+> Now available **fully functional extraction** `DataTable` & `StringTable`.
 
 ## LocresCSV Structure:
 Will be imported or converted to `.locres` file.
@@ -50,6 +47,15 @@ First, follow the steps described above, and only then continue.
 1. Place the `.usmap` file in the main directory of the game (or a subdir), and the tool will find it automatically. 
 2. The preparation for the work is completed.
 
+## Merging CSV
+> [!NOTE]  
+> It happens automatically when you re-run the extraction of the same game (in same folder). 
+> * **Very useful when the game is being updated and you need to get new lines and not lose the translation.**
+>
+> **Exactly this work like that:**  
+> - If the row contains values in only 2 columns (`key` & `source`) and the `Source` value in the `Key` does not match. <br>The `Source` value from the past added as a `Translation`.  _(As example when exporting from UE4localizationsTool)_ 
+> -  Otherwise, if it matches, then we write the value from column `Translation` to `Translation`.
+> -  And of course, it adds lines if they are in the previous file, but not in the new one.
 
 ## Using:
 * Or [download](https://github.com/SolicenTEAM/UEExtractor/releases) and **drag & drop** folder to a command tool to parse whole game directory and get `<dir_name>.csv`.
@@ -79,7 +85,7 @@ UEExtractor.exe <csv_path> <output_locres>
 | --skip-uexp, --skip-uasset | skip `.uexp` or `.uasset` files during the process.
 | --locres | write .locres file after parsing.
 | --underscore | do not skip line with underscores: **ex_string**
-| --upper-upper | do not skip line with upperupper: **EXAMPLE**.
+| --upper-upper | skip line with upperupper: **EXAMPLE**.
 | --table-format | replace standard separator **`,`** symbol to **`\|`**
 | --headmark | include header and footer in the `csv`.
 | --autoexit | automatically exit after execution all processes.
