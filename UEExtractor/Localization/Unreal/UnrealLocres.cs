@@ -55,7 +55,9 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
-        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", "animation", "/fx/", "/vfx/" };
+        public enum ExportType  { None, TextProperty, StringTable, DataTable }
+        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", 
+                                               "animation", "/fx/", "/vfx/", "/meshes/", "/megascans/", "/music/" };
         public static bool ExtractLocres = false;
         public static bool AllFolders = false;
         public static bool PickyMode = false;
@@ -85,7 +87,8 @@ namespace Solicen.Localization.UE4
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
             var filesExtensions = new[] { "*.uexp", "*.uasset" };
-            var excludeTypes = new[] { "Texture2D", "StaticMesh", "ParticleSystem", "LevelSequence" };
+            var excludeTypes = new[] { "Texture2D", "SoundWave", "StaticMesh", "Material", "MaterialInstanceConstant",
+                                       "Skeleton", "AnimSequence", "PhysicsAsset", "Font", "CurveTable", "SoundCue" };
             pDirectory = directory;
 
             using var reader = new UnrealArchiveReader(directory, UEVersion);
@@ -103,7 +106,8 @@ namespace Solicen.Localization.UE4
 
                 List<LocresResult> fileResults = new List<LocresResult>();
 
-                if (path.Contains("StringTable") || path.Contains("DataTable") || path.Contains("/ST_"))
+                var eType = path.EndsWith(".uasset") ? IsTable(stream) : ExportType.None;
+                if (eType == ExportType.StringTable)
                 {
                     reader.LoadStringTable(path, (TableNamespace, Keys) =>
                     {
@@ -111,25 +115,22 @@ namespace Solicen.Localization.UE4
                         fileResults.AddRange(newResult);
                     });
                 }
-                else
-                {
+                else if (eType == ExportType.DataTable)
+                {             
+                    var res = reader.LoadDataTable(Path.ChangeExtension(path, ".uasset"));
+                    var newResult = TableToLocres(res);
+                    fileResults.AddRange(newResult);
+                }
+                else if (eType == ExportType.None)
+                {                             
                     using (stream)
                     {
                         fileResults = UnrealUepx.ExtractDataFromStream(stream);
-                        if (path.EndsWith(".uexp"))
-                        {
-                            var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path);
-                            fileResults.AddRange(newResult);
-                        }
-                        if (path.EndsWith(".uasset"))
-                        {
-                            var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path).Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
-                            fileResults.AddRange(newResult);
-                        }
+                        var newResult = UE4.UnrealUasset.ExtractDataFromStream(stream, path)
+                            .Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
+                        fileResults.AddRange(newResult);
                     }
                 }
-
-
 
                 #region Zero Data
                 if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
@@ -161,7 +162,7 @@ namespace Solicen.Localization.UE4
             // Преобразуем отсортированный словарь обратно в ConcurrentDictionary
             var sortedConcurrentResults = new ConcurrentDictionary<string, LocresResult>(allResults);
 
-            GC.Collect();
+            GC.Collect(2);
             return sortedConcurrentResults;
         }
 
@@ -182,6 +183,83 @@ namespace Solicen.Localization.UE4
             WriteToLocres(result.ToArray(), filePath);
         }
         */
+
+        // Ищем "StringTable" // 
+        public static bool IsStringTable(byte[] buffer)
+        {
+            if (BinaryParser.FindSequence(buffer, new ReadOnlySpan<byte>(
+                new byte[] { 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x54, 0x61, 0x62, 0x6C, 0x65 }).ToArray()) != -1)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        // Ищем "ArrayProperty" (признак DataTable)
+        public static bool IsArrayProperty(byte[] buffer)
+        {
+            if (BinaryParser.FindSequence(buffer.ToArray(), new ReadOnlySpan<byte>(
+                new byte[] { 0x41, 0x72, 0x72, 0x61, 0x79, 0x50, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79 }).ToArray()) != -1)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        // Ищем "TextProperty" 
+        public static bool IsTextProperty(byte[] buffer)
+        {
+            if (BinaryParser.FindSequence(buffer.ToArray(), new ReadOnlySpan<byte>(
+                new byte[] { 0x54, 0x65, 0x78, 0x74, 0x50, 0x72, 0x6F, 0x70, 0x65, 0x72, 0x74, 0x79 }).ToArray()) != -1)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        public static ExportType IsTable(Stream stream)
+        {
+            const int bufferSize = 1024;
+            long originalPosition = stream.Position; // Сохраняем исходную позицию
+            try
+            {
+                // Выделяем буфер на стеке. Это очень быстро и не создает мусора в куче.
+                Span<byte> buffer = stackalloc byte[bufferSize];
+                
+                stream.Read(buffer);
+
+                // Ищем "StringTable"
+                if (IsStringTable(buffer.ToArray()))
+                {
+                    return ExportType.StringTable;
+                }
+
+                // Ищем "ArrayProperty" (признак DataTable)
+                if (IsArrayProperty(buffer.ToArray()))
+                {
+                    if (IsTextProperty(buffer.ToArray()))
+                    {
+                        return ExportType.DataTable;
+                    }
+                }
+
+                return ExportType.None;
+            }
+            finally
+            {
+                stream.Position = originalPosition; // Всегда восстанавливаем исходную позицию потока
+            }
+        }
+
+        public static LocresResult[] TableToLocres(List<(string Namespace, string Key, string SourceString)> results)
+        {
+            List<LocresResult> result = new List<LocresResult>();
+            foreach (var res in results)
+            {
+                result.Add(new LocresResult($"{res.Key}", LocresHelper.EscapeKey(res.SourceString), Namespace: res.Namespace));
+            }
+            return result.ToArray();
+        }
 
         public static LocresResult[] TableToLocres(string TableNamespace, Dictionary<string,string> keys)
         {
@@ -223,9 +301,9 @@ namespace Solicen.Localization.UE4
                 {
                     var line = result.Namespace != string.Empty ? $"{result.Namespace}::" : "";
                     if (ForceQmarksOutput)
-                       line += ($"{EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
+                       line += ($"{CSV.EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
                     else
-                       line += ($"{EscapeCsvField(result.Key)}{separator}{EscapeCsvField(result.Source)}{separator}{EscapeCsvField(result.Translation)}");
+                       line += ($"{CSV.EscapeCsvField(result.Key)}{separator}{CSV.EscapeCsvField(result.Source)}{separator}{CSV.EscapeCsvField(result.Translation)}");
                     writer.WriteLine(line);
                 }
 
@@ -259,14 +337,6 @@ namespace Solicen.Localization.UE4
 
             });       
             return result.ToArray();
-        }
-
-        private static string EscapeCsvField(string field)
-        {
-            if (field == null) return field;                 // Return empty string
-            if (TableSeparator) return field;                // Don't write a QMarks between | string | 
-            if (field.Contains(',')) field = $"\"{field}\""; // Return QMarks between " string " if detect comma symbol in line.          
-            return field;
         }
 
         public static byte[] Combine(byte[] remainder, byte[] buffer, int bytesRead)
