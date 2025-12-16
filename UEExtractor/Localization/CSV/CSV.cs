@@ -7,6 +7,16 @@ using System.Threading.Tasks;
 
 public class CSV
 {
+    public static string EscapeCsvField(string field)
+    {
+        if (field == null) return field;                      // Return empty string
+        if (field.Contains("\"") && !field.Contains("\"\""))
+            field = field.Replace("\"", "\"\"");
+        if (field.Contains(',') || field.Contains('\"'))      // Return QMarks between " string " if detect comma symbol in line. 
+            field = $"\"{field}\"";
+        return field;
+    }
+
     public class Table
     {
         public class Row
@@ -136,6 +146,7 @@ public class CSV
             for (int i = 0; i < line.Length; i++)
             {
                 char currentChar = line[i];
+                //if (inQuotes && currentChar == ',') i++;
                 if (currentChar == '"')
                 {
                     if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
