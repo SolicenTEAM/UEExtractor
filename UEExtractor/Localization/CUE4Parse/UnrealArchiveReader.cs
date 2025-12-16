@@ -1,15 +1,29 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Linq;
+using System.IO;
 using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
+using CUE4Parse.FileProvider.Objects;
 using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
+using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.UE4.Readers;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Versions;
+using Newtonsoft.Json.Linq;
+using CUE4Parse.Utils;
 using Solicen.Localization.UE4;
+using static System.Net.Mime.MediaTypeNames;
+using System.Text.Json;
+using Newtonsoft.Json;
 
 public class UnrealArchiveReader : IDisposable
 {
+
     public string UE_VER = string.Empty;
     public string AES_KEY = string.Empty;
 
@@ -220,10 +234,14 @@ public class UnrealArchiveReader : IDisposable
             throw new InvalidOperationException("No valid files available for processing");
 
         // Расширенный список расширений
+        // UPD: Исключаем uexp, так как uasset и так ссылается на него при загрузке.
         var validExtensions = new[] { ".uasset", ".uexp" };
-        var assets = _provider.Files.Keys
-            .Where(x => validExtensions.Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+        var assets = _provider.Files.Keys.Where(x => validExtensions
+        .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
             .ToList();
+
+        //assets = assets.Where(x => x.Contains("/Voicelines/Level/1_UNICORN/Intro_Prologue_Sequence/") == true).ToList();
 
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
@@ -241,30 +259,82 @@ public class UnrealArchiveReader : IDisposable
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
 
-        // Очищение: работаем только с файлами не из Engine папки.
-        var gameAssets = assets.Where(x => !x.Contains("Engine/")).ToList();
-        int totalAssets = gameAssets.Count; int currentIndex = 1;
+        int totalAssets = assets.Count; 
+        int currentIndex = 1;
 
-        // Возвращение: возвращение параллельной обработки для ускорения.
-        // Может быть незаметно на маленьких играх, но отлично ускоряет обработку на больших
-        var partitioner = Partitioner.Create(gameAssets, EnumerablePartitionerOptions.NoBuffering);
-        Parallel.ForEach(partitioner, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount * 4 }, assetPath =>
+        Parallel.ForEach(assets, assetPath => 
         {
             try
             {
-                var byteArray = _provider.SaveAsset(assetPath);
-                using var stream = new MemoryStream(byteArray);
                 Console.WriteLine($"[{currentIndex}/{totalAssets}] ..{assetPath}");
+                using var stream = LoadAsset(assetPath);
                 currentIndex++;
                 processor(assetPath, stream);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing {assetPath}: {ex.Message}");
+                Console.WriteLine($"[{currentIndex}/{totalAssets}] Error processing {assetPath}: {ex.Message}");
                 if (ex is System.Security.SecurityException)
                     Console.WriteLine(">> Possible encryption issue!");
             }
         });
+    }
+
+    public List<(string Namespace, string Key, string SourceString)> LoadDataTable(string assetPath)
+    {
+        var results = new List<(string Namespace, string Key, string SourceString)>();
+        var asset = _provider.LoadPackage(assetPath);
+
+        // Сериализуем все экспорты пакета в JSON
+        var exports = asset.GetExports();
+        var json = JsonConvert.SerializeObject(exports);
+        try
+        {   
+            var jToken = JToken.Parse(json);
+            ProcessJsonToken(jToken, results);
+        }
+        catch (Newtonsoft.Json.JsonReaderException ex)
+        {
+            Console.WriteLine($"Error parsing JSON for asset {assetPath}: {ex.Message}");
+        }
+        json = string.Empty;
+        return results;
+    }
+
+    private void ProcessJsonToken(JToken token, List<(string Namespace, string Key, string SourceString)> results)
+    {
+        if (token is JObject obj)
+        {
+            // Проверяем, похож ли объект на структуру FText
+            // {"Namespace": "", "Key": "...", "SourceString": "..."}
+            if (obj.TryGetValue("SourceString", out var sourceStringToken) &&
+                obj.TryGetValue("Key", out var keyToken) &&
+                obj.TryGetValue("Namespace", out var nameToken))
+                {
+                    var key = keyToken.ToString();
+                    var sourceString = sourceStringToken.ToString();
+                    var Namespace = nameToken.ToString();
+
+                    if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(sourceString))
+                    {
+                        results.Add((Namespace, key, sourceString));
+                    }
+                }
+
+            // Рекурсивный обход всех свойств объекта
+            foreach (var property in obj.Properties())
+            {
+                ProcessJsonToken(property.Value, results);
+            }
+        }
+        else if (token is JArray array)
+        {
+            // Рекурсивный обход всех элементов массива
+            foreach (var item in array)
+            {
+                ProcessJsonToken(item, results);
+            }
+        }
     }
 
     public MemoryStream LoadAsset(string assetPath)
@@ -283,7 +353,7 @@ public class UnrealArchiveReader : IDisposable
                 Console.WriteLine($"Error reading file {filePath}: {ex.Message}");
                 return null;
             }
-        }
+        } 
         return null;
     }
 
