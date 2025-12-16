@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Text;
-using System.Threading.Tasks;
 using static Solicen.Localization.UE4.UnrealLocres;
 
 namespace Solicen.Localization.UE4
@@ -86,9 +81,6 @@ namespace Solicen.Localization.UE4
                 // Explicitly clear remainder array
                 Array.Clear(remainder, 0, remainder.Length);
             }
-
-            // Force garbage collection to free memory
-            GC.Collect();
 
             return results.ToList();
         }

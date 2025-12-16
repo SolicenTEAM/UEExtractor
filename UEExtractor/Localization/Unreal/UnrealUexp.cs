@@ -1,20 +1,12 @@
-﻿using Org.BouncyCastle.Utilities;
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Concurrent;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using static Solicen.Localization.UE4.UnrealLocres;
 
 namespace Solicen.Localization.UE4
 {
     public class UnrealUepx
     {
         #region Console Settings
-        public static bool SkipUpperUpper = true;
+        public static bool SkipUpperUpper = false;
         public static bool SkipUnderscore = true;
         public static bool IncludeInvalidData = false;
         public static bool IncludeHashInKeyValue = false;
@@ -70,8 +62,6 @@ namespace Solicen.Localization.UE4
                 ProcessChunk(remainder, remainder.Length, allowedChars, results, IncludeInvalidData, out remainder);
             }
 
-            // Force garbage collection to free memory
-            GC.Collect();
             if (UnrealLocres.IncludeUrlInKeyValue)
             {
                 var path = UnrealLocres.FilePATH;
@@ -158,7 +148,6 @@ namespace Solicen.Localization.UE4
 
                     byte[] stringData = new byte[size - 1];
                     Array.Copy(buffer, i + 37, stringData, 0, size - 1);
-
                     string hashDecoded = Encoding.UTF8.GetString(hashCandidate).Trim();
                     if (!IsValidHash(hashDecoded))
                     {
