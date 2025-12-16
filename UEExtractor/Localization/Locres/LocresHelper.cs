@@ -23,6 +23,12 @@ public static class MemoryStreamExtensions
 
 namespace Solicen.Localization.UE4
 {
+    public enum LocresVersion
+    {
+        Compact = 0,
+        Optimized = 1,
+    }
+
     internal class LocresHelper
     {
         public char Separator = ','; 
@@ -38,16 +44,26 @@ namespace Solicen.Localization.UE4
                 var separateBy = $@"[{Separator}](?=(?:[^""]*""[^""]*"")*[^""]*$)";
                 var allValues = Regex.Split(line, separateBy);
 
-                var key = allValues[0];
-                var source = SimplifyQMarksInStr(allValues[1]);
+                var _namespace = string.Empty;
+                var _key = allValues[0];
+                var _source = SimplifyQMarksInStr(allValues[1]);
 
                 #region Translation Column
                 // It will slow down the creation of the locres file a little,
                 // but otherwise we will not read the translation column normally if it contains commas.
-                var translation = SimplifyQMarksInStr(allValues.FirstOrDefault(x => x != source && x != key));
+                var _translation = SimplifyQMarksInStr(allValues.FirstOrDefault(x => x != _source && x != _key));
                 #endregion
 
-                results.Add(new LocresResult(key, source, translation));
+                #region Namespace
+                if (_key.Contains("::"))
+                {
+                    _namespace = _key.Split("::")[0];
+                    _key = _key.Split("::")[1];
+                    
+                }
+                #endregion
+
+                results.Add(new LocresResult(_key, _source, _translation, _namespace));
                 index++;
             }
             return results.ToArray();
@@ -60,7 +76,8 @@ namespace Solicen.Localization.UE4
         /// <returns></returns>
         public static string SimplifyQMarksInStr(string str)
         {
-            return str.StartsWith("\"") && str.EndsWith("\"") ? str.Trim('\"') : str;
+            if (str == null) return null;
+            return str.StartsWith("\"") && str.Contains(',') && str.EndsWith("\"") ? str.Trim('\"') : str;
         }
 
         public static string EscapeKey(string str)
@@ -69,16 +86,20 @@ namespace Solicen.Localization.UE4
                 .Replace("\n\n", "\\n\\n") 
                 .Replace("\n", "\\n")      
                 .Replace("\r", "\\r")     
-                .Replace("\t", "\\t");     
+                .Replace("\t", "\\t") 
+                .Replace("\\r\\n", "<cf>")
+                .Replace("\"", "\"\"");            
         }
 
         public static string UnEscapeKey(string str)
         {
             return str
-                .Replace("\\n\\n", "\n\n") 
-                .Replace("\\n", "\n")      
-                .Replace("\\r", "\r")      
-                .Replace("\\t", "\t");     
+                .Replace("<cf>", "\\r\\n")
+                .Replace("\\n\\n", "\n\n")
+                .Replace("\\n", "\n")
+                .Replace("\\r", "\r")
+                .Replace("\\t", "\t")
+                .Replace("\"\"","\"");          
         }
    
         public static int GetDataCount(byte[] data)
@@ -110,7 +131,7 @@ namespace Solicen.Localization.UE4
             return data;
         }
 
-        public static byte[] GetReadablyHeader(int stringsAll, string filePath)
+        public static byte[] GetReadablyHeader(int stringsAll, string filePath, LocresVersion version = LocresVersion.Compact)
         {
             byte[] buffer = new byte[34];
             if (File.Exists(filePath))
@@ -123,12 +144,28 @@ namespace Solicen.Localization.UE4
             }
             else
             {
-                buffer = new byte[] { 0x0E, 0x14, 0x74, 0x75, 0x67, 
-                    0x4A, 0x03, 0xFC, 0x4A, 0x15, 0x90, 0x9D, 0xC3, 
-                    0x37, 0x7F, 0x1B, 0x01, 0x03, 0x04, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00 }
-                ;
+                List<byte> header = new List<byte> {
+                    0x0E, 0x14, 0x74, 0x75, 0x67, 0x4A, 0x03, 0xFC,
+                    0x4A, 0x15, 0x90, 0x9D, 0xC3, 0x37, 0x7F, 0x1B };
+
+                switch (version)
+                {
+                    case LocresVersion.Compact:
+                        header.AddRange(new byte[] { 
+                    0x01, 0x03, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                    0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+                    0x00, 0x16, 0x00, 0x00, 0x00 });
+                        break;
+                    case LocresVersion.Optimized:
+                        header.AddRange(new byte[]
+                        {
+                    0x02, 0x5E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+                    0x00, 0x25, 0xF6, 0x00, 0xBF });
+                        break;
+
+                }
+                buffer = header.ToArray();       
             }
 
             // Чтение первых 18 байтов
