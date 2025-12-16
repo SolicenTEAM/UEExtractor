@@ -115,16 +115,16 @@ namespace Solicen.Localization.UE4
                     break;
 
                 int stringStartIndex = startIndex + StartSequence.Length;
-                int separatorIndex = IndexOf(chunk, SeparatorSequence, stringStartIndex);
+                int SeparatorIndex = IndexOf(chunk, SeparatorSequence, stringStartIndex);
 
-                if (separatorIndex != -1)
+                if (SeparatorIndex != -1)
                 {
-                    string decodedString = LocresHelper.EscapeKey(Encoding.UTF8.GetString(chunk, stringStartIndex, separatorIndex - stringStartIndex));
-                    int hashStartIndex = separatorIndex + SeparatorSequence.Length;
+                    string decodedString = LocresHelper.EscapeKey(Encoding.UTF8.GetString(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
+                    int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
                     int hashEndIndex = hashStartIndex + HashLength;
 
                     string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
-                    if (IsValidHash(decodedHash))
+                    if (IsValidHash(decodedHash) && decodedString.Length != 1)
                     {
                         var res = new LocresResult(decodedHash, decodedString);
                         if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();

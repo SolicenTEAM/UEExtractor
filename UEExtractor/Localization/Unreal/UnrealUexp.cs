@@ -159,20 +159,20 @@ namespace Solicen.Localization.UE4
                         continue;
                     }
 
-                    string stringDecoded = null;
+                    string? decodedString = string.Empty;
                     bool decodedSuccessfully = false;
 
                     try
                     {
-                        stringDecoded = LocresHelper.EscapeKey(Encoding.UTF8.GetString(stringData));
-                        if (IsValidDecode(stringDecoded))
+                        decodedString = LocresHelper.EscapeKey(Encoding.UTF8.GetString(stringData));
+                        if (IsValidDecode(decodedString))
                         {
                             decodedSuccessfully = true;
                         }
                         else
                         {
-                            Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | InvalidDecode");
-                            UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
+                            Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | InvalidDecode");
+                            UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{decodedString}");
                             i = endPos;
                             continue;
                         }
@@ -182,22 +182,21 @@ namespace Solicen.Localization.UE4
                     {
                         Console.WriteLine($"DecoderFallbackException: Unable to decode string at position {i}");
                     }
-                
 
-                    if (ContainsUpperUpper(stringDecoded) && SkipUpperUpper) {
-                        Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | UpperUpper");
-                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
+                    if (ContainsUpperUpper(decodedString) && SkipUpperUpper) {
+                        Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | UpperUpper");
+                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{decodedString}");
                         i = endPos; continue; }
-                    if (stringDecoded.Contains('_') && SkipUnderscore) {
-                        Console.WriteLine($"SKIP: {hashDecoded}:{stringDecoded} | Underscore");
-                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{stringDecoded}");
+                    if (decodedString.Contains('_') && SkipUnderscore) {
+                        Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | Underscore");
+                        UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{decodedString}");
                         i = endPos; continue; }
-                    if (decodedSuccessfully)
+                    if (decodedSuccessfully && decodedString.Length != 1)
                     {
                         if (includeInvalidData || !results.Any(r => r.Key == hashDecoded))
                         {
-                            var res = new LocresResult(hashDecoded, stringDecoded);
-                            if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(stringDecoded).ToString();
+                            var res = new LocresResult(hashDecoded, decodedString);
+                            if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
                             results.Add(res);
                         }
                     }
