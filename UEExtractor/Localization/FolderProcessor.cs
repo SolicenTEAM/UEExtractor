@@ -23,7 +23,7 @@ namespace Solicen.Localization.UE4
             new Argument("--skip-uexp", "skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 			new Argument("--skip-uasset", "skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 			new Argument("--underscore", "do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
-			new Argument("--upper-upper", "do not skip lines with UpperUpper.", () => UnrealUepx.SkipUpperUpper = false),
+			new Argument("--upper-upper", "skip lines with UpperUpper.", () => UnrealUepx.SkipUpperUpper = true),
 			new Argument("--no-parallel", "disable parallel processing, slower, may output additional data.", () => UnrealUasset.parallelProcessing = false),
 			new Argument("--invalid", "include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
 			new Argument("--qmarks", "forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
@@ -150,6 +150,7 @@ namespace Solicen.Localization.UE4
 			}
 		}
 
+
 		public static void ProcessFolder(string folderPath, string fileName = "", string locresPath = "")
 		{
 			var exePath = new FileInfo(typeof(FolderProcessor).Assembly.Location).Directory;
@@ -168,19 +169,29 @@ namespace Solicen.Localization.UE4
 			// If found previous CSV file load and analyze all rows and columns
 			if (File.Exists(csvPath))
 			{
-				Console.WriteLine("\nFound previous CSV file, analyzing, that take a while...");
-				var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
-				Console.WriteLine($"Rows: [New:{Result.Count}] | [Old:{oldCSV.Length}]");
 
-				foreach (var line in oldCSV)
+				Console.WriteLine("\nFound previous CSV file, analyzing, that take a while...");
+                var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
+				//Console.WriteLine($"Rows: [New:{Result.Count}] | [Old:{oldCSV.Length}]");
+				int LinesToMergeInt = oldCSV.Where(x => Result.Any(r => r.Key == x.Key)).ToArray().Length;
+				int NewLinesInt = oldCSV.Length - LinesToMergeInt;
+				int TotalInt = Result.Count + NewLinesInt;
+
+                Console.WriteLine($" - Extracted : {Result.Count}");
+                Console.WriteLine($" - To merge  : {LinesToMergeInt}");
+                Console.WriteLine($" - New rows  : {NewLinesInt}");
+                Console.WriteLine($" - Total     : {TotalInt}");
+
+				
+                foreach (var line in oldCSV)
 				{
 					if (Result.Any(x => x.Key == line.Key))
 					{
 						var rLine = Result.ToList().FirstOrDefault(x => x.Key == line.Key);
 						if (rLine.Key != null)
 						{
-                            // Adds Translation value from CSV [Source] Column.
-                            if (rLine.Value.Source != line.Source)
+							// Adds Translation value from CSV [Source] Column.
+							if (rLine.Value.Source != line.Source && line.Translation == string.Empty)
                                 Result[rLine.Key].Translation = line.Source;
 
                             // Adds Translation value from CSV [Translation] Column.
