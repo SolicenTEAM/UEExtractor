@@ -157,12 +157,22 @@ public class UnrealArchiveReader : IDisposable
 
     private void LoadCompression()
     {
-        OodleHelper.DownloadOodleDll();
+        bool OodleDownloaded = OodleHelper.DownloadOodleDll();
         ZlibHelper.DownloadDll();
 
+        // UPD: 05.01.2026 - Замечена проблема при загрузке Oddle DLL, решение ниже.
+        if (!OodleDownloaded)
+        {
+            OodleHelper.DownloadOodleDllFromOodleUEAsync(
+                new HttpClient(new SocketsHttpHandler
+            {
+                UseProxy = false,
+                UseCookies = false,
+                AutomaticDecompression = DecompressionMethods.All
+            }), OodleHelper.OODLE_DLL_NAME).Wait();
+        }
         OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
         ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
-
     }
 
     private void LoadUsmapFiles(string gameDirectory)
