@@ -147,7 +147,7 @@ body {
 .terminal-dots span { width: 12px; height: 12px; border-radius: 50%; }
 .terminal-dots span:nth-child(1){background:#ff5f56} .terminal-dots span:nth-child(2){background:#ffbd2e} .terminal-dots span:nth-child(3){background:#27ca40}
 .terminal-title { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; }
-.terminal-body { padding: 20px; font-family: var(--font-mono); font-size: 0.9rem; min-height: 280px; }
+.terminal-body { padding: 20px; font-family: var(--font-mono); font-size: 0.9rem; min-height: 180px; }
 .terminal-line { margin-bottom: 8px; }
 .prompt { color: var(--accent-cyan); margin-right: 8px; }
 .command { color: var(--text-primary); }
