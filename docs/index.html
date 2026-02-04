@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UEExtractor — Unreal Engine Text & Localization Extractor</title>
+  <meta name="description" content="UEExtractor is a .NET 8 tool to extract localization text from Unreal Engine games (4.0–5.6). Exports locresCSV, supports DataTable & StringTable, AES keys, .pak/.utoc, ZenLoader via .usmap." />
+  <meta name="theme-color" content="#0a0a0f" />
+
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- Background Effects -->
+  <div class="bg-effects">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="noise-overlay"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-content">
+      <a href="#" class="logo" aria-label="UEExtractor">
+        <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#logoGradient)" stroke-width="2"/>
+          <path d="M12 20L17 25L28 14" stroke="url(#logoGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#a855f7"/>
+              <stop offset="100%" style="stop-color:#ec4899"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>UEExtractor</span>
+      </a>
+
+      <nav class="nav" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#usage">Usage</a>
+        <a href="#cli">CLI Reference</a>
+        <a href="#preparation">Preparation</a>
+      </nav>
+
+      <div class="header-actions">
+        <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-ghost">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          GitHub
+        </a>
+        <a href="#download" class="btn btn-primary">Download</a>
+      </div>
+
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <nav aria-label="Mobile">
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#usage">Usage</a>
+      <a href="#cli">CLI Reference</a>
+      <a href="#preparation">Preparation</a>
+      <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer">GitHub</a>
+    </nav>
+  </div>
+
+  <main>
+    <!-- Hero -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="badge-heart">❤️</span>
+            Made for translators & developers
+          </div>
+          <h1 class="hero-title">
+            Extract Unreal Engine Text
+            <span class="gradient-text">Effortlessly</span>
+          </h1>
+          <p class="hero-subtitle">
+            UEExtractor is a <strong>.NET 8.0</strong> utility to extract text from Unreal Engine games <strong>(4.0–5.6)</strong>.
+            It uses <strong>CUE4Parse</strong> to parse <code>.pak</code>/<code>.utoc</code> archives and generates a <strong>locresCSV</strong> file for localization workflows.
+          </p>
+          <div class="hero-actions">
+            <a href="#download" class="btn btn-primary btn-lg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download Latest
+            </a>
+            <a href="#usage" class="btn btn-outline btn-lg">Get Started</a>
+          </div>
+          <div class="hero-tags">
+            <span class="tag">UE 4.0 - 5.6</span>
+            <span class="tag">.NET 8.0</span>
+            <span class="tag">CUE4Parse</span>
+            <span class="tag">LocresCSV</span>
+            <span class="tag">DataTable & StringTable</span>
+          </div>
+        </div>
+
+        <div class="hero-terminal" aria-label="Terminal preview">
+          <div class="terminal-header">
+            <div class="terminal-dots"><span></span><span></span><span></span></div>
+            <span class="terminal-title">UEExtractor Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line">
+              <span class="prompt">C:\Games&gt;</span>
+              <span class="command" id="command1">UEExtractor.exe "Stalker 2" -v=UE5.1</span>
+            </div>
+            <div class="terminal-output" id="output1">
+              <span class="success">✓</span> UE5.1 detected<br />
+              <span class="success">✓</span> AES Key loaded<br />
+              <span class="success">✓</span> USMAP found<br />
+              <span class="processing">→</span> Processing archives...
+            </div>
+            <div class="terminal-line" id="line2">
+              <span class="prompt">C:\Games&gt;</span>
+              <span class="command">UEExtractor.exe locres.csv -o=game.locres</span>
+            </div>
+            <div class="terminal-output" id="output2">
+              <span class="success">✓</span> CSV parsed successfully<br />
+              <span class="success">✓</span> 15,432 entries extracted<br />
+              <span class="success">✓</span> locres file created: <span class="file">game.locres</span>
+            </div>
+            <div class="cursor-line" id="cursorLine">
+              <span class="prompt">C:\Games&gt;</span>
+              <span class="cursor">█</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Powerful Features</h2>
+          <p class="section-subtitle">Everything you need to extract and manage Unreal Engine localization data</p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card" data-delay="0">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <h3>UE 4.0–5.6 Support</h3>
+            <p>Extract text from a wide range of Unreal Engine versions. Auto-detection included, with optional <code>-v</code> override.</p>
+          </div>
+          <div class="feature-card" data-delay="100">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18"/>
+                <path d="M9 21V9"/>
+              </svg>
+            </div>
+            <h3>DataTable & StringTable</h3>
+            <p>Now fully functional extraction for DataTable & StringTable assets—ideal for games that store dialogue/UI in tables.</p>
+          </div>
+          <div class="feature-card" data-delay="200">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+            </div>
+            <h3>LocresCSV Output</h3>
+            <p>Generates <strong>locresCSV</strong> with <code>key</code>, <code>source</code>, and <code>Translation</code> columns—ready for translators and tools.</p>
+          </div>
+          <div class="feature-card" data-delay="300">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+            </div>
+            <h3>Smart CSV Merging</h3>
+            <p>Re-run extraction in the same folder to merge new strings while preserving existing translations during game updates.</p>
+          </div>
+          <div class="feature-card" data-delay="400">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <h3>AES Key Workflow</h3>
+            <p>Provide AES keys via <code>aes.txt</code> (game folder) or <code>--aes=0x…</code> for encrypted archives.</p>
+          </div>
+          <div class="feature-card" data-delay="500">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+            </div>
+            <h3>ZenLoader + .usmap</h3>
+            <p>For modern UE4–UE5 ZenLoader titles, drop a <code>.usmap</code> into the game folder—UEExtractor will find it automatically.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Formats -->
+    <section class="formats">
+      <div class="container">
+        <div class="formats-content">
+          <h2>Supported File Formats</h2>
+          <p>Common Unreal Engine archives and assets supported via CUE4Parse</p>
+          <div class="formats-grid">
+            <div class="format-item"><span class="format-ext">.uasset</span><span class="format-name">Asset Files</span></div>
+            <div class="format-item"><span class="format-ext">.umap</span><span class="format-name">Map Files</span></div>
+            <div class="format-item"><span class="format-ext">.locres</span><span class="format-name">Localization</span></div>
+            <div class="format-item"><span class="format-ext">.uexp</span><span class="format-name">Export Data</span></div>
+            <div class="format-item"><span class="format-ext">.ubulk</span><span class="format-name">Bulk Data</span></div>
+            <div class="format-item"><span class="format-ext">.utoc</span><span class="format-name">TOC Index</span></div>
+            <div class="format-item"><span class="format-ext">.pak</span><span class="format-name">Package Archive</span></div>
+            <div class="format-item"><span class="format-ext">.usmap</span><span class="format-name">Schema Map</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-it-works" id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">How It Works</h2>
+          <p class="section-subtitle">Extract localization in three steps</p>
+        </div>
+        <div class="steps">
+          <div class="step" data-delay="0">
+            <div class="step-number">01</div>
+            <div class="step-content">
+              <h3>Prepare</h3>
+              <p>For encrypted games, add your AES key. For ZenLoader games, provide a <code>.usmap</code> file.</p>
+              <div class="step-code">
+                <code>--aes=0x32CHARHEXKEY</code>
+                <span class="copy-btn" data-copy="--aes=0x32CHARHEXKEY" role="button" tabindex="0" aria-label="Copy">📋</span>
+              </div>
+            </div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step" data-delay="100">
+            <div class="step-number">02</div>
+            <div class="step-content">
+              <h3>Extract</h3>
+              <p>Drag & drop the game folder onto <code>UEExtractor.exe</code>, or run in CMD with optional flags.</p>
+              <div class="step-code">
+                <code>UEExtractor.exe "C:\Games\MyGame"</code>
+                <span class="copy-btn" data-copy='UEExtractor.exe "C:\Games\MyGame"' role="button" tabindex="0" aria-label="Copy">📋</span>
+              </div>
+            </div>
+            <div class="step-connector"></div>
+          </div>
+          <div class="step" data-delay="200">
+            <div class="step-number">03</div>
+            <div class="step-content">
+              <h3>Translate</h3>
+              <p>Get a <code>&lt;dir_name&gt;.csv</code>. Use the Translation column and optionally import it via UE4localizationsTool.</p>
+              <div class="step-code">
+                <code>key,source,Translation</code>
+                <span class="copy-btn" data-copy="key,source,Translation" role="button" tabindex="0" aria-label="Copy">📋</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Usage -->
+    <section class="usage" id="usage">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Usage</h2>
+          <p class="section-subtitle">Drag & drop for speed, CLI for control, and a predictable CSV format</p>
+        </div>
+        <div class="usage-tabs">
+          <div class="tab-buttons" role="tablist" aria-label="Usage tabs">
+            <button class="tab-btn active" data-tab="dragdrop" role="tab" aria-selected="true">Drag & Drop</button>
+            <button class="tab-btn" data-tab="cli" role="tab" aria-selected="false">CLI Commands</button>
+            <button class="tab-btn" data-tab="csv" role="tab" aria-selected="false">CSV Format</button>
+          </div>
+          <div class="tab-content">
+            <div class="tab-pane active" id="dragdrop" role="tabpanel">
+              <div class="usage-grid">
+                <div class="usage-card">
+                  <div class="usage-icon folder">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                  </div>
+                  <h3>Folder → CSV</h3>
+                  <p>Drag the game directory onto <code>UEExtractor.exe</code> to extract and export <code>&lt;dir_name&gt;.csv</code>.</p>
+                </div>
+                <div class="usage-card">
+                  <div class="usage-icon csv">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                  </div>
+                  <h3>CSV → .locres</h3>
+                  <p>Drag a locresCSV onto <code>UEExtractor.exe</code> to convert it back into a <code>.locres</code> file.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-pane" id="cli" role="tabpanel">
+              <div class="cli-commands">
+                <div class="cli-command">
+                  <h4>Extract LocresCSV from game:</h4>
+                  <code>UEExtractor.exe &lt;dir_path&gt; &lt;output_csv&gt;</code>
+                </div>
+                <div class="cli-command">
+                  <h4>Create .locres from CSV file:</h4>
+                  <code>UEExtractor.exe &lt;csv_path&gt; &lt;output_locres&gt;</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-pane" id="csv" role="tabpanel">
+              <div class="csv-structure">
+                <h4>LocresCSV Structure</h4>
+                <p>UEExtractor exports a standard CSV structure suitable for importing or converting back to <code>.locres</code>:</p>
+                <div class="csv-example">
+                  <table>
+                    <thead>
+                      <tr><th>key</th><th>source</th><th>Translation</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="key">4A6FDB1549E45F6C5D8D739129686E2F</td>
+                        <td class="source">Default</td>
+                        <td class="translation">(your translation)</td>
+                      </tr>
+                      <tr>
+                        <td class="key">9F2E3C4A1B567890D1234567890ABCDE</td>
+                        <td class="source">Start Game</td>
+                        <td class="translation">(your translation)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="csv-note"><strong>Tip:</strong> Importing a Translation column from CSV is possible via UE4localizationsTool.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLI Reference -->
+    <section class="cli-reference" id="cli">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">CLI Reference</h2>
+          <p class="section-subtitle">Searchable argument list</p>
+        </div>
+        <div class="cli-search">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="cliSearch" placeholder="Search arguments..." />
+        </div>
+        <div class="cli-grid" id="cliGrid">
+          <div class="cli-item" data-keywords="version ue">
+            <div class="cli-args"><code>-v=UE5.1</code><span class="cli-or">or</span><code>--version=Stalker2</code></div>
+            <div class="cli-desc">Specify the Unreal Engine version used in the game. Overrides auto-detection.</div>
+          </div>
+          <div class="cli-item" data-keywords="aes encryption key">
+            <div class="cli-args"><code>-a=[key]</code><span class="cli-or">or</span><code>--aes=[key]</code></div>
+            <div class="cli-desc">32-character hex string as AES key. Key must start with 0x.</div>
+          </div>
+          <div class="cli-item" data-keywords="skip uexp">
+            <div class="cli-args"><code>--skip-uexp</code></div>
+            <div class="cli-desc">Skip .uexp files during the extraction process.</div>
+          </div>
+          <div class="cli-item" data-keywords="skip uasset">
+            <div class="cli-args"><code>--skip-uasset</code></div>
+            <div class="cli-desc">Skip .uasset files during the extraction process.</div>
+          </div>
+          <div class="cli-item" data-keywords="locres output">
+            <div class="cli-args"><code>--locres</code></div>
+            <div class="cli-desc">Write .locres file after parsing the directory.</div>
+          </div>
+          <div class="cli-item" data-keywords="underscore">
+            <div class="cli-args"><code>--underscore</code></div>
+            <div class="cli-desc">Do not skip lines with underscores (e.g., ex_string).</div>
+          </div>
+          <div class="cli-item" data-keywords="upper">
+            <div class="cli-args"><code>--upper-upper</code></div>
+            <div class="cli-desc">Skip lines that are UPPERCASE (e.g., EXAMPLE).</div>
+          </div>
+          <div class="cli-item" data-keywords="table format separator">
+            <div class="cli-args"><code>--table-format</code></div>
+            <div class="cli-desc">Replace standard separator comma (,) with pipe symbol (|) in CSV.</div>
+          </div>
+          <div class="cli-item" data-keywords="headmark header footer">
+            <div class="cli-args"><code>--headmark</code></div>
+            <div class="cli-desc">Include header and footer rows in the CSV output.</div>
+          </div>
+          <div class="cli-item" data-keywords="autoexit">
+            <div class="cli-args"><code>--autoexit</code></div>
+            <div class="cli-desc">Automatically exit after all processes complete.</div>
+          </div>
+          <div class="cli-item" data-keywords="invalid">
+            <div class="cli-args"><code>--invalid</code></div>
+            <div class="cli-desc">Include invalid data in the output CSV.</div>
+          </div>
+          <div class="cli-item" data-keywords="qmarks quotes">
+            <div class="cli-args"><code>--qmarks</code></div>
+            <div class="cli-desc">Forcibly add quotation marks between text strings in CSV.</div>
+          </div>
+          <div class="cli-item" data-keywords="hash">
+            <div class="cli-args"><code>--hash</code></div>
+            <div class="cli-desc">Include hash of string for locres (format: [key][hash],[string]).</div>
+          </div>
+          <div class="cli-item" data-keywords="picky verbose">
+            <div class="cli-args"><code>--picky</code></div>
+            <div class="cli-desc">Picky mode: displays more detailed information.</div>
+          </div>
+          <div class="cli-item" data-keywords="url path">
+            <div class="cli-args"><code>--url</code></div>
+            <div class="cli-desc">Include path to source file (format: [url][key],[string]).</div>
+          </div>
+          <div class="cli-item" data-keywords="help">
+            <div class="cli-args"><code>--help</code></div>
+            <div class="cli-desc">Show help information with all available arguments.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Preparation -->
+    <section class="preparation" id="preparation">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Preparation Guide</h2>
+          <p class="section-subtitle">AES key and USMAP setup by archive type</p>
+        </div>
+
+        <div class="prep-tabs">
+          <div class="prep-tab-buttons" role="tablist" aria-label="Preparation tabs">
+            <button class="prep-tab-btn active" data-prep="pre-zen" role="tab" aria-selected="true">UE4 Pre-ZenLoader</button>
+            <button class="prep-tab-btn" data-prep="zen" role="tab" aria-selected="false">UE4-5 ZenLoader</button>
+          </div>
+          <div class="prep-tab-content">
+            <div class="prep-pane active" id="pre-zen" role="tabpanel">
+              <div class="prep-step">
+                <div class="prep-step-header"><span class="step-marker">1</span><h3>AES Key (if needed)</h3></div>
+                <div class="prep-step-body">
+                  <p>Some games require AES decryption, some do not. If needed, obtain a 32-character hex key.</p>
+                  <div class="prep-tip"><strong>Tip:</strong> Try extracting without a key first.</div>
+                </div>
+              </div>
+              <div class="prep-step">
+                <div class="prep-step-header"><span class="step-marker">2</span><h3>UE Version (Optional)</h3></div>
+                <div class="prep-step-body">
+                  <p>You can specify an engine version (e.g. <code>-v=UE5_1</code>). Auto-detection works, but the argument takes priority.</p>
+                  <div class="prep-code"><code>UEExtractor.exe "MyGame" -v=UE5_1</code></div>
+                  <div class="prep-note"><strong>Note:</strong> UE version values come from CUE4Parse. You can find the right one via FModel.</div>
+                </div>
+              </div>
+              <div class="prep-step">
+                <div class="prep-step-header"><span class="step-marker">3</span><h3>Provide AES Key</h3></div>
+                <div class="prep-step-body">
+                  <div class="prep-methods">
+                    <div class="prep-method">
+                      <h4>Method 1: aes.txt</h4>
+                      <p>Place <code>aes.txt</code> in the game directory. One line: 32-char hex string.</p>
+                      <div class="prep-file-tree">
+                        <div class="tree-item"><span class="folder">📁</span> MyGame/</div>
+                        <div class="tree-item tree-indent"><span class="file">📄</span> aes.txt</div>
+                        <div class="tree-item tree-indent"><span class="file">📁</span> Content/</div>
+                      </div>
+                    </div>
+                    <div class="prep-method">
+                      <h4>Method 2: CLI</h4>
+                      <p>Provide key via command line:</p>
+                      <div class="prep-code"><code>UEExtractor.exe "MyGame" --aes=0x012345...</code></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="prep-pane" id="zen" role="tabpanel">
+              <div class="prep-warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/>
+                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <span>First complete Pre-ZenLoader steps, then continue below</span>
+              </div>
+
+              <div class="prep-step zen-step">
+                <div class="prep-step-header"><span class="step-marker zen">4</span><h3>USMAP File Required</h3></div>
+                <div class="prep-step-body">
+                  <p>ZenLoader games require a <code>.usmap</code> to access resources and archives.</p>
+                  <div class="prep-tip"><strong>Tip:</strong> Check NexusMods and modding forums for USMAP availability.</div>
+                  <div class="prep-file-tree">
+                    <div class="tree-item"><span class="folder">📁</span> MyGame/</div>
+                    <div class="tree-item tree-indent"><span class="file">📄</span> game.usmap</div>
+                    <div class="tree-item tree-indent"><span class="file">📄</span> aes.txt (optional)</div>
+                    <div class="tree-item tree-indent"><span class="file">📁</span> Content/</div>
+                  </div>
+                  <div class="prep-note"><strong>Note:</strong> Place the .usmap in the main directory or a subdir—UEExtractor finds it automatically.</div>
+                </div>
+              </div>
+
+              <div class="prep-success">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                <span>Preparation complete — you can now extract localization data.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Merging -->
+    <section class="merging">
+      <div class="container">
+        <div class="merging-content">
+          <div class="merging-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5"/>
+              <path d="M8 3H3v5"/>
+              <path d="M21 16v5h-5"/>
+              <path d="M3 16v5h5"/>
+              <path d="M12 7v10"/>
+            </svg>
+          </div>
+          <div class="merging-text">
+            <h2>Smart CSV Merging</h2>
+            <p>When you re-run extraction in the same folder, UEExtractor merges with the previous CSV to keep translations safe while adding new lines.</p>
+            <div class="merge-logic">
+              <div class="merge-rule"><span class="rule-condition">Source changed</span><span class="rule-arrow">→</span><span class="rule-result">Old source becomes Translation</span></div>
+              <div class="merge-rule"><span class="rule-condition">Source matches</span><span class="rule-arrow">→</span><span class="rule-result">Translation preserved</span></div>
+              <div class="merge-rule"><span class="rule-condition">New keys</span><span class="rule-arrow">→</span><span class="rule-result">Added automatically</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section class="download" id="download">
+      <div class="container">
+        <div class="download-content">
+          <h2>Ready to Extract?</h2>
+          <p>Download UEExtractor and start extracting localization text from Unreal Engine games.</p>
+          <div class="download-actions">
+            <a href="https://github.com/SolicenTEAM/UEExtractor/releases" target="_blank" rel="noreferrer" class="btn btn-primary btn-lg">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download Latest Release
+            </a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-outline btn-lg">View on GitHub</a>
+          </div>
+          <div class="download-requirements">
+            <span class="req-item">.NET 8.0 Runtime</span><span class="req-dot">•</span>
+            <span class="req-item">Windows 10/11</span><span class="req-dot">•</span>
+            <span class="req-item">Open Source</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <a href="#" class="logo">
+            <svg class="logo-icon" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="2" width="36" height="36" rx="8" stroke="url(#footerGradient)" stroke-width="2"/>
+              <path d="M12 20L17 25L28 14" stroke="url(#footerGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="footerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#a855f7"/>
+                  <stop offset="100%" style="stop-color:#ec4899"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span>UEExtractor</span>
+          </a>
+          <p>Made with ❤️ for all translators and translation developers.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-column">
+            <h4>Resources</h4>
+            <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor/releases" target="_blank" rel="noreferrer">Releases</a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor/issues" target="_blank" rel="noreferrer">Issues</a>
+          </div>
+          <div class="footer-column">
+            <h4>Related</h4>
+            <a href="https://github.com/FabianFG/CUE4Parse" target="_blank" rel="noreferrer">CUE4Parse</a>
+            <a href="https://fmodel.app/" target="_blank" rel="noreferrer">FModel</a>
+            <a href="#usage">UE4localizationsTool</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; <span id="year"></span> UEExtractor. Open source.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./script.js"></script>
+</body>
+</html>
