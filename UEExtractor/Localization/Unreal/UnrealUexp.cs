@@ -89,7 +89,7 @@ namespace Solicen.Localization.UE4
             return true;
         }
 
-        static string ToHex(string input)
+        private static string ToHex(string input)
         {
             var bytes = Encoding.UTF8.GetBytes(input);
             var hex = BitConverter.ToString(bytes);

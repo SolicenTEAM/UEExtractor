@@ -19,7 +19,7 @@ namespace UEExtractor
             TimeSpan timeTaken = new TimeSpan();
             var backgroundThread = new Thread(() =>
             {
-                Solicen.Localization.UE4.FolderProcessor.ProcessProgram(args);
+                Solicen.Localization.UE4.CLI_Processor.ProcessProgram(args);
                 stopwatch.Stop(); timeTaken = stopwatch.Elapsed;
             });
             backgroundThread.Start(); backgroundThread.Join();

@@ -7,6 +7,9 @@
             return s.ToCharArray().Select(c => (byte)c).ToArray();
         }
 
+        public static int FindSequence(Span<byte> data, byte[] pattern, int startIndex = 0)
+            => FindSequence(data.ToArray(), pattern, startIndex);
+
         /// <summary>
         /// Находит последовательность байтов в массиве.
         /// </summary>

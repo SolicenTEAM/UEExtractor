@@ -1,25 +1,13 @@
-﻿using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Linq;
-using System.IO;
-using CUE4Parse.Compression;
+﻿using CUE4Parse.Compression;
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
-using CUE4Parse.FileProvider.Objects;
 using CUE4Parse.MappingsProvider;
-using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
-using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Objects.UObject;
-using CUE4Parse.UE4.Readers;
-using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Versions;
-using Newtonsoft.Json.Linq;
-using CUE4Parse.Utils;
-using Solicen.Localization.UE4;
-using static System.Net.Mime.MediaTypeNames;
-using System.Text.Json;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Diagnostics;
+using System.Net;
 
 public class UnrealArchiveReader : IDisposable
 {
@@ -30,6 +18,7 @@ public class UnrealArchiveReader : IDisposable
     private readonly DefaultFileProvider _provider;
     private bool _hasValidFiles;
     private bool _isEncrypted;
+    public static bool EngineSpecified = false;
 
     public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
     {
@@ -41,8 +30,9 @@ public class UnrealArchiveReader : IDisposable
             throw new DirectoryNotFoundException($"Directory not found: {gameDirectory}");
 
         // Вывод списка файлов для диагностики
+        string[] allowedExtensions = { ".utoc", ".pak" };
         var files = Directory.GetFiles(gameDirectory, "*.*", SearchOption.AllDirectories)
-            .Where(x => x.EndsWith(".pak") || x.EndsWith(".ucas") || x.EndsWith(".utoc"))
+            .Where(file => allowedExtensions.Any(file.EndsWith))
             .Where(x => x.Contains("\\Content\\Paks")).ToArray();
 
         EGame UE = LoadEngineVersion(gameDirectory);
@@ -107,8 +97,8 @@ public class UnrealArchiveReader : IDisposable
 
     private EGame LoadEngineVersion(string dir)
     {
-        var engineFile = Directory.GetFiles(dir, "*", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Win64\\CrashReportClient.exe"));
-        if (UE_VER != string.Empty)
+        var engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Engine\\Binaries\\Win64\\")); //CrashReportClient.exe
+        if (UE_VER != string.Empty && EngineSpecified)
         {
             var version = $"GAME_{UE_VER}";
             return ParseVersion(version);
@@ -117,6 +107,17 @@ public class UnrealArchiveReader : IDisposable
         {
             var versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
             var version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
+
+            if (version == "GAME_UE0_0")
+            {
+                engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories)
+                    .FirstOrDefault(x => x.Contains("Binaries\\Win64\\") && !x.Contains("CrashReportClient.exe"));
+
+                Console.WriteLine(engineFile);
+                versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
+                version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
+            }
+
             Console.WriteLine($"UEFile: {engineFile}");
             Console.WriteLine($"UEVersion: {version}");
             return ParseVersion(version);
@@ -160,7 +161,7 @@ public class UnrealArchiveReader : IDisposable
         bool OodleDownloaded = OodleHelper.DownloadOodleDll();
         ZlibHelper.DownloadDll();
 
-        // UPD: 05.01.2026 - Замечена проблема при загрузке Oddle DLL, решение ниже.
+        // UPD: 05.01.2026 - Замечена проблема при загрузке Oodle DLL, решение ниже.
         if (!OodleDownloaded)
         {
             OodleHelper.DownloadOodleDllFromOodleUEAsync(
@@ -214,21 +215,24 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
-    public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
+    public void LoadBlueprint(string path, Action<string, Dictionary<string, string>> processor)
     {
         if (path.EndsWith(".uasset"))
         {
-            var packageid = Path.ChangeExtension(path, null);
-            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var st))
+            var packageId = Path.ChangeExtension(path, null);
+            try
             {
-                Dictionary<string, string> keys = new Dictionary<string, string>();
-                foreach (var entry in st.StringTable.KeysToEntries)
-                {
-                    Console.WriteLine($" - {st.StringTable.TableNamespace}::{entry.Key} | {LocresHelper.EscapeKey(entry.Value)} | ");
-                    keys.Add(entry.Key, entry.Value);
-                }
+                var package = _provider.LoadPackage(packageId);
 
-                processor(st.StringTable.TableNamespace, keys);
+                var exports = package.GetExports();
+                foreach (var export in exports)
+                {
+                    Console.WriteLine($" - {export.ExportType} || {export.Name} ");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading blueprint asset {path}: {ex.Message}");
             }
         }
     }
@@ -245,13 +249,13 @@ public class UnrealArchiveReader : IDisposable
 
         // Расширенный список расширений
         // UPD: Исключаем uexp, так как uasset и так ссылается на него при загрузке.
-        var validExtensions = new[] { ".uasset", ".uexp" };
+        var validExtensions = new[] { ".uasset", ".uexp", ".umap" };
         var assets = _provider.Files.Keys.Where(x => validExtensions
         .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
             .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
             .ToList();
 
-        //assets = assets.Where(x => x.Contains("/Voicelines/Level/1_UNICORN/Intro_Prologue_Sequence/") == true).ToList();
+        //assets = assets.Where(x => x.Contains("/DT_DialogBoxes.uasset") == true).ToList();
 
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
@@ -290,16 +294,35 @@ public class UnrealArchiveReader : IDisposable
         });
     }
 
-    public List<(string Namespace, string Key, string SourceString)> LoadDataTable(string assetPath)
+
+    public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
+    {
+        if (path.EndsWith(".uasset"))
+        {
+            var packageid = Path.ChangeExtension(path, null);
+            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var st))
+            {
+                Dictionary<string, string> keys = new Dictionary<string, string>();
+                foreach (var entry in st.StringTable.KeysToEntries)
+                {
+                    keys.Add(entry.Key, entry.Value);
+                }
+
+                processor(st.StringTable.TableNamespace, keys);
+            }
+        }
+    }
+
+
+    public void LoadDataTable(string assetPath, Action<List<(string Namespace, string Key, string SourceString)>> processor)
     {
         var results = new List<(string Namespace, string Key, string SourceString)>();
         var asset = _provider.LoadPackage(assetPath);
-
         // Сериализуем все экспорты пакета в JSON
         var exports = asset.GetExports();
         var json = JsonConvert.SerializeObject(exports);
         try
-        {   
+        {
             var jToken = JToken.Parse(json);
             ProcessJsonToken(jToken, results);
         }
@@ -308,13 +331,16 @@ public class UnrealArchiveReader : IDisposable
             Console.WriteLine($"Error parsing JSON for asset {assetPath}: {ex.Message}");
         }
         json = string.Empty;
-        return results;
+
+        processor(results);
     }
 
     private void ProcessJsonToken(JToken token, List<(string Namespace, string Key, string SourceString)> results)
     {
         if (token is JObject obj)
         {
+            //Console.WriteLine(obj.ToString());
+
             // Проверяем, похож ли объект на структуру FText
             // {"Namespace": "", "Key": "...", "SourceString": "..."}
             if (obj.TryGetValue("SourceString", out var sourceStringToken) &&
