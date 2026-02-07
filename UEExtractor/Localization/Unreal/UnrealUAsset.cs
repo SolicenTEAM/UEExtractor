@@ -6,7 +6,8 @@ namespace Solicen.Localization.UE4
 {
     public static class UnrealUasset
     {
-        private static readonly byte[] StartSequence = { 0x29, 0x01, 0x1F };
+
+        private static readonly byte[] StartSequence = { 0x29, 0x01 }; // Исключаем 0x1F
         private static readonly byte[] SeparatorSequence = { 0x00, 0x1F };
         private const int HashLength = 32; // 32 hex characters
 
@@ -98,8 +99,52 @@ namespace Solicen.Localization.UE4
                 foreach (var result in chunkResult.Results)
                 {
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Url = path;
+                   
                     results.Add(result);
                 }
+            }
+        }
+
+        private static byte[] GetBytes(byte[] source, int index, int count)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (index < 0 || index >= source.Length) throw new ArgumentOutOfRangeException(nameof(index));
+            if (count < 0 || index + count > source.Length) throw new ArgumentOutOfRangeException(nameof(count));
+
+            byte[] result = new byte[count];
+            Array.Copy(source, index, result, 0, count);
+            return result;
+        }
+
+        private static string Latin1DecodeFix(string str)
+        {
+            var specialReplacements = new Dictionary<string, char>
+            {
+                { "\u0019\u0020", '’' },    // RIGHT SINGLE QUOTATION MARK
+                { "\u0018\u0020", '‘' },    // левая одинарная кавычка
+                { "\u001C\u0020", '“' },    // левая двойная кавычка
+                { "\u001D\u0020", '”' },    // правая двойная кавычка
+                { "\u0026\u0020", '…' },    // многоточие
+                { "\u0014\u0020", '—' },    // тире
+                { "\u0013\u0020", '–' },    // короткое тире
+            };
+            foreach (var rep in specialReplacements)
+            {
+                str = str.Replace(rep.Key, $"{rep.Value}");
+            }
+            return str.Replace("\0", "");
+        }
+
+        private static string GetString(byte[] source, int index, int count)
+        {
+            var b = GetBytes(source, index, count);
+            if (b.Length == 0) return string.Empty;
+            if (b[0] == 0x1F)
+                return Encoding.UTF8.GetString(b).Remove(0,1);
+            else
+            {
+                var str = Encoding.Latin1.GetString(b).Remove(0,1);
+                return Latin1DecodeFix(str);
             }
         }
 
@@ -119,21 +164,23 @@ namespace Solicen.Localization.UE4
 
                 if (SeparatorIndex != -1)
                 {
-                    string decodedString = LocresHelper.EscapeKey(Encoding.UTF8.GetString(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
+                    string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
                     int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
                     int hashEndIndex = hashStartIndex + HashLength;
 
-                    string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
-                    if (IsValidHash(decodedHash) && decodedString.Length != 1)
+                    try
                     {
-                        var res = new LocresResult(decodedHash, decodedString);
-                        if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
-                        results.Add(res);
-
-                        i = hashEndIndex + SeparatorSequence.Length;
-                        continue;
+                        string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
+                        if (IsValidHash(decodedHash) && decodedString.Length != 1)
+                        {
+                            var res = new LocresResult(decodedHash, decodedString);
+                            if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
+                            results.Add(res);
+                            i = hashEndIndex + SeparatorSequence.Length;
+                            continue;
+                        }
                     }
-
+                    catch (ArgumentOutOfRangeException ex) { i = startIndex + 1;  continue; }
                 }
 
                 i = startIndex + 1;
