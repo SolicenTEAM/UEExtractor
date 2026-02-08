@@ -29,37 +29,52 @@
       </a>
 
       <nav class="nav" aria-label="Primary">
-        <a href="#features">Features</a>
-        <a href="#how-it-works">How It Works</a>
-        <a href="#usage">Usage</a>
-        <a href="#cli">CLI Reference</a>
-        <a href="#preparation">Preparation</a>
+        <a href="#features" data-en="Features" data-ru="Особенности"></a>
+        <a href="#how-it-works" data-en="How It Works" data-ru="Как это работает"></a>
+        <a href="#usage" data-en="Usage" data-ru="Использование"></a>
+        <a href="#cli" data-en="CLI Reference" data-ru="Справочник CLI"></a>
+        <a href="#preparation" data-en="Preparation" data-ru="Подготовка"></a>
       </nav>
 
       <div class="header-actions">
-        <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-ghost">
+        <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-pc btn-ghost">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
           </svg>
           GitHub
         </a>
-        <a href="#download" class="btn btn-primary">Download</a>
-      </div>
-
+        <!-- Language Switcher -->
+        <div class="lang-dropdown">
+          <button class="btn btn-ghost lang-toggle" id="langToggle" aria-label="Select language" aria-expanded="false">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </button>
+          <div class="lang-menu" id="langMenu">
+            <button class="lang-option" data-value="en">English (EN)</button>
+            <button class="lang-option" data-value="ru">Русский (RU)</button>
+          </div>
+        </div>
+        <a href="#download" class="btn btn-pc btn-primary" data-en="Download" data-ru="Загрузить"></a>
       <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
+      </div>
+
+
     </div>
   </header>
 
   <!-- Mobile Menu -->
   <div class="mobile-menu" id="mobileMenu">
     <nav aria-label="Mobile">
-      <a href="#features">Features</a>
-      <a href="#how-it-works">How It Works</a>
-      <a href="#usage">Usage</a>
-      <a href="#cli">CLI Reference</a>
-      <a href="#preparation">Preparation</a>
+      <a href="#features" data-en="Features" data-ru="Особенности"></a>
+      <a href="#how-it-works" data-en="How It Works" data-ru="Как это работает"></a>
+      <a href="#usage" data-en="Usage" data-ru="Использование"></a>
+      <a href="#cli" data-en="CLI Reference" data-ru="Справочник CLI"></a>
+      <a href="#preparation" data-en="Preparation" data-ru="Подготовка"></a>
       <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer">GitHub</a>
     </nav>
   </div>
@@ -71,16 +86,15 @@
         <div class="hero-content">
           <div class="hero-badge">
             <span class="badge-heart">❤️</span>
-            Made for translators & developers
+            <span data-en="Made for translators" data-ru="Создано переводчиком для переводчиков"></span>
           </div>
           <h1 class="hero-title">
-            Extract Unreal Engine Text
-            <span class="gradient-text">Effortlessly</span>
+            <span data-en="Extract Unreal Engine Text" data-ru="Извлекайте текст из Unreal Engine"></span>
+            <span class="gradient-text" data-en="Effortlessly" data-ru="Без усилий"></span>
           </h1>
-          <p class="hero-subtitle">
-            UEExtractor is a <strong>.NET 8.0</strong> utility to extract text from Unreal Engine games <strong>(4.0–5.6)</strong>.
-            It uses <strong>CUE4Parse</strong> to parse <code>.pak</code>/<code>.utoc</code> archives and generates a <strong>locresCSV</strong> file for localization workflows.
-          </p>
+          <p class="hero-subtitle" 
+              data-en="UEExtractor is a <strong>NET 8</strong> utility to extract text from Unreal Engine games <strong>(4.0–5.6)</strong>. It uses <strong>CUE4Parse</strong> to parse <code>.pak</code>/<code>.ucas</code> archives and generates a <strong>locresCSV</strong> file for localization workflows." 
+              data-ru="UEExtractor — это утилита на <strong>NET 8</strong> для извлечения текста из игр на Unreal Engine <strong>(4.0–5.6)</strong>. Она использует <strong>CUE4Parse</strong> для разбора архивов <code>.pak</code>/<code>.ucas</code> и генерирует файл <strong>locresCSV</strong> для локализации."></p>
           <div class="hero-actions">
             <a href="#download" class="btn btn-primary btn-lg">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -88,16 +102,16 @@
                 <polyline points="7 10 12 15 17 10"/>
                 <line x1="12" y1="15" x2="12" y2="3"/>
               </svg>
-              Download Latest
+              <span data-en="Download Latest" data-ru="Загрузить бесплатно">Download Latest</span>
             </a>
-            <a href="#usage" class="btn btn-outline btn-lg">Get Started</a>
+            <a href="#usage" class="btn btn-outline btn-lg" data-en="Get Started" data-ru="Начать работу">Get Started</a>
           </div>
           <div class="hero-tags">
             <span class="tag">UE 4.0 - 5.6</span>
             <span class="tag">.NET 8.0</span>
             <span class="tag">CUE4Parse</span>
             <span class="tag">LocresCSV</span>
-            <span class="tag">DataTable & StringTable</span>
+            <span class="tag" data-en="DataTable & StringTable" data-ru="DataTable & StringTable"></span>
           </div>
         </div>
 
@@ -108,14 +122,14 @@
           </div>
           <div class="terminal-body">
             <div class="terminal-line">
-              <span class="prompt">C:\Games&gt;</span>
-              <span class="command" id="command1">UEExtractor.exe "Stalker 2" -v=UE5.1</span>
+              <span class="prompt">UEExtractor.exe</span>
+              <span class="command" id="command1">"C:\Games\Cronos New Dawn"</span>
             </div>
             <div class="terminal-output" id="output1">
-              <span class="success">✓</span> UE5.1 detected<br />
-              <span class="success">✓</span> AES Key loaded<br />
-              <span class="success">✓</span> USMAP found<br />
-              <span class="processing">→</span> Processing archives...<br>
+              <span class="success">✓</span> <span data-en="UE5.6 detected" data-ru="UE5.6 обнаружен"></span><br />
+              <span class="success">✓</span> <span data-en="AES not needed" data-ru="AES не требуется"></span><br />
+              <span class="success">✓</span> <span data-en="USMAP found: Cronos-UE_5.5.usmap" data-ru="USMAP найден: Cronos-UE_5.5.usmap"></span><br />
+              <span class="processing">→</span> <span data-en="Processing archives..." data-ru="Обработка архивов..."></span><br>
             </div>
             <div class="cursor-line" id="cursorLine">
               <span class="prompt">C:\Games&gt;</span>
@@ -130,94 +144,84 @@
     <section class="features" id="features">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">Powerful Features</h2>
-          <p class="section-subtitle">Everything you need to extract and manage Unreal Engine localization data</p>
+          <h2 class="section-title" data-en="Magicly Powerful Features" data-ru="Магически мощные функции"></h2>
+          <p class="section-subtitle" data-en="Everything you need to extract and manage Unreal Engine localization data for <strong>.locres files.</strong>" data-ru="Всё необходимое для извлечения и управления данными локализации Unreal Engine для <strong>.locres</strong> файлов."></p>
         </div>
         <div class="features-grid">
           <div class="feature-card" data-delay="0">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             </div>
-            <h3>UE 4.0–5.6 Support</h3>
-            <p>Extract text from a wide range of Unreal Engine versions. Auto-detection included, with optional <code>-v</code> override.</p>
+            <h3 data-en="UE 4.0–5.6 Support" data-ru="Поддержка UE 4.0–5.6">UE 4.0–5.6 Support</h3>
+            <p data-en="Extract text from a wide range of Unreal Engine versions. Auto-detection included, with optional <code>-v</code> override." data-ru="Извлекайте текст из широкого спектра версий Unreal Engine. Включено автоопределение с возможностью ручного переопределения через <code>-v</code>.">Extract text from a wide range of Unreal Engine versions. Auto-detection included, with optional <code>-v</code> override.</p>
           </div>
           <div class="feature-card" data-delay="100">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M3 9h18"/>
-                <path d="M9 21V9"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
             </div>
-            <h3>DataTable & StringTable</h3>
-            <p>Now fully functional extraction for DataTable & StringTable assets—ideal for games that store dialogue/UI in tables.</p>
+            <h3 data-en="DataTable & StringTable" data-ru="Таблицы данных и строк">DataTable & StringTable</h3>
+            <p data-en="Now fully functional extraction for DataTable & StringTable assets—ideal for games that store dialogue/UI in tables." data-ru="Теперь полностью функциональное извлечение для ассетов DataTable и StringTable — идеально для игр, хранящих диалоги/интерфейс в таблицах.">Now fully functional extraction for DataTable & StringTable assets—ideal for games that store dialogue/UI in tables.</p>
           </div>
           <div class="feature-card" data-delay="200">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             </div>
-            <h3>LocresCSV Output</h3>
-            <p>Generates <strong>locresCSV</strong> with <code>key</code>, <code>source</code>, and <code>Translation</code> columns—ready for translators and tools.</p>
+            <h3 data-en="LocresCSV Output" data-ru="Вывод в LocresCSV">LocresCSV Output</h3>
+            <p data-en="Generates <strong>locresCSV</strong> with <code>key</code>, <code>source</code>, and <code>Translation</code> columns—ready for translators and tools." data-ru="Генерирует <strong>locresCSV</strong> со столбцами <code>key</code>, <code>source</code> и <code>Translation</code> — идеально для переводчиков и инструментов.">Generates <strong>locresCSV</strong> with <code>key</code>, <code>source</code>, and <code>Translation</code> columns—ready for translators and tools.</p>
           </div>
           <div class="feature-card" data-delay="300">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <polyline points="23 4 23 10 17 10"/>
-                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </div>
-            <h3>Smart CSV Merging</h3>
-            <p>Re-run extraction in the same folder to merge new strings while preserving existing translations during game updates.</p>
+            <h3 data-en="Smart CSV Merging" data-ru="Умное слияние CSV">Smart CSV Merging</h3>
+            <p data-en="Re-run extraction in the same folder to merge new strings while preserving existing translations during game updates." data-ru="Повторный запуск извлечения в той же папке для слияния новых строк с сохранением существующих переводов при обновлениях игры.">Re-run extraction in the same folder to merge new strings while preserving existing translations during game updates.</p>
           </div>
           <div class="feature-card" data-delay="400">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
-            <h3>AES Key Workflow</h3>
-            <p>Provide AES keys via <code>aes.txt</code> (game folder) or <code>--aes=0x…</code> for encrypted archives.</p>
+            <h3 data-en="AES Key Workflow" data-ru="Работа с AES ключами">AES Key Workflow</h3>
+            <p data-en="Provide AES keys via <code>aes.txt</code> (game folder) or <code>--aes=0x…</code> for encrypted archives." data-ru="Предоставляйте ключи AES через <code>aes.txt</code> (в папке с игрой) или <code>--aes=0x…</code> для зашифрованных архивов.">Provide AES keys via <code>aes.txt</code> (game folder) or <code>--aes=0x…</code> for encrypted archives.</p>
           </div>
           <div class="feature-card" data-delay="500">
             <div class="feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-              </svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
             </div>
-            <h3>ZenLoader + .usmap</h3>
-            <p>For modern UE4–UE5 ZenLoader titles, drop a <code>.usmap</code> into the game folder—UEExtractor will find it automatically.</p>
+            <h3 data-en="ZenLoader + .usmap" data-ru="ZenLoader + .usmap">ZenLoader + .usmap</h3>
+            <p data-en="For modern UE4–UE5 ZenLoader titles, drop a <code>.usmap</code> into the game folder—UEExtractor will find it automatically." data-ru="Для современных игр на UE4–UE5 с ZenLoader поместите файл <code>.usmap</code> в папку с игрой — UEExtractor найдет его автоматически.">For modern UE4–UE5 ZenLoader titles, drop a <code>.usmap</code> into the game folder—UEExtractor will find it automatically.</p>
+          </div>
+          <div class="feature-card" data-delay="200">
+            <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" style="opacity:1;"><path  d="m12 22l-1-3H4q-.825 0-1.412-.587T2 17V4q0-.825.588-1.412T4 2h6l.875 3H20q.875 0 1.438.563T22 7v13q0 .825-.562 1.413T20 22zm-4.85-7.4q1.725 0 2.838-1.112T11.1 10.6q0-.2-.012-.362t-.063-.338h-3.95v1.55H9.3q-.2.7-.763 1.088t-1.362.387q-.975 0-1.675-.7T4.8 10.5t.7-1.725t1.675-.7q.45 0 .85.163t.725.487L9.975 7.55Q9.45 7 8.712 6.7T7.15 6.4q-1.675 0-2.863 1.188T3.1 10.5t1.188 2.913T7.15 14.6m6.7.5l.55-.525q-.35-.425-.637-.825t-.563-.85zm1.25-1.275q.7-.825 1.063-1.575t.487-1.175h-3.975l.3 1.05h1q.2.375.475.813t.65.887M13 21h7q.45 0 .725-.288T21 20V7q0-.45-.275-.725T20 6h-8.825l1.175 4.05h1.975V9h1.025v1.05H19v1.025h-1.275q-.25.95-.75 1.85T15.8 14.6l2.725 2.675L17.8 18l-2.7-2.7l-.9.925L15 19z"/></svg>
+            </div>
+            <h3 data-en="Neural Network Translator" data-ru="Нейросетевой переводчик"></h3>
+            <p data-en="Provides the ability to automatically translate through OpenRouter (choose a model) all extracted strings, immediately after or by a separate process." data-ru="Возможность для автоматического перевода через OpenRouter (вы можете выбирать модель) всех извлеченных строк, сразу после или отдельным процессом."></p>
+          </div>
+          <div class="feature-card" data-delay="200">
+            <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" style="opacity:1;"><path  d="m5.05 22.375l-1.4-1.425L6.6 18H4.35v-2H10v5.65H8v-2.225zM12 22v-8H4V2h10l6 6v14zm1-13h5l-5-5l5 5l-5-5z"/></svg>
+            </div>
+            <h3 data-en="Easy Locres Writer" data-ru="Запись locres в один клик"></h3>
+            <p data-en="Converts the LocresCSV table on the fly into a single localization file (.locres) immediately suitable for use in the Unreal Engine." data-ru="На лету преобразует таблицу LocresCSV в единный файл локализации (.locres) сразу пригодный для использования в Unreal Engine."></p>
           </div>
         </div>
       </div>
     </section>
-
     <!-- Formats -->
     <section class="formats">
       <div class="container">
         <div class="formats-content">
-          <h2>Supported File Formats</h2>
-          <p>Common Unreal Engine archives and assets supported via CUE4Parse</p>
+          <h2 data-en="Supported File Formats" data-ru="Поддерживаемые форматы файлов">Supported File Formats</h2>
+          <p data-en="Common Unreal Engine archives and assets supported via CUE4Parse" data-ru="Общие архивы и ассеты Unreal Engine, поддерживаемые через CUE4Parse">Common Unreal Engine archives and assets supported via CUE4Parse</p>
           <div class="formats-grid">
-            <div class="format-item"><span class="format-ext">.uasset</span><span class="format-name">Asset Files</span></div>
-            <div class="format-item"><span class="format-ext">.umap</span><span class="format-name">Map Files</span></div>
-            <div class="format-item"><span class="format-ext">.locres</span><span class="format-name">Localization</span></div>
-            <div class="format-item"><span class="format-ext">.uexp</span><span class="format-name">Export Data</span></div>
-            <div class="format-item"><span class="format-ext">.ubulk</span><span class="format-name">Bulk Data</span></div>
-            <div class="format-item"><span class="format-ext">.utoc</span><span class="format-name">TOC Index</span></div>
-            <div class="format-item"><span class="format-ext">.pak</span><span class="format-name">Package Archive</span></div>
-            <div class="format-item"><span class="format-ext">.usmap</span><span class="format-name">Schema Map</span></div>
+            <div class="format-item"><span class="format-ext">.uasset</span><span class="format-name" data-en="Asset Files" data-ru="Файлы ассетов">Asset Files</span></div>
+            <div class="format-item"><span class="format-ext">.umap</span><span class="format-name" data-en="Map Files" data-ru="Файлы карт">Map Files</span></div>
+            <div class="format-item"><span class="format-ext">.locres</span><span class="format-name" data-en="Localization" data-ru="Локализация">Localization</span></div>
+            <div class="format-item"><span class="format-ext">.uexp</span><span class="format-name" data-en="Export Data" data-ru="Данные экспорта">Export Data</span></div>
+            <div class="format-item"><span class="format-ext">.ubulk</span><span class="format-name" data-en="Bulk Data" data-ru="Массовые данные">Bulk Data</span></div>
+            <div class="format-item"><span class="format-ext">.utoc</span><span class="format-name" data-en="TOC Index" data-ru="Индекс TOC">TOC Index</span></div>
+            <div class="format-item"><span class="format-ext">.pak</span><span class="format-name" data-en="Package Archive" data-ru="Архив пакетов">Package Archive</span></div>
+            <div class="format-item"><span class="format-ext">.usmap</span><span class="format-name" data-en="Schema Map" data-ru="Карта схемы">Schema Map</span></div>
           </div>
         </div>
       </div>
@@ -227,18 +231,21 @@
     <section class="how-it-works" id="how-it-works">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">How It Works</h2>
-          <p class="section-subtitle">Extract localization in three steps</p>
+          <h2 class="section-title" data-en="How It Works" data-ru="Как это работает">How It Works</h2>
+          <p class="section-subtitle" data-en="Extract localization in three steps" data-ru="Извлеките локализацию за три простых шага"></p>
         </div>
         <div class="steps">
           <div class="step" data-delay="0">
             <div class="step-number">01</div>
             <div class="step-content">
-              <h3>Prepare</h3>
-              <p>For encrypted games, add your AES key. For ZenLoader games, provide a <code>.usmap</code> file.</p>
+              <h3 data-en="Prepare" data-ru="Подготовка">Prepare</h3>
+              <p 
+                data-en="For encrypted games, add your AES key. For ZenLoader (ucas, utoc) games, provide a <code>.usmap</code> file." 
+                data-ru="Для зашифрованных игр добавьте ключ AES. Для игр с ZenLoader (ucas, utoc) предоставьте файл <code>.usmap</code>.">
+              </p>
               <div class="step-code">
                 <code>--aes=0x32CHARHEXKEY</code>
-                <span class="copy-btn" data-copy="--aes=0x32CHARHEXKEY" role="button" tabindex="0" aria-label="Copy">📋</span>
+                <span class="copy-btn" data-copy="--aes=0x32CHARHEXKEY" role="button" tabindex="0" aria-label="Copy"></span>
               </div>
             </div>
             <div class="step-connector"></div>
@@ -246,11 +253,11 @@
           <div class="step" data-delay="100">
             <div class="step-number">02</div>
             <div class="step-content">
-              <h3>Extract</h3>
-              <p>Drag & drop the game folder onto <code>UEExtractor.exe</code>, or run in CMD with optional flags.</p>
+              <h3 data-en="Extract" data-ru="Извлечение">Extract</h3>
+              <p data-en="Drag & drop the game folder onto <code>UEExtractor.exe</code>, or run in CMD with optional flags." data-ru="Перетащите папку с игрой на <code>UEExtractor.exe</code> или запустите в CMD с дополнительными флагами.">Drag & drop the game folder onto <code>UEExtractor.exe</code>, or run in CMD with optional flags.</p>
               <div class="step-code">
-                <code>UEExtractor.exe "C:\Games\MyGame"</code>
-                <span class="copy-btn" data-copy='UEExtractor.exe "C:\Games\MyGame"' role="button" tabindex="0" aria-label="Copy">📋</span>
+                <code>UEExtractor.exe "C:\MyGame" -v=5.3</code>
+                <span class="copy-btn" data-copy='UEExtractor.exe "C:\Games\MyGame"' role="button" tabindex="0" aria-label="Copy"></span>
               </div>
             </div>
             <div class="step-connector"></div>
@@ -258,15 +265,14 @@
           <div class="step" data-delay="200">
             <div class="step-number">03</div>
             <div class="step-content">
-              <h3>Translate</h3>
-              <p>Get a <code>&lt;dir_name&gt;.csv</code>. Use the Translation column and optionally import it via UE4localizationsTool.</p>
+              <h3 data-en="Translate" data-ru="Перевод">Translate</h3>
+              <p data-en="Get a <code>&lt;dir_name&gt;.csv</code>. Use the Translation column and optionally import it via UE4localizationsTool." data-ru="Получите файл <code>&lt;dir_name&gt;.csv</code>. Используйте столбец Translation, импортируйте его через UE4localizationsTool.">Get a <code>&lt;dir_name&gt;.csv</code>. Use the Translation column and optionally import it via UE4localizationsTool.</p>
               <div class="step-code">
                 <code>key,source,Translation</code>
-                <span class="copy-btn" data-copy="key,source,Translation" role="button" tabindex="0" aria-label="Copy">📋</span>
+                <span class="copy-btn" data-copy="key,source,Translation" role="button" tabindex="0" aria-label="Copy"></span>
               </div>
             </div>
           </div>
-        </div>
       </div>
     </section>
 
@@ -274,36 +280,31 @@
     <section class="usage" id="usage">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">Usage</h2>
-          <p class="section-subtitle">Drag & drop for speed, CLI for control, and a predictable CSV format</p>
+          <h2 class="section-title" data-en="Usage" data-ru="Использование">Usage</h2>
+          <p class="section-subtitle" data-en="Drag & drop for speed, CLI for control, and a predictable CSV format" data-ru="Перетаскивание для скорости, используйте CLI для контроля процесса, получите CSV">Drag & drop for speed, CLI for control, and a predictable CSV format</p>
         </div>
         <div class="usage-tabs">
           <div class="tab-buttons" role="tablist" aria-label="Usage tabs">
-            <button class="tab-btn active" data-tab="dragdrop" role="tab" aria-selected="true">Drag & Drop</button>
-            <button class="tab-btn" data-tab="cli" role="tab" aria-selected="false">CLI Commands</button>
-            <button class="tab-btn" data-tab="csv" role="tab" aria-selected="false">CSV Format</button>
+            <button class="tab-btn active" data-tab="dragdrop" role="tab" aria-selected="true" data-en="Drag & Drop" data-ru="Перетаскивание">Drag & Drop</button>
+            <button class="tab-btn" data-tab="cli" role="tab" aria-selected="false" data-en="CLI Commands" data-ru="Команды CLI">CLI Commands</button>
+            <button class="tab-btn" data-tab="csv" role="tab" aria-selected="false" data-en="CSV Format" data-ru="Формат CSV">CSV Format</button>
           </div>
           <div class="tab-content">
             <div class="tab-pane active" id="dragdrop" role="tabpanel">
               <div class="usage-grid">
                 <div class="usage-card">
                   <div class="usage-icon folder">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                   </div>
-                  <h3>Folder → CSV</h3>
-                  <p>Drag the game directory onto <code>UEExtractor.exe</code> to extract and export <code>&lt;dir_name&gt;.csv</code>.</p>
+                  <h3 data-en="Folder → CSV" data-ru="Папка → CSV">Folder → CSV</h3>
+                  <p data-en="Drag the game directory onto <code>UEExtractor.exe</code> to extract and export <code>&lt;dir_name&gt;.csv</code>." data-ru="Перетащите директорию игры на <code>UEExtractor.exe</code> для извлечения и экспорта <code>&lt;dir_name&gt;.csv</code>.">Drag the game directory onto <code>UEExtractor.exe</code> to extract and export <code>&lt;dir_name&gt;.csv</code>.</p>
                 </div>
                 <div class="usage-card">
                   <div class="usage-icon csv">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                      <polyline points="14 2 14 8 20 8"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                   </div>
-                  <h3>CSV → .locres</h3>
-                  <p>Drag a locresCSV onto <code>UEExtractor.exe</code> to convert it back into a <code>.locres</code> file.</p>
+                  <h3 data-en="CSV → .locres" data-ru="CSV → .locres">CSV → .locres</h3>
+                  <p data-en="Drag a locresCSV onto <code>UEExtractor.exe</code> to convert it back into a <code>.locres</code> file." data-ru="Перетащите locresCSV на <code>UEExtractor.exe</code>, чтобы конвертировать его обратно в файл <code>.locres</code>.">Drag a locresCSV onto <code>UEExtractor.exe</code> to convert it back into a <code>.locres</code> file.</p>
                 </div>
               </div>
             </div>
@@ -311,20 +312,20 @@
             <div class="tab-pane" id="cli" role="tabpanel">
               <div class="cli-commands">
                 <div class="cli-command">
-                  <h4>Extract LocresCSV from game:</h4>
+                  <h4 data-en="Extract LocresCSV from game:" data-ru="Извлечь LocresCSV из игры:">Extract LocresCSV from game:</h4>
                   <code>UEExtractor.exe &lt;dir_path&gt; &lt;output_csv&gt;</code>
                 </div>
                 <div class="cli-command">
-                  <h4>Create .locres from CSV file:</h4>
-                  <code>UEExtractor.exe &lt;csv_path&gt; &lt;output_locres&gt;</code>
+                  <h4 data-en="Create .locres from CSV file:" data-ru="Создать .locres из CSV файла:">Create .locres from CSV file:</h4>
+                  <code>UEExtractor.exe &lt;csv_path&gt; </code>
                 </div>
               </div>
             </div>
 
             <div class="tab-pane" id="csv" role="tabpanel">
               <div class="csv-structure">
-                <h4>LocresCSV Structure</h4>
-                <p>UEExtractor exports a standard CSV structure suitable for importing or converting back to <code>.locres</code>:</p>
+                <h4 data-en="LocresCSV Structure" data-ru="Структура LocresCSV">LocresCSV Structure</h4>
+                <p data-en="UEExtractor exports a standard CSV structure suitable for importing or converting back to <code>.locres</code>:" data-ru="UEExtractor экспортирует стандартную структуру CSV, подходящую для импорта или обратной конвертации в <code>.locres</code>:">UEExtractor exports a standard CSV structure suitable for importing or converting back to <code>.locres</code>:</p>
                 <div class="csv-example">
                   <table>
                     <thead>
@@ -334,17 +335,17 @@
                       <tr>
                         <td class="key">4A6FDB1549E45F6C5D8D739129686E2F</td>
                         <td class="source">Default</td>
-                        <td class="translation">(your translation)</td>
+                        <td class="translation" data-en="(your translation)" data-ru="(ваш перевод)">(your translation)</td>
                       </tr>
                       <tr>
                         <td class="key">9F2E3C4A1B567890D1234567890ABCDE</td>
-                        <td class="source">Start Game</td>
-                        <td class="translation">(your translation)</td>
+                        <td class="source" data-en="Start Game" data-ru="Начать игру">Start Game</td>
+                        <td class="translation" data-en="(your translation)" data-ru="(ваш перевод)">(your translation)</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <p class="csv-note"><strong>Tip:</strong> Importing a Translation column from CSV is possible via UE4localizationsTool.</p>
+                <p class="csv-note" data-en="<strong>Tip:</strong> Importing a Translation column from CSV is possible via UE4localizationsTool." data-ru="<strong>Совет:</strong> Импорт столбца Translation из CSV возможен через UE4localizationsTool."><strong>Tip:</strong> Importing a Translation column from CSV is possible via UE4localizationsTool.</p>
               </div>
             </div>
           </div>
@@ -356,80 +357,93 @@
     <section class="cli-reference" id="cli">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">CLI Reference</h2>
-          <p class="section-subtitle">Searchable argument list</p>
+          <h2 class="section-title" data-en="CLI Reference" data-ru="Справочник CLI">CLI Reference</h2>
+          <p class="section-subtitle" data-en="Searchable argument list" data-ru="Список аргументов с поиском">Searchable argument list</p>
         </div>
         <div class="cli-search">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" id="cliSearch" placeholder="Search arguments..." />
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="cliSearch" placeholder="Search arguments..." data-en-placeholder="Search arguments..." data-ru-placeholder="Поиск аргументов..." />
         </div>
         <div class="cli-grid" id="cliGrid">
           <div class="cli-item" data-keywords="version ue">
-            <div class="cli-args"><code>-v=UE5.1</code><span class="cli-or">or</span><code>--version=Stalker2</code></div>
-            <div class="cli-desc">Specify the Unreal Engine version used in the game. Overrides auto-detection.</div>
+            <div class="cli-args"><code>-v=UE5.1</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--version=Stalker2</code></div>
+            <div class="cli-desc" data-en="Specify the Unreal Engine version used in the game. Overrides auto-detection." data-ru="Укажите версию Unreal Engine, используемую в игре. Переопределяет автоопределение.">Specify the Unreal Engine version used in the game. Overrides auto-detection.</div>
           </div>
           <div class="cli-item" data-keywords="aes encryption key">
-            <div class="cli-args"><code>-a=[key]</code><span class="cli-or">or</span><code>--aes=[key]</code></div>
-            <div class="cli-desc">32-character hex string as AES key. Key must start with 0x.</div>
+            <div class="cli-args"><code>-a=[key]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--aes=[key]</code></div>
+            <div class="cli-desc" data-en="32-character hex string as AES key. Key must start with 0x." data-ru="32-символьная hex-строка как ключ AES. Ключ должен начинаться с 0x.">32-character hex string as AES key. Key must start with 0x.</div>
           </div>
           <div class="cli-item" data-keywords="skip uexp">
             <div class="cli-args"><code>--skip-uexp</code></div>
-            <div class="cli-desc">Skip .uexp files during the extraction process.</div>
+            <div class="cli-desc" data-en="Skip .uexp files during the extraction process." data-ru="Пропустить файлы .uexp во время процесса извлечения.">Skip .uexp files during the extraction process.</div>
           </div>
           <div class="cli-item" data-keywords="skip uasset">
             <div class="cli-args"><code>--skip-uasset</code></div>
-            <div class="cli-desc">Skip .uasset files during the extraction process.</div>
+            <div class="cli-desc" data-en="Skip .uasset files during the extraction process." data-ru="Пропустить файлы .uasset во время процесса извлечения.">Skip .uasset files during the extraction process.</div>
           </div>
           <div class="cli-item" data-keywords="locres output">
             <div class="cli-args"><code>--locres</code></div>
-            <div class="cli-desc">Write .locres file after parsing the directory.</div>
+            <div class="cli-desc" data-en="Write .locres file after parsing the directory." data-ru="Записать файл .locres после парсинга директории.">Write .locres file after parsing the directory.</div>
           </div>
           <div class="cli-item" data-keywords="underscore">
             <div class="cli-args"><code>--underscore</code></div>
-            <div class="cli-desc">Do not skip lines with underscores (e.g., ex_string).</div>
+            <div class="cli-desc" data-en="Do not skip lines with underscores (e.g., ex_string)." data-ru="Не пропускать строки с подчеркиваниями (например, ex_string).">Do not skip lines with underscores (e.g., ex_string).</div>
           </div>
           <div class="cli-item" data-keywords="upper">
             <div class="cli-args"><code>--upper-upper</code></div>
-            <div class="cli-desc">Skip lines that are UPPERCASE (e.g., EXAMPLE).</div>
+            <div class="cli-desc" data-en="Skip lines that are UPPERCASE (e.g., EXAMPLE)." data-ru="Пропускать строки, написанные ЗАГЛАВНЫМИ буквами (например, EXAMPLE).">Skip lines that are UPPERCASE (e.g., EXAMPLE).</div>
           </div>
           <div class="cli-item" data-keywords="table format separator">
             <div class="cli-args"><code>--table-format</code></div>
-            <div class="cli-desc">Replace standard separator comma (,) with pipe symbol (|) in CSV.</div>
+            <div class="cli-desc" data-en="Replace standard separator comma (,) with pipe symbol (|) in CSV." data-ru="Заменить стандартный разделитель запятую (,) на символ вертикальной черты (|) в CSV.">Replace standard separator comma (,) with pipe symbol (|) in CSV.</div>
           </div>
           <div class="cli-item" data-keywords="headmark header footer">
             <div class="cli-args"><code>--headmark</code></div>
-            <div class="cli-desc">Include header and footer rows in the CSV output.</div>
+            <div class="cli-desc" data-en="Include header and footer rows in the CSV output." data-ru="Включить строки заголовка и подвала в выходной CSV.">Include header and footer rows in the CSV output.</div>
           </div>
           <div class="cli-item" data-keywords="autoexit">
             <div class="cli-args"><code>--autoexit</code></div>
-            <div class="cli-desc">Automatically exit after all processes complete.</div>
+            <div class="cli-desc" data-en="Automatically exit after all processes complete." data-ru="Автоматически выйти после завершения всех процессов.">Automatically exit after all processes complete.</div>
           </div>
           <div class="cli-item" data-keywords="invalid">
             <div class="cli-args"><code>--invalid</code></div>
-            <div class="cli-desc">Include invalid data in the output CSV.</div>
+            <div class="cli-desc" data-en="Include invalid data in the output CSV." data-ru="Включить недействительные данные в выходной CSV.">Include invalid data in the output CSV.</div>
           </div>
           <div class="cli-item" data-keywords="qmarks quotes">
             <div class="cli-args"><code>--qmarks</code></div>
-            <div class="cli-desc">Forcibly add quotation marks between text strings in CSV.</div>
+            <div class="cli-desc" data-en="Forcibly add quotation marks between text strings in CSV." data-ru="Принудительно добавлять кавычки между текстовыми строками в CSV.">Forcibly add quotation marks between text strings in CSV.</div>
           </div>
           <div class="cli-item" data-keywords="hash">
             <div class="cli-args"><code>--hash</code></div>
-            <div class="cli-desc">Include hash of string for locres (format: [key][hash],[string]).</div>
+            <div class="cli-desc" data-en="Include hash of string for locres (format: [key][hash],[string])." data-ru="Включить хэш строки для locres (формат: [key][hash],[string]).">Include hash of string for locres (format: [key][hash],[string]).</div>
           </div>
           <div class="cli-item" data-keywords="picky verbose">
             <div class="cli-args"><code>--picky</code></div>
-            <div class="cli-desc">Picky mode: displays more detailed information.</div>
+            <div class="cli-desc" data-en="Picky mode: displays more detailed information." data-ru="Придирчивый режим: отображает более подробную информацию.">Picky mode: displays more detailed information.</div>
           </div>
           <div class="cli-item" data-keywords="url path">
             <div class="cli-args"><code>--url</code></div>
-            <div class="cli-desc">Include path to source file (format: [url][key],[string]).</div>
+            <div class="cli-desc" data-en="Include path to source file (format: [url][key],[string])." data-ru="Включить путь к исходному файлу (формат: [url][key],[string]).">Include path to source file (format: [url][key],[string]).</div>
+          </div>
+          <div class="cli-item" data-keywords="api">
+            <div class="cli-args"><code>--api</code></div>
+            <div class="cli-desc" data-en="Set API key for OpenRouter (e.g., --api=api.txt or --api=sk-or-v1...).<br>Translation always occurs before writing .locres." data-ru="Устанавливает ключ API для OpenRouter (например, --api=api.txt или--api=sk-or-v1...). Перевод всегда происходит до записи .locres файла."></div>
+          </div>
+          <div class="cli-item" data-keywords="api model">
+            <div class="cli-args"><code>--api:model</code></div>
+            <div class="cli-desc" data-en="Set model for OpenRouter. (e.g., --api=chimera:free)" data-ru="Устанавливает модель для OpenRouter. (--api=chimera:free)"></div>
+          </div>
+          <div class="cli-item" data-keywords="api translator">
+            <div class="cli-args"><code>--lang:from</code></div>
+            <div class="cli-desc" data-en="Set the source language for translation (e.g., --lang:from=en)." data-ru="Указывает исходный язык для перевода (например, --lang:from=en)."></div>
+          </div>
+          <div class="cli-item" data-keywords="api translator">
+            <div class="cli-args"><code>--lang:to</code></div>
+            <div class="cli-desc" data-en="Set the target language for translation (e.g., --lang:to=ru)." data-ru="Указывает целевой язык для перевода (например, --lang:to=ru)."></div>
           </div>
           <div class="cli-item" data-keywords="help">
             <div class="cli-args"><code>--help</code></div>
-            <div class="cli-desc">Show help information with all available arguments.</div>
+            <div class="cli-desc" data-en="Show help information with all available arguments." data-ru="Показать справочную информацию со всеми доступными аргументами.">Show help information with all available arguments.</div>
           </div>
         </div>
       </div>
@@ -439,39 +453,39 @@
     <section class="preparation" id="preparation">
       <div class="container">
         <div class="section-header">
-          <h2 class="section-title">Preparation Guide</h2>
-          <p class="section-subtitle">AES key and USMAP setup by archive type</p>
+          <h2 class="section-title" data-en="Preparation Guide" data-ru="Руководство по подготовке">Preparation Guide</h2>
+          <p class="section-subtitle" data-en="AES key and USMAP setup by archive type" data-ru="Настройка ключа AES и USMAP по типу архива">AES key and USMAP setup by archive type</p>
         </div>
 
         <div class="prep-tabs">
           <div class="prep-tab-buttons" role="tablist" aria-label="Preparation tabs">
-            <button class="prep-tab-btn active" data-prep="pre-zen" role="tab" aria-selected="true">UE4 Pre-ZenLoader</button>
-            <button class="prep-tab-btn" data-prep="zen" role="tab" aria-selected="false">UE4-5 ZenLoader</button>
+            <button class="prep-tab-btn active" data-prep="pre-zen" role="tab" aria-selected="true" data-en="UE4 Pre-ZenLoader" data-ru="UE4 до ZenLoader">UE4 Pre-ZenLoader</button>
+            <button class="prep-tab-btn" data-prep="zen" role="tab" aria-selected="false" data-en="UE4-5 ZenLoader" data-ru="UE4-5 ZenLoader">UE4-5 ZenLoader</button>
           </div>
           <div class="prep-tab-content">
             <div class="prep-pane active" id="pre-zen" role="tabpanel">
               <div class="prep-step">
-                <div class="prep-step-header"><span class="step-marker">1</span><h3>AES Key (if needed)</h3></div>
+                <div class="prep-step-header"><span class="step-marker">1</span><h3 data-en="AES Key (if needed)" data-ru="Ключ AES (если требуется)">AES Key (if needed)</h3></div>
                 <div class="prep-step-body">
-                  <p>Some games require AES decryption, some do not. If needed, obtain a 32-character hex key.</p>
-                  <div class="prep-tip"><strong>Tip:</strong> Try extracting without a key first.</div>
+                  <p data-en="Some games require AES decryption, some do not. If needed, obtain a 32-character hex key." data-ru="Некоторые игры требуют расшифровки AES, некоторые нет. Если требуется, получите 32-символьный hex-ключ.">Some games require AES decryption, some do not. If needed, obtain a 32-character hex key.</p>
+                  <div class="prep-tip" data-en="<strong>Tip:</strong> Try extracting without a key first." data-ru="<strong>Совет:</strong> Сначала попробуйте извлечь без ключа."><strong>Tip:</strong> Try extracting without a key first.</div>
                 </div>
               </div>
               <div class="prep-step">
-                <div class="prep-step-header"><span class="step-marker">2</span><h3>UE Version (Optional)</h3></div>
+                <div class="prep-step-header"><span class="step-marker">2</span><h3 data-en="UE Version (Optional)" data-ru="Версия UE (необязательно)">UE Version (Optional)</h3></div>
                 <div class="prep-step-body">
-                  <p>You can specify an engine version (e.g. <code>-v=UE5_1</code>). Auto-detection works, but the argument takes priority.</p>
+                  <p data-en="You can specify an engine version (e.g. <code>-v=UE5_1</code>). Auto-detection works, but the argument takes priority." data-ru="Вы можете указать версию движка (например, <code>-v=UE5_1</code>). Автоопределение работает, но аргумент имеет приоритет.">You can specify an engine version (e.g. <code>-v=UE5_1</code>). Auto-detection works, but the argument takes priority.</p>
                   <div class="prep-code"><code>UEExtractor.exe "MyGame" -v=UE5_1</code></div>
-                  <div class="prep-note"><strong>Note:</strong> UE version values come from CUE4Parse. You can find the right one via FModel.</div>
+                  <div class="prep-note" data-en="<strong>Note:</strong> UE version values come from CUE4Parse. You can find the right one via FModel." data-ru="<strong>Примечание:</strong> Значения версий UE берутся из CUE4Parse. Вы можете найти нужную через FModel."><strong>Note:</strong> UE version values come from CUE4Parse. You can find the right one via FModel.</div>
                 </div>
               </div>
               <div class="prep-step">
-                <div class="prep-step-header"><span class="step-marker">3</span><h3>Provide AES Key</h3></div>
+                <div class="prep-step-header"><span class="step-marker">3</span><h3 data-en="Provide AES Key" data-ru="Укажите ключ AES">Provide AES Key</h3></div>
                 <div class="prep-step-body">
                   <div class="prep-methods">
                     <div class="prep-method">
-                      <h4>Method 1: aes.txt</h4>
-                      <p>Place <code>aes.txt</code> in the game directory. One line: 32-char hex string.</p>
+                      <h4 data-en="Method 1: aes.txt" data-ru="Метод 1: aes.txt">Method 1: aes.txt</h4>
+                      <p data-en="Place <code>aes.txt</code> in the game directory. One line: 32-char hex string." data-ru="Поместите <code>aes.txt</code> в директорию игры. Одна строка: 32-символьная hex-строка.">Place <code>aes.txt</code> in the game directory. One line: 32-char hex string.</p>
                       <div class="prep-file-tree">
                         <div class="tree-item"><span class="folder">📁</span> MyGame/</div>
                         <div class="tree-item tree-indent"><span class="file">📄</span> aes.txt</div>
@@ -479,8 +493,8 @@
                       </div>
                     </div>
                     <div class="prep-method">
-                      <h4>Method 2: CLI</h4>
-                      <p>Provide key via command line:</p>
+                      <h4 data-en="Method 2: CLI" data-ru="Метод 2: CLI">Method 2: CLI</h4>
+                      <p data-en="Provide key via command line:" data-ru="Укажите ключ через командную строку:">Provide key via command line:</p>
                       <div class="prep-code"><code>UEExtractor.exe "MyGame" --aes=0x012345...</code></div>
                     </div>
                   </div>
@@ -490,35 +504,28 @@
 
             <div class="prep-pane" id="zen" role="tabpanel">
               <div class="prep-warning">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
-                </svg>
-                <span>First complete Pre-ZenLoader steps, then continue below</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span data-en="First complete Pre-ZenLoader steps, then continue below" data-ru="Сначала выполните шаги до ZenLoader, затем продолжайте ниже">First complete Pre-ZenLoader steps, then continue below</span>
               </div>
 
               <div class="prep-step zen-step">
-                <div class="prep-step-header"><span class="step-marker zen">4</span><h3>USMAP File Required</h3></div>
+                <div class="prep-step-header"><span class="step-marker zen">4</span><h3 data-en="USMAP File Required" data-ru="Требуется файл USMAP">USMAP File Required</h3></div>
                 <div class="prep-step-body">
-                  <p>ZenLoader games require a <code>.usmap</code> to access resources and archives.</p>
-                  <div class="prep-tip"><strong>Tip:</strong> Check NexusMods and modding forums for USMAP availability.</div>
+                  <p data-en="ZenLoader games require a <code>.usmap</code> to access resources and archives." data-ru="Игры с ZenLoader требуют <code>.usmap</code> для доступа к ресурсам и архивам.">ZenLoader games require a <code>.usmap</code> to access resources and archives.</p>
+                  <div class="prep-tip" data-en="<strong>Tip:</strong> Check NexusMods and modding forums for USMAP availability." data-ru="<strong>Совет:</strong> Проверьте наличие USMAP на NexusMods и форумах моддинга."><strong>Tip:</strong> Check NexusMods and modding forums for USMAP availability.</div>
                   <div class="prep-file-tree">
                     <div class="tree-item"><span class="folder">📁</span> MyGame/</div>
                     <div class="tree-item tree-indent"><span class="file">📄</span> game.usmap</div>
                     <div class="tree-item tree-indent"><span class="file">📄</span> aes.txt (optional)</div>
                     <div class="tree-item tree-indent"><span class="file">📁</span> Content/</div>
                   </div>
-                  <div class="prep-note"><strong>Note:</strong> Place the .usmap in the main directory or a subdir—UEExtractor finds it automatically.</div>
+                  <div class="prep-note" data-en="<strong>Note:</strong> Place the .usmap in the main directory or a subdir—UEExtractor finds it automatically." data-ru="<strong>Примечание:</strong> Поместите .usmap в главную директорию или подпапку — UEExtractor найдет его автоматически."><strong>Note:</strong> Place the .usmap in the main directory or a subdir—UEExtractor finds it automatically.</div>
                 </div>
               </div>
 
               <div class="prep-success">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                  <polyline points="22 4 12 14.01 9 11.01"/>
-                </svg>
-                <span>Preparation complete — you can now extract localization data.</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span data-en="Preparation complete — you can now extract localization data." data-ru="Подготовка завершена — теперь вы можете извлекать данные локализации.">Preparation complete — you can now extract localization data.</span>
               </div>
             </div>
           </div>
@@ -531,21 +538,15 @@
       <div class="container">
         <div class="merging-content">
           <div class="merging-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M16 3h5v5"/>
-              <path d="M8 3H3v5"/>
-              <path d="M21 16v5h-5"/>
-              <path d="M3 16v5h5"/>
-              <path d="M12 7v10"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M21 16v5h-5"/><path d="M3 16v5h5"/><path d="M12 7v10"/></svg>
           </div>
           <div class="merging-text">
-            <h2>Smart CSV Merging</h2>
-            <p>When you re-run extraction in the same folder, UEExtractor merges with the previous CSV to keep translations safe while adding new lines.</p>
+            <h2 data-en="Smart CSV Merging" data-ru="Умное слияние CSV">Smart CSV Merging</h2>
+            <p data-en="When you re-run extraction in the same folder, UEExtractor merges with the previous CSV to keep translations safe while adding new lines." data-ru="При повторном запуске извлечения в той же папке UEExtractor объединяет данные с предыдущим CSV, сохраняя переводы и добавляя новые строки.">When you re-run extraction in the same folder, UEExtractor merges with the previous CSV to keep translations safe while adding new lines.</p>
             <div class="merge-logic">
-              <div class="merge-rule"><span class="rule-condition">Source changed</span><span class="rule-arrow">→</span><span class="rule-result">Old source becomes Translation</span></div>
-              <div class="merge-rule"><span class="rule-condition">Source matches</span><span class="rule-arrow">→</span><span class="rule-result">Translation preserved</span></div>
-              <div class="merge-rule"><span class="rule-condition">New keys</span><span class="rule-arrow">→</span><span class="rule-result">Added automatically</span></div>
+              <div class="merge-rule"><span class="rule-condition" data-en="Source changed" data-ru="Source изменен">Source changed</span><span class="rule-arrow">→</span><span class="rule-result" data-en="Old source becomes Translation" data-ru="Старый source становится Translation">Old source becomes Translation</span></div>
+              <div class="merge-rule"><span class="rule-condition" data-en="Source matches" data-ru="Source совпадает">Source matches</span><span class="rule-arrow">→</span><span class="rule-result" data-en="Translation preserved" data-ru="Translation сохраняется">Translation preserved</span></div>
+              <div class="merge-rule"><span class="rule-condition" data-en="New keys" data-ru="Новые ключи">New keys</span><span class="rule-arrow">→</span><span class="rule-result" data-en="Added automatically" data-ru="Добавляются автоматически">Added automatically</span></div>
             </div>
           </div>
         </div>
@@ -556,23 +557,19 @@
     <section class="download" id="download">
       <div class="container">
         <div class="download-content">
-          <h2>Ready to Extract?</h2>
-          <p>Download UEExtractor and start extracting localization text from Unreal Engine games.</p>
+          <h2 data-en="Ready to Magic?" data-ru="Готовы к магии?">Ready to Extract?</h2>
+          <p data-en="Download UEExtractor and start extracting localization text from Unreal Engine games." data-ru="Скачайте UEExtractor и начните извлекать текст локализации из игр на Unreal Engine.">Download UEExtractor and start extracting localization text from Unreal Engine games.</p>
           <div class="download-actions">
             <a href="https://github.com/SolicenTEAM/UEExtractor/releases" target="_blank" rel="noreferrer" class="btn btn-primary btn-lg">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Download Latest Release
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span data-en="Download Latest Release" data-ru="Загрузить последний релиз">Download Latest Release</span>
             </a>
-            <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-outline btn-lg">View on GitHub</a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer" class="btn btn-outline btn-lg" data-en="View on GitHub" data-ru="Смотреть на GitHub">View on GitHub</a>
           </div>
           <div class="download-requirements">
             <span class="req-item">.NET 8.0 Runtime</span><span class="req-dot">•</span>
             <span class="req-item">Windows 10/11</span><span class="req-dot">•</span>
-            <span class="req-item">Open Source</span>
+            <span class="req-item" data-en="Open Source" data-ru="Открытый исходный код">Open Source</span>
           </div>
         </div>
       </div>
@@ -586,19 +583,19 @@
         <div class="footer-brand">
           <a href="#" class="logo">
             <span>UEExtractor</span>
-            <h6 style="opacity: 25%;">by Denis Solicen</h6>
+            <h6 style="opacity: 25%; margin: 0; font-size: 0.8rem; font-weight: 400;" data-en="by Denis Solicen" data-ru="от Denis Solicen">by Denis Solicen</h6>
           </a>
-          <p>Made with ❤️ for all translators and translation developers.</p>
+          <p data-en="Made with ❤️ for all translators and translation developers." data-ru="Создано с ❤️ для всех переводчиков и разработчиков переводов.">Made with ❤️ for all translators and translation developers.</p>
         </div>
         <div class="footer-links">
           <div class="footer-column">
-            <h4>Resources</h4>
+            <h4 data-en="Resources" data-ru="Ресурсы">Resources</h4>
             <a href="https://github.com/SolicenTEAM/UEExtractor" target="_blank" rel="noreferrer">GitHub</a>
-            <a href="https://github.com/SolicenTEAM/UEExtractor/releases" target="_blank" rel="noreferrer">Releases</a>
-            <a href="https://github.com/SolicenTEAM/UEExtractor/issues" target="_blank" rel="noreferrer">Issues</a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor/releases" target="_blank" rel="noreferrer" data-en="Releases" data-ru="Релизы">Releases</a>
+            <a href="https://github.com/SolicenTEAM/UEExtractor/issues" target="_blank" rel="noreferrer" data-en="Issues" data-ru="Вопросы">Issues</a>
           </div>
           <div class="footer-column">
-            <h4>Related</h4>
+            <h4 data-en="Related" data-ru="Связанное">Related</h4>
             <a href="https://github.com/FabianFG/CUE4Parse" target="_blank" rel="noreferrer">CUE4Parse</a>
             <a href="https://fmodel.app/" target="_blank" rel="noreferrer">FModel</a>
             <a href="https://github.com/JunkBeat/UE4LocalizationsTool/releases/tag/v1" target="_blank" rel="noreferrer">UE4localizationsTool</a>
@@ -606,7 +603,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>&copy; <span id="year"></span> UEExtractor. Open source.</p>
+        <p>&copy; <span id="year"></span> UEExtractor. <span data-en="Open source." data-ru="Открытый исходный код.">Open source.</span></p>
       </div>
     </div>
   </footer>
