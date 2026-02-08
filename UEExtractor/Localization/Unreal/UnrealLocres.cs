@@ -1,27 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using Solicen.Translator;
+using System.Collections.Concurrent;
 using System.Text;
 
 namespace Solicen.Localization.UE4
 {
-    public class LocresResult
-    {
-        public string Url  { get; set; } = string.Empty;
-        public string Hash { get; set; } = string.Empty;
-
-        public string Namespace   { get; set; } = string.Empty;
-        public string Key         { get; set; } 
-        public string Source      { get; set; }
-        public string Translation { get; set; } = string.Empty;
-
-        public LocresResult(string Key, string Source, string Translation = null, string Namespace = "")
-        {
-            this.Key = Key;
-            this.Source = Source;
-            this.Translation = Translation;
-            this.Namespace = Namespace;
-        }
-
-    }
     public class UnrealLocres
     {
         public string errorParseText = "UE4 error while parse folder to create CSV Locres file.";
@@ -114,7 +96,6 @@ namespace Solicen.Localization.UE4
 
                 switch (eType)
                 {
-
                     case ExportType.Table:
                         {
                             var newResult = new LocresResult[0];
@@ -200,24 +181,6 @@ namespace Solicen.Localization.UE4
                 || value.IsAllOne()
                 || value.IsStringDigit());
         }
-
-        /*
-        public static void LocresMerge(string locresFile1, string locresFile2)
-        {
-            var result = new List<LocresResult>();
-            var _tempL1 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile1));
-            Console.WriteLine($"Total lines in locres1: {_tempL1.Count}");
-            var _tempL2 = ZenParser.ParseLocres(File.ReadAllBytes(locresFile2));
-            Console.WriteLine($"Total lines in locres2: {_tempL1.Count}");
-
-            result.AddRange(_tempL1);
-            result.AddRange(_tempL2.Where(x => result.Any(key => key.Key != x.Key))); // Добавляем только без дубликатов
-
-            var filePath = $"{AppDomain.CurrentDomain}\\{Path.GetFileNameWithoutExtension(locresFile1)}_NEW.locres";
-            Console.WriteLine($"New locres has been merged to: {filePath}");
-            WriteToLocres(result.ToArray(), filePath);
-        }
-        */
 
         // Ищем "BlueprintGeneratedClass" //
         public static bool IsBlueprintGeneratedClass(Span<byte> buffer)
@@ -368,17 +331,6 @@ namespace Solicen.Localization.UE4
             return result.ToArray();
         }
 
-        public static void WriteToLocres(LocresResult[] results, string outputLocres)
-        {
-            LocresWriter locres = new LocresWriter(outputLocres, "");
-            locres.Write(results);
-        }
-        public static void WriteToLocres(ConcurrentDictionary<string, LocresResult> results, string outputLocres)
-        {
-            var result = results.Select(x => x.Value).ToArray();
-            WriteToLocres(result, outputLocres);
-        }
-
         public static void WriteToCsv(ConcurrentDictionary<string, LocresResult> results, string outputCsv)
         {
             using (var writer = new StreamWriter(outputCsv, false, Encoding.UTF8))
@@ -475,51 +427,14 @@ namespace Solicen.Localization.UE4
             }
         }
 
-        public class LocresFileWriter
+        public static void ProcessTranslator(ref LocresResult[] locres)
         {
-            private const ushort LocresVersion = 1;
-
-            public void WriteLocresFile(string outputPath, List<LocresResult> locresResults)
+            var manager = new UberTranslator();
+            var allValues = locres.Where(x => string.IsNullOrWhiteSpace(x.Translation)).ToDictionary(x => x.Source, x => x.Translation);
+            if (allValues.Count() > 0)
             {
-                using (var writer = new BinaryWriter(File.Open(outputPath, FileMode.Create), Encoding.UTF8))
-                {
-                    // Write the header
-                    writer.Write(LocresVersion); // Version
-                    writer.Write((ushort)0); // Placeholder for data count, we'll come back to it later
-                    long countPosition = writer.BaseStream.Position - sizeof(ushort);
-
-                    // Write the string data
-                    var stringTable = new Dictionary<string, int>();
-                    foreach (var result in locresResults)
-                    {
-                        WriteString(writer, result.Key, stringTable);
-                        WriteString(writer, result.Source, stringTable);
-                        WriteString(writer, result.Translation, stringTable);
-                    }
-
-                    // Go back and write the correct data count
-                    long endPosition = writer.BaseStream.Position;
-                    writer.BaseStream.Seek(countPosition, SeekOrigin.Begin);
-                    writer.Write((ushort)locresResults.Count);
-                    writer.BaseStream.Seek(endPosition, SeekOrigin.Begin);
-                }
-            }
-
-            private void WriteString(BinaryWriter writer, string value, Dictionary<string, int> stringTable)
-            {
-                if (stringTable.TryGetValue(value, out int index))
-                {
-                    writer.Write((byte)1); // String is already in the table
-                    writer.Write(index);
-                }
-                else
-                {
-                    writer.Write((byte)0); // New string
-                    byte[] bytes = Encoding.UTF8.GetBytes(value);
-                    writer.Write(bytes.Length);
-                    writer.Write(bytes);
-                    stringTable[value] = stringTable.Count;
-                }
+                manager.TranslateLines(ref allValues);
+                locres.ReplaceAll(allValues);
             }
         }
 

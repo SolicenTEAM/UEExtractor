@@ -98,14 +98,22 @@ public class UnrealArchiveReader : IDisposable
     private EGame LoadEngineVersion(string dir)
     {
         var engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Engine\\Binaries\\Win64\\")); //CrashReportClient.exe
+        var mainExecutable = Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly).FirstOrDefault(x => x.Contains(".exe"));
+
         if (UE_VER != string.Empty && EngineSpecified)
         {
-            var version = $"GAME_{UE_VER}";
+            var version = $"GAME_UE{UE_VER}";
             return ParseVersion(version);
         }
-        else if (engineFile != null)
+        else if (engineFile != null || mainExecutable != null)
         {
-            var versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
+            bool isEngineFile = mainExecutable != null ? false : true;
+            var file = isEngineFile ? engineFile : mainExecutable;
+
+            if (FileVersionInfo.GetVersionInfo(file).FileMajorPart < 4)
+                file = engineFile;
+
+            var versionInfo = FileVersionInfo.GetVersionInfo(file);
             var version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
 
             if (version == "GAME_UE0_0")
@@ -331,7 +339,6 @@ public class UnrealArchiveReader : IDisposable
             Console.WriteLine($"Error parsing JSON for asset {assetPath}: {ex.Message}");
         }
         json = string.Empty;
-
         processor(results);
     }
 
