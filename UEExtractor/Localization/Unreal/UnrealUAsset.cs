@@ -99,10 +99,25 @@ namespace Solicen.Localization.UE4
                 foreach (var result in chunkResult.Results)
                 {
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Url = path;
-                   
                     results.Add(result);
                 }
             }
+        }
+
+        private static int GetReversedIndex(byte[] data)
+        {
+            int index = 0;
+            if (BinaryParser.FindSequence(data, [0x29, 0x01, 0x1F]) != -1)
+            {
+                while (index < data.Length-1)
+                {
+                    index++;
+                    if (data[index] == 0x01 
+                        && data[index+1] == 0x1F) { index += 2; break; }
+                }
+            }
+            if (data[index] == 0x1F) return index + 1;
+            return index;
         }
 
         private static byte[] GetBytes(byte[] source, int index, int count)
@@ -139,13 +154,20 @@ namespace Solicen.Localization.UE4
         {
             var b = GetBytes(source, index, count);
             if (b.Length == 0) return string.Empty;
-            if (b[0] == 0x1F)
-                return Encoding.UTF8.GetString(b).Remove(0,1);
+            if (GetEncoding(b) == Encoding.UTF8)
+                return Encoding.UTF8.GetString(b);
             else
             {
-                var str = Encoding.Latin1.GetString(b).Remove(0,1);
+                var str = Encoding.Latin1.GetString(b).Remove(0, 1);
                 return Latin1DecodeFix(str);
             }
+        }
+
+        private static Encoding GetEncoding(byte[] data)
+        {
+            if (Encoding.UTF8.GetString(data).Contains("\0"))
+                return Encoding.Latin1;
+            else return Encoding.UTF8;
         }
 
         private static ChunkResult ExtractFromChunk(byte[] chunk)
@@ -164,7 +186,8 @@ namespace Solicen.Localization.UE4
 
                 if (SeparatorIndex != -1)
                 {
-                    string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
+                    var reversedIndex = GetReversedIndex(GetBytes(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
+                    string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex + reversedIndex, SeparatorIndex - stringStartIndex - reversedIndex));
                     int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
                     int hashEndIndex = hashStartIndex + HashLength;
 

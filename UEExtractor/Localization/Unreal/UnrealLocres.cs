@@ -37,9 +37,8 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
-        public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass }
-        public static string[] ExcludePath = { "mesh", "texture", "material", "decal", "model", "_tex/", "/sound/", "/effects/", 
-                                               "animation", "/fx/", "/vfx/", "/meshes/", "/megascans/", "/music/", "blueprints" };
+        public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass, Texture }
+        public static string[] ExcludePath = { "/sound/", "/effects/", "/fx/", "/vfx/", "/meshes/", "/mesh/", "/textures/", "/megascans/", "/music/" };
         public static bool EngineSpecified = false;
         public static bool ExtractLocres = false;
         public static bool AllFolders = false;
@@ -110,18 +109,25 @@ namespace Solicen.Localization.UE4
                             // DataTable
                             if (newResult.Length == 0)
                             {
-                                reader.LoadDataTable(GetUasset(path), (Table) =>
+                                reader.GetLocalizedStrings(GetUasset(path), (Table) =>
                                 {
-                                    newResult = TableToLocres(Table);
+                                    newResult = LocalizedToLocres(Table);
                                     fileResults.AddRange(newResult);
                                 });
                             }
                         }
                         break;
+                    case ExportType.Texture: break;
                     case ExportType.BlueprintClass:
                         {
-                            // Потенциально содержит KismetString | EX_StringConst
-                            // Обработка возможна только через KissE (Kismet Editor)
+                            // Содержит BlueprintGeneratedClass (Kismet String)
+                            // Может содержать TextProperty (для locres)
+                            var newResult = new LocresResult[0];
+                            reader.GetLocalizedStrings(GetUasset(path), (Table) =>
+                            {
+                                newResult = LocalizedToLocres(Table);
+                                fileResults.AddRange(newResult);
+                            });
                             break;
                         }
                     default:
@@ -129,8 +135,12 @@ namespace Solicen.Localization.UE4
                             using (stream)
                             {
                                 fileResults = UnrealUepx.ExtractDataFromStream(stream);
-                                var newResult = UnrealUasset.ExtractDataFromStream(stream, path)
-                                    .Where(x => fileResults.Any(q => q.Key != x.Key)).ToList();
+                                var newResult = UnrealUasset.ExtractDataFromStream(stream, path);
+                                if (fileResults.Count > 0)
+                                {
+                                    newResult = newResult.Where
+                                    (x => fileResults.Any(q => q.Key != x.Key)).ToList();
+                                }
                                 fileResults.AddRange(newResult);
                             }
                             break;
@@ -185,10 +195,8 @@ namespace Solicen.Localization.UE4
         // Ищем "BlueprintGeneratedClass" //
         public static bool IsBlueprintGeneratedClass(Span<byte> buffer)
         {
-            if (BinaryParser.FindSequence(buffer, new ReadOnlySpan<byte>(
-            new byte[] { 
-                0x42, 0x6C, 0x75, 0x65, 0x70, 0x72, 0x69, 0x6E, 0x74, 0x47, 0x65, 0x6E, 
-                0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x43, 0x6C, 0x61, 0x73, 0x73 }).ToArray()) != -1)
+            if (BinaryParser.FindSequence(buffer, 
+                UnrealFormat.Blueprint.BlueprintGeneratedClass) != -1)
             {
                 return true;
             }
@@ -295,14 +303,14 @@ namespace Solicen.Localization.UE4
                 stream.Read(buffer);
 
                 if (IsTexture(buffer))
-                    return ExportType.BlueprintClass;
+                    return ExportType.Texture;
 
-                if (IsBlueprintGeneratedClass(buffer))
+                if (IsBlueprintGeneratedClass(buffer) || IsTextProperty(buffer))
                     return ExportType.BlueprintClass;
 
                 if (IsTable(buffer))
                     return ExportType.Table;
-        
+
                 return ExportType.None;
             }
             finally
@@ -311,7 +319,17 @@ namespace Solicen.Localization.UE4
             }
         }
 
-        public static LocresResult[] TableToLocres(List<(string Namespace, string Key, string SourceString)> results)
+        public static byte[] StreamToByte(Stream stream)
+        {
+            long originalPosition = stream.Position; 
+            Span<byte> buffer = stackalloc byte[(int)stream.Length];
+            stream.Read(buffer);
+            stream.Position = originalPosition; 
+            return buffer.ToArray();
+
+        }
+ 
+        public static LocresResult[] LocalizedToLocres(List<(string Namespace, string Key, string SourceString)> results)
         {
             List<LocresResult> result = new List<LocresResult>();
             foreach (var res in results)

@@ -135,8 +135,7 @@ namespace Solicen.Localization.UE4
 
                     if (endPos > bytesRead || size <= 0)
                     {
-                        i++;
-                        continue;
+                        i++; continue;
                     }
 
                     if (endPos > buffer.Length)
@@ -146,8 +145,6 @@ namespace Solicen.Localization.UE4
                         break;
                     }
 
-                    byte[] stringData = new byte[size - 1];
-                    Array.Copy(buffer, i + 37, stringData, 0, size - 1);
                     string hashDecoded = Encoding.UTF8.GetString(hashCandidate).Trim();
                     if (!IsValidHash(hashDecoded))
                     {
@@ -158,6 +155,9 @@ namespace Solicen.Localization.UE4
                         i = endPos;
                         continue;
                     }
+
+                    byte[] stringData = new byte[size - 1];
+                    Array.Copy(buffer, i + 37, stringData, 0, size - 1);
 
                     string? decodedString = string.Empty;
                     bool decodedSuccessfully = false;

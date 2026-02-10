@@ -263,7 +263,7 @@ public class UnrealArchiveReader : IDisposable
             .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
             .ToList();
 
-        //assets = assets.Where(x => x.Contains("/DT_DialogBoxes.uasset") == true).ToList();
+        //assets = assets.Where(x => x.Contains("Widget_InputSelector") == true).ToList();
 
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
@@ -322,7 +322,7 @@ public class UnrealArchiveReader : IDisposable
     }
 
 
-    public void LoadDataTable(string assetPath, Action<List<(string Namespace, string Key, string SourceString)>> processor)
+    public void GetLocalizedStrings(string assetPath, Action<List<(string Namespace, string Key, string SourceString)>> processor)
     {
         var results = new List<(string Namespace, string Key, string SourceString)>();
         var asset = _provider.LoadPackage(assetPath);
@@ -346,9 +346,7 @@ public class UnrealArchiveReader : IDisposable
     {
         if (token is JObject obj)
         {
-            //Console.WriteLine(obj.ToString());
-
-            // Проверяем, похож ли объект на структуру FText
+            // Проверяем, похож ли объект на структуру FText (TextProperty)
             // {"Namespace": "", "Key": "...", "SourceString": "..."}
             if (obj.TryGetValue("SourceString", out var sourceStringToken) &&
                 obj.TryGetValue("Key", out var keyToken) &&
