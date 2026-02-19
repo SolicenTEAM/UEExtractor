@@ -116,7 +116,10 @@ namespace Solicen.Localization.UE4
                         && data[index+1] == 0x1F) { index += 2; break; }
                 }
             }
-            if (data[index] == 0x1F) return index + 1;
+            if (data.Length > index)
+                if (data[index] == 0x1F 
+                    && data.Length > index+2) return index + 1;
+            
             return index;
         }
 
@@ -186,26 +189,29 @@ namespace Solicen.Localization.UE4
 
                 if (SeparatorIndex != -1)
                 {
-                    var reversedIndex = GetReversedIndex(GetBytes(chunk, stringStartIndex, SeparatorIndex - stringStartIndex));
-                    string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex + reversedIndex, SeparatorIndex - stringStartIndex - reversedIndex));
-                    int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
-                    int hashEndIndex = hashStartIndex + HashLength;
-
-                    try
+                    Span<byte> b = GetBytes(chunk, stringStartIndex, SeparatorIndex - stringStartIndex);
+                    if (b.Length > 0)
                     {
-                        string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
-                        if (IsValidHash(decodedHash) && decodedString.Length != 1)
-                        {
-                            var res = new LocresResult(decodedHash, decodedString);
-                            if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
-                            results.Add(res);
-                            i = hashEndIndex + SeparatorSequence.Length;
-                            continue;
-                        }
-                    }
-                    catch (ArgumentOutOfRangeException ex) { i = startIndex + 1;  continue; }
-                }
+                        var reversedIndex = GetReversedIndex(b.ToArray());
+                        string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex + reversedIndex, SeparatorIndex - stringStartIndex - reversedIndex));
+                        int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
+                        int hashEndIndex = hashStartIndex + HashLength;
 
+                        try
+                        {
+                            string decodedHash = Encoding.UTF8.GetString(chunk, hashStartIndex, HashLength).Trim();
+                            if (IsValidHash(decodedHash) && decodedString.Length != 1)
+                            {
+                                var res = new LocresResult(decodedHash, decodedString);
+                                if (UnrealLocres.IncludeHashInKeyValue) res.Hash = LocresSharp.Crc.StrCrc32(decodedString).ToString();
+                                results.Add(res);
+                                i = hashEndIndex + SeparatorSequence.Length;
+                                continue;
+                            }
+                        }
+                        catch (ArgumentOutOfRangeException ex) { i = startIndex + 1; continue; }
+                    }
+                }
                 i = startIndex + 1;
             }
 
