@@ -79,7 +79,7 @@ static internal class StringHelper
         var letters = str.Where(c => char.IsLetter(c));
         return letters.All(c => char.IsUpper(c) == true);
     }
-    public static bool IsAllOne(this string str)
+    public static bool IsAllSame(this string str)
     {
         return str.All(c => c == str[0] == true);
     }
