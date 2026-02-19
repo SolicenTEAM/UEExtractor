@@ -76,17 +76,17 @@ namespace Solicen.Localization.UE4
 
         static bool IsValidHash(string hash)
         {
-            if (hash.Length != 32) return false;           // Если длина хеш строки не равна 32 символам
-            if (hash.All(char.IsDigit)) return false;      // Если все символы это только цифры
-            if (hash.All(x => x == hash[0])) return false; // Если все символы одинаковые, пример: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+            if (
+                   hash.Length != 32  // Если длина хеш строки не равна 32 символам
+                || hash.IsAllNumber() // Если все символы это только цифры
+                || hash.IsAllSame()   // Если все символы одинаковые, пример: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+                || !hash.IsGUID()
+                ) return false;
 
+            if (hash.IsGUID()) // Проверка, только разрешенные символы для хеш строки
+                return true;
             
-            foreach (char c in hash)                       // Проверка, только разрешенные символы для хеш строки
-            {
-                if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
-                    return false;
-            }
-            return true;
+            return false;
         }
 
         private static string ToHex(string input)
@@ -148,9 +148,7 @@ namespace Solicen.Localization.UE4
                     string hashDecoded = Encoding.UTF8.GetString(hashCandidate).Trim();
                     if (!IsValidHash(hashDecoded))
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine($"SKIP: {hashDecoded}:NULL | InvalidHash");
-                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine($"SKIP: {hashDecoded} as NULL");
                         UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},");
                         i = endPos;
                         continue;
@@ -171,7 +169,8 @@ namespace Solicen.Localization.UE4
                         }
                         else
                         {
-                            Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | InvalidDecode");
+                            // Скрыл, ибо небезопасно выводить результат с InvalidDecode в консоль
+                            // Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | InvalidDecode");
                             UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{decodedString}");
                             i = endPos;
                             continue;
