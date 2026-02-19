@@ -43,6 +43,7 @@ namespace Solicen.Localization.UE4
 		static void ProcessVersion(string version)
         {
 			if (string.IsNullOrWhiteSpace(version)) return;
+			version = char.IsDigit(version[0]) ? "UE" + version : version;	
 			UnrealLocres.UEVersion = version.Replace(".", "_");
             UnrealLocres.EngineSpecified = true;
 			UnrealArchiveReader.EngineSpecified = true;

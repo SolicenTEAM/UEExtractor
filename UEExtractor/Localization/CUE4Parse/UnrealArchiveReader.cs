@@ -102,7 +102,7 @@ public class UnrealArchiveReader : IDisposable
 
         if (UE_VER != string.Empty && EngineSpecified)
         {
-            var version = $"GAME_UE{UE_VER}";
+            var version = $"GAME_{UE_VER}";
             return ParseVersion(version);
         }
         else if (engineFile != null || mainExecutable != null)
