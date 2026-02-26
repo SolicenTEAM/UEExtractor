@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <StartupObject>UEExtractor.Program</StartupObject>
@@ -10,7 +10,7 @@
     <Authors>Solicen</Authors>
     <Company>Solicen</Company>
     <Copyright>Solicen</Copyright>
-    <Version>1.0.7.4</Version>
+    <Version>1.0.7.5</Version>
     <RepositoryUrl>https://github.com/SolicenTEAM/UEExtractor</RepositoryUrl>
     <PackageIcon>unreal.ico</PackageIcon>
     <PackageIconUrl />
@@ -27,7 +27,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="CUE4Parse" Version="1.2.2" />
+    <PackageReference Include="CUE4Parse" Version="1.2.2.18" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="PortableCostura.Fody" Version="6.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

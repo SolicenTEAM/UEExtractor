@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using Solicen.Localization.UE4;
+using Solicen.Utils;
+using System.Diagnostics;
 using System.Reflection;
 namespace UEExtractor
 {
@@ -7,7 +9,7 @@ namespace UEExtractor
         const string title = $"UEExtractor VER : https://github.com/SolicenTEAM/UEExtractor";
         static void Main(string[] args)
         {
-            var Version = $"{FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).FileVersion}";
+            var Version = $"{Assembly.GetExecutingAssembly().GetName().Version}";
             Console.Title = "UEExtractor • Solicen";
             Solicen.CLI.Console.WriteLine($"{title.Replace("VER", Version)}", ConsoleColor.Cyan);
             Solicen.CLI.Console.WriteLine("Author: Denis Solicen : https://github.com/DenisSolicen", ConsoleColor.Cyan);
@@ -16,12 +18,16 @@ namespace UEExtractor
             Thread.Sleep(100);
             Stopwatch stopwatch = new Stopwatch(); stopwatch.Start();
             TimeSpan timeTaken = new TimeSpan();
+
+            MemoryManager.Start();
             var backgroundThread = new Thread(() =>
             {
-                Solicen.Localization.UE4.CLI_Processor.ProcessProgram(args);
+                CLI_Processor.ProcessProgram(args);
                 stopwatch.Stop(); timeTaken = stopwatch.Elapsed;
             });
             backgroundThread.Start(); backgroundThread.Join();
+            MemoryManager.Stop();
+
             Solicen.CLI.Console.WriteLine($"Operation completed in: {timeTaken.TotalSeconds} seconds");
             Solicen.CLI.Console.WriteLine("\nIf my program was useful to you, please put a star on its GitHub page, thank you!", ConsoleColor.Yellow);
             Solicen.CLI.Console.WriteLine("Toss a coin: https://boosty.to/denissolicen/donate", ConsoleColor.Yellow);

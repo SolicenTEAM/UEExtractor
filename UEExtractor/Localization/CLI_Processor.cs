@@ -1,6 +1,6 @@
-﻿using Solicen.CLI;
+﻿﻿using Solicen.CLI;
+using Solicen.GitHub.Updater;
 using Solicen.Translator;
-using System.Collections.Concurrent;
 
 namespace Solicen.Localization.UE4
 {
@@ -8,9 +8,13 @@ namespace Solicen.Localization.UE4
 	{
         private static bool ProgramAutoExit = false;
         private static readonly List<Argument> arguments;
+
 		static CLI_Processor()
 		{
-			arguments = new List<Argument>
+			GitProvider.RepoName = "UEExtractor";
+			GitProvider.UserName = "SolicenTEAM";
+
+            arguments = new List<Argument>
 			{
                 new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
                 new Argument("--all", "-all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
@@ -32,6 +36,7 @@ namespace Solicen.Localization.UE4
 				new Argument("--table-format", "-tf", "replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 				new Argument("--auto-exit", "-exit", "Exit automatically after execution", () => ProgramAutoExit = true),
 				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
+                new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
 
                 new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
                 new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
@@ -95,7 +100,7 @@ namespace Solicen.Localization.UE4
 		}
 
 
-		public static void ProcessFolder(string folderPath, string fileName = "", string locresPath = "")
+		public static void ProcessFolder(string folderPath, string? fileName = "", string? locresPath = "")
 		{
 			var exePath = new FileInfo(typeof(CLI_Processor).Assembly.Location).Directory;
 			var csvPath = string.IsNullOrWhiteSpace(fileName)

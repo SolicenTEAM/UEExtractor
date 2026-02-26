@@ -36,7 +36,7 @@ public class UnrealArchiveReader : IDisposable
             .Where(x => x.Contains("\\Content\\Paks")).ToArray();
 
         EGame UE = LoadEngineVersion(gameDirectory);
-        Console.WriteLine($"UE Version: {UE}");
+        Console.WriteLine($"UE::Version: {UE}");
         Console.WriteLine($"Found {files.Length} files:");
         foreach (var file in files.Take(10))
             Console.WriteLine($"- {Path.GetFileName(file)}");
@@ -126,8 +126,8 @@ public class UnrealArchiveReader : IDisposable
                 version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
             }
 
-            Console.WriteLine($"UEFile: {engineFile}");
-            Console.WriteLine($"UEVersion: {version}");
+            Console.WriteLine($"UE::File: {engineFile}");
+            Console.WriteLine($"UE::Version: {version}");
             return ParseVersion(version);
         }
         return EGame.GAME_UE5_LATEST;
@@ -178,9 +178,9 @@ public class UnrealArchiveReader : IDisposable
                 UseProxy = false,
                 UseCookies = false,
                 AutomaticDecompression = DecompressionMethods.All
-            }), OodleHelper.OODLE_DLL_NAME).Wait();
+            }), OodleHelper.OODLE_NAME_CURRENT).Wait();
         }
-        OodleHelper.Initialize(OodleHelper.OODLE_DLL_NAME);
+        OodleHelper.Initialize(OodleHelper.OODLE_NAME_CURRENT);
         ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
     }
 

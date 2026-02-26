@@ -116,10 +116,10 @@ namespace Solicen.Localization.UE4
                         && data[index+1] == 0x1F) { index += 2; break; }
                 }
             }
-            if (data.Length > index)
-                if (data[index] == 0x1F 
-                    && data.Length > index+2) return index + 1;
-            
+            while (data.Length-1 > index && data[index] == 0x1F)
+            {
+                index++;
+            }   
             return index;
         }
 
@@ -189,10 +189,10 @@ namespace Solicen.Localization.UE4
 
                 if (SeparatorIndex != -1)
                 {
-                    Span<byte> b = GetBytes(chunk, stringStartIndex, SeparatorIndex - stringStartIndex);
-                    if (b.Length > 0)
+                    var bArray = GetBytes(chunk, stringStartIndex, SeparatorIndex - stringStartIndex);
+                    if (bArray.Length > 0)
                     {
-                        var reversedIndex = GetReversedIndex(b.ToArray());
+                        var reversedIndex = GetReversedIndex(bArray);
                         string decodedString = LocresHelper.EscapeKey(GetString(chunk, stringStartIndex + reversedIndex, SeparatorIndex - stringStartIndex - reversedIndex));
                         int hashStartIndex = SeparatorIndex + SeparatorSequence.Length;
                         int hashEndIndex = hashStartIndex + HashLength;
@@ -226,16 +226,17 @@ namespace Solicen.Localization.UE4
 
         static bool IsValidHash(string hash)
         {
-            if (hash.Length != 32) return false;           // Если длина хеш строки не равна 32 символам
-            if (hash.All(char.IsDigit)) return false;      // Если все символы это только цифры
-            if (hash.All(x => x == hash[0])) return false; // Если все символы одинаковые, пример: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+            if (
+                   hash.Length != 32  // Если длина хеш строки не равна 32 символам
+                || hash.IsAllNumber() // Если все символы это только цифры
+                || hash.IsAllSame()   // Если все символы одинаковые, пример: DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+                || !hash.IsGUID()
+                ) return false;
 
-            foreach (char c in hash)                       // Проверка, только разрешенные символы для хеш строки
-            {
-                if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F')))
-                    return false;
-            }
-            return true;
+            if (hash.IsGUID()) // Проверка, только разрешенные символы для хеш строки
+                return true;
+
+            return false;
         }
 
         private static int IndexOf(byte[] array, byte[] pattern, int startIndex)

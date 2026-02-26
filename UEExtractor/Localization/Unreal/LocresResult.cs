@@ -39,6 +39,17 @@ namespace Solicen.Localization.UE4
         {
             return concurrent.Select(x => x.Value).ToArray();
         }
+
+        public static IEnumerable<LocresResult> GetUnique(this IEnumerable<LocresResult> locres)
+        {
+            var result = new List<LocresResult>();
+            foreach (var value in locres)
+            {
+                var v = result.FirstOrDefault(x => x.Source == value.Source);
+                if (v == null) result.Add(value);
+            }
+            return result.ToArray();
+        }
     }
 
     public class LocresResult

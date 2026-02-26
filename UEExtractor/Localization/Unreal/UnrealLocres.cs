@@ -33,11 +33,10 @@ namespace Solicen.Localization.UE4
         /// Enable comms header and footer of the csv.
         /// </summary>
         public static bool ForceMark = false;
-
         public static bool WriteLocres = false;
         #endregion
 
-        public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass, Texture }
+        public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass, Texture, Sound }
         public static string[] ExcludePath = { "/sound/", "/effects/", "/fx/", "/vfx/", "/meshes/", "/mesh/", "/textures/", "/megascans/", "/music/" };
         public static bool EngineSpecified = false;
         public static bool ExtractLocres = false;
@@ -93,46 +92,47 @@ namespace Solicen.Localization.UE4
                 var eType = path.EndsWith(".uasset") ? GetExportType(stream) : ExportType.None;
                     eType = path.Contains("BP_") ? ExportType.BlueprintClass : eType;
 
-                switch (eType)
+                try
                 {
-                    case ExportType.Table:
-                        {
-                            var newResult = new LocresResult[0];
-
-                            // StringTable 
-                            reader.LoadStringTable(path, (TableNamespace, Keys) =>
+                    switch (eType)
+                    {
+                        case ExportType.Table:
                             {
-                                newResult = TableToLocres(TableNamespace, Keys);
-                                fileResults.AddRange(newResult);
-                            });
+                                var newResult = new LocresResult[0];
 
-                            // DataTable
-                            if (newResult.Length == 0)
+                                // StringTable 
+                                reader.LoadStringTable(path, (TableNamespace, Keys) =>
+                                {
+                                    newResult = TableToLocres(TableNamespace, Keys);
+                                    fileResults.AddRange(newResult);
+                                });
+
+                                // DataTable
+                                if (newResult.Length == 0)
+                                {
+                                    reader.GetLocalizedStrings(GetUasset(path), (Table) =>
+                                    {
+                                        newResult = LocalizedToLocres(Table);
+                                        fileResults.AddRange(newResult);
+                                    });
+                                }
+                            }
+                            break;
+                        case ExportType.Sound:   break;
+                        case ExportType.Texture: break;
+                        case ExportType.BlueprintClass:
                             {
+                                // Содержит BlueprintGeneratedClass (Kismet String)
+                                // Может содержать TextProperty (для locres)
+                                var newResult = new LocresResult[0];
                                 reader.GetLocalizedStrings(GetUasset(path), (Table) =>
                                 {
                                     newResult = LocalizedToLocres(Table);
                                     fileResults.AddRange(newResult);
                                 });
+                                break;
                             }
-                        }
-                        break;
-                    case ExportType.Texture: break;
-                    case ExportType.BlueprintClass:
-                        {
-                            // Содержит BlueprintGeneratedClass (Kismet String)
-                            // Может содержать TextProperty (для locres)
-                            var newResult = new LocresResult[0];
-                            reader.GetLocalizedStrings(GetUasset(path), (Table) =>
-                            {
-                                newResult = LocalizedToLocres(Table);
-                                fileResults.AddRange(newResult);
-                            });
-                            break;
-                        }
-                    default:
-                        {
-                            using (stream)
+                        default:
                             {
                                 fileResults = UnrealUepx.ExtractDataFromStream(stream);
                                 var newResult = UnrealUasset.ExtractDataFromStream(stream, path);
@@ -142,9 +142,18 @@ namespace Solicen.Localization.UE4
                                     (x => fileResults.Any(q => q.Key != x.Key)).ToList();
                                 }
                                 fileResults.AddRange(newResult);
+                                break;
                             }
-                            break;
-                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERR] Error while processing {path}: {ex.Message}");
+                    SkippedCSV.WriteLine($"[ERR] Error while processing {path}: {ex.Message}");
+                }
+                finally
+                {
+                    stream.Close();
                 }
 
                 #region Zero Data
@@ -180,7 +189,8 @@ namespace Solicen.Localization.UE4
         public static bool IsNotAllowedString(string value)
         {
             return (
-                string.IsNullOrWhiteSpace(value)
+                   value == "TextBlockDefaultValue"
+                || string.IsNullOrWhiteSpace(value)
                 || value.Trim().Length < 2
                 || value == "None"
                 || value.IsGUID()
@@ -188,7 +198,7 @@ namespace Solicen.Localization.UE4
                 || value.IsAllDot()
                 || value.IsBoolean()
                 || value.IsPath()
-                || value.IsAllOne()
+                || value.IsAllSame()
                 || value.IsStringDigit());
         }
 
@@ -291,6 +301,20 @@ namespace Solicen.Localization.UE4
             return false;
         }
 
+        public static bool IsSound(Span<byte> buffer)
+        {
+            if (BinaryParser.FindSequence(buffer,
+                UnrealFormat.Sound.SoundWave) != -1
+                ||
+                BinaryParser.FindSequence(buffer,
+                UnrealFormat.Sound.libVorbis) != -1
+                ||
+                BinaryParser.FindSequence(buffer,
+                UnrealFormat.Sound.LipSyncFrameSequence) != -1)
+                return true;
+
+            return false;
+        }
 
         public static ExportType GetExportType(Stream stream)
         {
@@ -301,6 +325,9 @@ namespace Solicen.Localization.UE4
                 // Выделяем буфер на стеке. Это очень быстро и не создает мусора в куче.
                 Span<byte> buffer = stackalloc byte[bufferSize];              
                 stream.Read(buffer);
+
+                if (IsSound(buffer))
+                    return ExportType.Sound;
 
                 if (IsTexture(buffer))
                     return ExportType.Texture;
@@ -448,7 +475,9 @@ namespace Solicen.Localization.UE4
         public static void ProcessTranslator(ref LocresResult[] locres)
         {
             var manager = new UberTranslator();
-            var allValues = locres.Where(x => string.IsNullOrWhiteSpace(x.Translation)).ToDictionary(x => x.Source, x => x.Translation);
+            var allValues = locres.GetUnique().Where(x => string.IsNullOrWhiteSpace(x.Translation))
+                .ToDictionary(x => x.Source, x => x.Translation);
+
             if (allValues.Count() > 0)
             {
                 manager.TranslateLines(ref allValues);

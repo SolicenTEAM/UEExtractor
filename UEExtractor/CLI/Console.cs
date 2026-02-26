@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Solicen.CLI
+﻿namespace Solicen.CLI
 {
     internal static class Console
     {
@@ -103,12 +95,11 @@ namespace Solicen.CLI
                 }
 
                 System.Console.SetCursorPosition(0, menuStartLine);
-
                 return selectedIndex;
             }
             finally
             {
-                // Блокировка больше не используется
+
             }
         }
 
