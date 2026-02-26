@@ -18,6 +18,7 @@ public class UnrealArchiveReader : IDisposable
     private readonly DefaultFileProvider _provider;
     private bool _hasValidFiles;
     private bool _isEncrypted;
+    private bool _isZenloader = false;
     public static bool EngineSpecified = false;
 
     public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
@@ -184,9 +185,17 @@ public class UnrealArchiveReader : IDisposable
         ZlibHelper.Initialize(ZlibHelper.DLL_NAME);
     }
 
+    static bool IsZenLoader(string path)
+    {
+        var zenLoaderFile = Directory.GetFiles(path, "*.utoc", SearchOption.AllDirectories);
+        return zenLoaderFile.Length > 0 ? true : false;
+    }
+
     private void LoadUsmapFiles(string gameDirectory)
     {
         var usmapFiles = Directory.GetFiles(gameDirectory, "*.usmap", SearchOption.AllDirectories);
+        _isZenloader = IsZenLoader(gameDirectory);
+
         if (usmapFiles.Length > 0)
         {
             foreach (var usmapPath in usmapFiles)
@@ -206,7 +215,16 @@ public class UnrealArchiveReader : IDisposable
         }
         else
         {
-            Console.WriteLine("Warning: No .usmap files found. Type information may be limited.");
+            if (_isZenloader)
+            {
+                Console.WriteLine("Danger: ZenLoader was provided, but the mapping file was not found..");
+            }
+            else
+            {
+                Console.WriteLine("Warning: No .usmap files found. Type information may be limited.");
+            }
+
+
         }
     }
 
