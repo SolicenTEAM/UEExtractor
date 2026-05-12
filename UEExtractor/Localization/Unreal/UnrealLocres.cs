@@ -10,6 +10,7 @@ namespace Solicen.Localization.UE4
         public static string FilePATH = string.Empty;
         public static string UEVersion = "4_24";
         public static string AES = string.Empty;
+        public static string SearchKeyName = string.Empty;
 
         #region LocresCSV file Setup
         public static bool WriteSkippedCSV = false;
@@ -90,7 +91,11 @@ namespace Solicen.Localization.UE4
 
                 List<LocresResult> fileResults = new List<LocresResult>();
                 var eType = path.EndsWith(".uasset") ? GetExportType(stream) : ExportType.None;
-                    eType = path.Contains("BP_") ? ExportType.BlueprintClass : eType;
+
+                eType = path.Contains("/Blueprints/") ? ExportType.BlueprintClass : eType;
+                eType = path.Contains("/DataTables/") ? ExportType.Table : eType;
+                eType = path.Contains("BP_") ? ExportType.BlueprintClass : eType;
+                eType = path.Contains("/DT_") || path.Contains("/DA_") ? ExportType.Table : eType;
 
                 try
                 {
@@ -162,9 +167,11 @@ namespace Solicen.Localization.UE4
 
                 foreach (var result in fileResults)
                 {
+
                     if (result == null) continue;
                     if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
+                    //if (SearchKeyName != string.Empty && result.Key != SearchKeyName) continue;
 
                     var outputValue = result.Namespace != string.Empty ?
                     $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
