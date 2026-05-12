@@ -37,6 +37,7 @@ namespace Solicen.Localization.UE4
 				new Argument("--auto-exit", "-exit", "Exit automatically after execution", () => ProgramAutoExit = true),
 				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
                 new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
+                new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key),
 
                 new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
                 new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
@@ -135,10 +136,10 @@ namespace Solicen.Localization.UE4
 					if (Result.Any(x => x.Key == line.Key))
 					{
 						var rLine = Result.ToList().FirstOrDefault(x => x.Key == line.Key);
-						if (rLine.Key != null)
+                        if (rLine.Key != null)
 						{
 							// Adds Translation value from CSV [Source] Column.
-							if (rLine.Value.Source != line.Source && line.Translation == string.Empty)
+							if (rLine.Value.Source != line.Source.Escape() && line.Translation == string.Empty)
                                 Result[rLine.Key].Translation = line.Source;
 
                             // Adds Translation value from CSV [Translation] Column.
