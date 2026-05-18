@@ -480,7 +480,7 @@ public class UnrealArchiveReader : IDisposable
             .ToList();
 
         // Expand to one entry per pak file per path
-        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.GameFile File)>();
+        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
         foreach (var path in uniquePaths)
             if (_provider.Files.TryGetValues(path, out var allFiles))
                 foreach (var gf in allFiles)
@@ -563,7 +563,7 @@ public class UnrealArchiveReader : IDisposable
 
         // Expand each unique path to one entry per pak file that contains it.
         // TryGetValues returns one GameFile per mounted VFS (pak) at that path.
-        var locresEntries = new List<(string Path, CUE4Parse.FileProvider.GameFile File)>();
+        var locresEntries = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
         foreach (var path in uniquePaths)
         {
             if (_provider.Files.TryGetValues(path, out var allFiles))
