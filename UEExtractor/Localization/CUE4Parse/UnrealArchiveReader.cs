@@ -48,13 +48,12 @@ public class UnrealArchiveReader : IDisposable
             _provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, new VersionContainer(UE));
 
             LoadCompression();
-            LoadAesKey(gameDirectory);
             LoadUsmapFiles(gameDirectory);
 
             _provider.Initialize();
-            _provider.LoadVirtualPaths();
+            LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
             _provider.Mount();
-            _provider.PostMount();
+            _provider.LoadVirtualPaths();  // must be after Mount
 
             Console.WriteLine($"Provider initialized. Found {_provider.Files.Count} virtual files.");
             ValidateFiles();
@@ -286,15 +285,31 @@ public class UnrealArchiveReader : IDisposable
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
         {
-            // Диагностика: какие вообще есть файлы
-            Console.WriteLine("Available file extensions:");
-            var extensions = _provider.Files.Keys
+            var allKeys = _provider.Files.Keys.ToList();
+            var extensions = allKeys
                 .Select(Path.GetExtension)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
-                .Take(20);
+                .Take(20)
+                .ToList();
+
+            Console.WriteLine("Available file extensions:");
             foreach (var ext in extensions)
                 Console.WriteLine($"- {ext}");
+
+            Console.WriteLine("\nSample virtual paths (first 10):");
+            foreach (var path in allKeys.Take(10))
+                Console.WriteLine($"  {path}");
+
+            bool onlyBinIni = extensions.All(e => e == ".bin" || e == ".ini");
+            if (onlyBinIni)
+            {
+                Console.WriteLine(
+                    "\n[HINT] Only .bin/.ini files are visible. This usually means the IoStore (.ucas) " +
+                    "containers could not be mounted, likely due to a wrong UE version flag.\n" +
+                    "Try removing the -v flag to auto-detect the version, or use the correct version " +
+                    "(e.g. -v=UE5_6 for a UE 5.6 game).");
+            }
 
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
