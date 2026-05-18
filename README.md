@@ -4,7 +4,7 @@
 
 Made with ❤️ for **all** translators and translation developers.
 
-This a tool on **.NET 10.0** to extract text from any game on [Unreal Engine](https://www.unrealengine.com/) (4.0 - 5.8).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
+This a tool on **.NET 9.0** to extract text from any game on [Unreal Engine](https://www.unrealengine.com/) (4.0 - 5.8).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
 
 With it, you will receive a `locresCSV` file for localization of the game based on its resources.
 
