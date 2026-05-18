@@ -173,7 +173,11 @@ namespace Solicen.Localization.UE4
 			if (UberTranslator.IsConfigured)
 			{
 				var tempRes = Result.Select(x => x.Value).ToArray();
-				UnrealLocres.ProcessTranslator(ref tempRes);
+				UnrealLocres.ProcessTranslator(ref tempRes, snapshot =>
+				{
+					UnrealLocres.WriteToCsv(snapshot.ToConcurrent(), csvPath);
+					CLI.Console.WriteLine($"\n[DarkGray]Progress saved to: {csvPath}");
+				});
 				Result = tempRes.ToConcurrent();
 			}
 
@@ -231,7 +235,11 @@ namespace Solicen.Localization.UE4
 				if (UberTranslator.IsConfigured)
 				{
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
-					UnrealLocres.ProcessTranslator(ref tempRes);
+					UnrealLocres.ProcessTranslator(ref tempRes, snapshot =>
+					{
+						UnrealLocres.WriteToCsv(snapshot.ToConcurrent(), csvPath);
+						CLI.Console.WriteLine($"\n[DarkGray]Progress saved to: {csvPath}");
+					});
 					finalResult = tempRes.ToConcurrent();
 				}
 

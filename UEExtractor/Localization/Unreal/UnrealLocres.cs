@@ -513,15 +513,24 @@ namespace Solicen.Localization.UE4
             }
         }
 
-        public static void ProcessTranslator(ref LocresResult[] locres)
+        public static void ProcessTranslator(ref LocresResult[] locres, Action<LocresResult[]>? onBatchComplete = null)
         {
             var manager = new UberTranslator();
             var allValues = locres.GetUnique().Where(x => string.IsNullOrWhiteSpace(x.Translation))
                 .ToDictionary(x => x.Source, x => x.Translation);
 
-            if (allValues.Count() > 0)
+            if (allValues.Count > 0)
             {
-                manager.TranslateLines(ref allValues);
+                // Capture ref for use inside the lambda
+                var locresRef = locres;
+                Action<Dictionary<string, string>>? batchCallback = onBatchComplete == null ? null :
+                    translated =>
+                    {
+                        locresRef.ReplaceAll(translated);
+                        onBatchComplete(locresRef);
+                    };
+
+                manager.TranslateLines(ref allValues, onBatchComplete: batchCallback);
                 locres.ReplaceAll(allValues);
             }
         }

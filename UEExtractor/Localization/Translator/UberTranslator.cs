@@ -30,25 +30,24 @@
             }
         }
 
-        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 150)
+        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 150, Action<Dictionary<string, string>>? onBatchComplete = null)
         {
             int SegmentIndex = 1; Dictionary<string, string> result = new Dictionary<string, string>();
             int nullSegments = values.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToArray().Length;
 
             if (OpenRouterClient == null)
             {
-                CLI.Console.WriteLine("[Red][Error] No API key or URL configured. Use --api=<key> for OpenRouter or --api:url=<url> for a local model.");
+                CLI.Console.WriteLine("[Red][Error] No API key or URL configured. Use --api:key=<key> for OpenRouter or --api:url=<url> for a local model.");
                 values = new Dictionary<string, string>(values);
                 return;
             }
 
-            // Используем пакетную логику для OpenRouter
-            var translatedBatch = TranslateBatchWithOpenRouterAsync(values, progress).GetAwaiter().GetResult();
+            var translatedBatch = TranslateBatchWithOpenRouterAsync(values, progress, onBatchComplete).GetAwaiter().GetResult();
             values = translatedBatch;
             return;
         }
 
-        private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(Dictionary<string, string> values, IProgress<Tuple<int, int>> progress)
+        private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(Dictionary<string, string> values, IProgress<Tuple<int, int>> progress, Action<Dictionary<string, string>>? onBatchComplete = null)
         {
             const string separator = "|||";
             int maxSegmentsPerRequest = BatchSize;
@@ -95,7 +94,6 @@
 
                     if (translatedSegments.Length == chunk.Count)
                     {
-                        // 3. Сопоставляем переводы с оригиналами
                         for (int j = 0; j < chunk.Count; j++)
                         {
                             var originalKey = chunk[j].Key;
@@ -105,6 +103,8 @@
                             progress?.Report(new Tuple<int, int>(totalTranslated, toTranslate.Count));
                             CLI.Console.WriteLine($"[DarkGray][{totalTranslated}/{toTranslate.Count}] : [O] : [White]'{originalKey.Escape()}' => '{translatedValue.Escape()}'");
                         }
+                        // Save progress after every successful batch so a restart can resume
+                        onBatchComplete?.Invoke(result);
                     }
                     else
                     {
