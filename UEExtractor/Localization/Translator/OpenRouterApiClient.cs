@@ -59,7 +59,8 @@ namespace Solicen.Translator
                 Timeout = TimeSpan.FromSeconds(500)
             };
 
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+            if (!string.IsNullOrEmpty(apiKey))
+                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
             _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "");
             _httpClient.DefaultRequestHeaders.Add("X-Title", "Kismet Editor");
         }

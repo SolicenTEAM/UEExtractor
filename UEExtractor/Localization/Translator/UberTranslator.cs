@@ -21,9 +21,8 @@
                 if (hasKey && File.Exists(OpenRouterApiKey))
                     OpenRouterApiKey = File.ReadAllLines(OpenRouterApiKey)[0];
 
-                var key = !string.IsNullOrEmpty(OpenRouterApiKey) ? OpenRouterApiKey : "local";
                 var url = hasUrl ? ApiBaseUrl : "https://openrouter.ai/api/v1/";
-                OpenRouterClient = new OpenRouterApiClient(key, url);
+                OpenRouterClient = new OpenRouterApiClient(OpenRouterApiKey, url);
             }
         }
 
