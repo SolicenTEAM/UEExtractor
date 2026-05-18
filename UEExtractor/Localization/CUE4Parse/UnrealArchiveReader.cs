@@ -51,9 +51,21 @@ public class UnrealArchiveReader : IDisposable
             LoadUsmapFiles(gameDirectory);
 
             _provider.Initialize();
+
+            Console.WriteLine($"UnloadedVfs after Initialize: {_provider.UnloadedVfs.Count}");
+            Console.WriteLine($"RequiredKeys (encryption GUIDs needed): {_provider.RequiredKeys.Count}");
+            foreach (var guid in _provider.RequiredKeys)
+                Console.WriteLine($"  GUID: {guid}");
+
             LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
-            _provider.Mount();
-            _provider.LoadVirtualPaths();  // must be after Mount
+
+            Console.WriteLine($"UnloadedVfs after SubmitKey: {_provider.UnloadedVfs.Count}");
+
+            int mounted = _provider.Mount();
+            Console.WriteLine($"Mount() newly mounted: {mounted}");
+            Console.WriteLine($"UnloadedVfs after Mount: {_provider.UnloadedVfs.Count}");
+
+            _provider.LoadVirtualPaths();
 
             Console.WriteLine($"Provider initialized. Found {_provider.Files.Count} virtual files.");
             ValidateFiles();
