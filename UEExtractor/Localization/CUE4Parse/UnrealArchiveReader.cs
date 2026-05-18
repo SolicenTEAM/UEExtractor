@@ -48,13 +48,12 @@ public class UnrealArchiveReader : IDisposable
             _provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, new VersionContainer(UE));
 
             LoadCompression();
-            LoadAesKey(gameDirectory);
             LoadUsmapFiles(gameDirectory);
 
             _provider.Initialize();
-            _provider.LoadVirtualPaths();
+            LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
             _provider.Mount();
-            _provider.PostMount();
+            _provider.LoadVirtualPaths();  // must be after Mount
 
             Console.WriteLine($"Provider initialized. Found {_provider.Files.Count} virtual files.");
             ValidateFiles();
