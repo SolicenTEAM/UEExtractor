@@ -366,13 +366,15 @@ public class UnrealArchiveReader : IDisposable
         // Расширенный список расширений
         // UPD: Исключаем uexp, так как uasset и так ссылается на него при загрузке.
         var validExtensions = new[] { ".uasset", ".uexp", ".umap" };
+        var filterPath = Solicen.Localization.UE4.UnrealLocres.FilterPath;
         var assets = _provider.Files.Keys.Where(x => validExtensions
-        .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
-            .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
+            .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            .Where(x => !x.Contains("Engine/"))
+            .Where(x => string.IsNullOrEmpty(filterPath) || x.Contains(filterPath, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        //assets = assets.Where(x => x.Contains("Widget_InputSelector") == true).ToList();
-
+        if (!string.IsNullOrEmpty(filterPath))
+            Console.WriteLine($"Path filter active: \"{filterPath}\"");
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
         {
