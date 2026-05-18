@@ -205,6 +205,28 @@ namespace Solicen.Localization.UE4
             return sortedConcurrentResults;
         }
 
+        // Processes .locres files grouped by source file, returning one result dict per locres.
+        // Used when the output path is a directory so each locres gets its own CSV.
+        public static List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>
+            ProcessLocresGrouped(string directory)
+        {
+            pDirectory = directory;
+            using var reader = new UnrealArchiveReader(directory, UEVersion);
+            var groups = reader.ReadLocresGrouped(string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+
+            return groups.Select(g =>
+            {
+                var dict = new ConcurrentDictionary<string, LocresResult>();
+                foreach (var (ns, key, value) in g.Entries)
+                {
+                    if (IsNotAllowedString(value)) continue;
+                    var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
+                    dict.TryAdd(compositeKey, new LocresResult(compositeKey, LocresHelper.EscapeKey(value), Namespace: ns));
+                }
+                return (g.CsvBaseName, dict);
+            }).Where(x => x.dict.Count > 0).ToList();
+        }
+
         public static bool IsNotAllowedString(string value)
         {
             return (

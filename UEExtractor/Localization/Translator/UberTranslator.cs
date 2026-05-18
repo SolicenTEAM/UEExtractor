@@ -10,6 +10,7 @@
         // Custom base URL for any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, etc.)
         // Example: http://localhost:11434/v1/  or  http://localhost:1234/v1/
         public static string ApiBaseUrl = string.Empty;
+        public static int BatchSize = 150;
 
         public static bool IsConfigured =>
             !string.IsNullOrEmpty(OpenRouterApiKey) || !string.IsNullOrEmpty(ApiBaseUrl);
@@ -50,7 +51,7 @@
         private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(Dictionary<string, string> values, IProgress<Tuple<int, int>> progress)
         {
             const string separator = "|||";
-            const int maxSegmentsPerRequest = 150;
+            int maxSegmentsPerRequest = BatchSize;
             var result = new Dictionary<string, string>(values);
             var toTranslate = values.Where(kvp => string.IsNullOrWhiteSpace(kvp.Value)).ToList();
             if (toTranslate.Count == 0) return result;
@@ -82,7 +83,8 @@
                     }
                 };
 
-                CLI.Console.StartProgress($"Translating batch {i / maxSegmentsPerRequest + 1} ({chunk.Count} segments) with OpenRouter...");
+                var endpoint = string.IsNullOrEmpty(ApiBaseUrl) ? "OpenRouter" : ApiBaseUrl;
+                CLI.Console.StartProgress($"Translating batch {i / maxSegmentsPerRequest + 1} ({chunk.Count} segments) via {endpoint} [{OpenRouterModel}]...");
                 var response = await OpenRouterClient.ChatAsync(request);
                 CLI.Console.StopProgress();
 

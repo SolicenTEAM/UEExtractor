@@ -532,6 +532,75 @@ public class UnrealArchiveReader : IDisposable
             Console.WriteLine($"  Completed with {errors} error(s).");
     }
 
+    // Returns locres entries grouped by (csvBaseName, pakChunkName) so callers can write
+    // one CSV per locres file. Duplicate basenames get the pak chunk name appended.
+    public List<(string CsvBaseName, List<(string Ns, string Key, string Value)> Entries)>
+        ReadLocresGrouped(string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var locresFiles = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Contains(pathFilter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!string.IsNullOrEmpty(pathFilter))
+            Console.WriteLine($"Path filter active: \"{pathFilter}\"");
+        Console.WriteLine($"Found {locresFiles.Count} .locres files to process");
+
+        // Detect duplicate basenames upfront to decide when to append pak name
+        var baseNames = locresFiles
+            .Select(p => Path.GetFileNameWithoutExtension(p))
+            .ToList();
+        var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
+            .Any(g => g.Count() > 1);
+
+        var result = new List<(string, List<(string, string, string)>)>();
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
+
+        for (int i = 0; i < locresFiles.Count; i++)
+        {
+            var locresPath = locresFiles[i];
+            var baseName = Path.GetFileNameWithoutExtension(locresPath);
+
+            if (hasDuplicateBase)
+            {
+                // Append pak chunk name (e.g. "pakchunk0-Windows") to disambiguate
+                var pakName = string.Empty;
+                if (_provider.Files.TryGetValue(locresPath, out var gf) &&
+                    gf is CUE4Parse.UE4.VirtualFileSystem.VfsEntry ve)
+                    pakName = Path.GetFileNameWithoutExtension(ve.Vfs.Name);
+
+                if (!string.IsNullOrEmpty(pakName))
+                    baseName = $"{baseName}_{pakName}";
+                else
+                    baseName = $"{baseName}_{i}";
+            }
+
+            var entries = new List<(string, string, string)>();
+            try
+            {
+                if (verbose) Console.WriteLine($"Reading: {locresPath}");
+                using var ar = _provider.CreateReader(locresPath);
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, ents) in locres.Entries)
+                    foreach (var (textKey, entry) in ents)
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            entries.Add((nsKey.Str, textKey.Str, entry.LocalizedString));
+            }
+            catch (Exception ex)
+            {
+                if (verbose) Console.WriteLine($"Error reading {locresPath}: {ex.Message}");
+            }
+
+            if (entries.Count > 0)
+                result.Add((baseName, entries));
+        }
+
+        return result;
+    }
+
 
     public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
     {

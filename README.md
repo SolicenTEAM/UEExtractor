@@ -103,7 +103,13 @@ UEExtractor.exe <csv_path> <output_locres>
 ```cmd
 UEExtractor.exe <dir_path> --api:url=http://localhost:11434/v1/ --api:model=llama3 --lang:from=en --lang:to=it
 ```
-Any server that exposes an OpenAI-compatible `/v1/chat/completions` endpoint works. No `--api` key is required for local servers.
+Any server that exposes an OpenAI-compatible `/v1/chat/completions` endpoint works. No `--api:key` is required for local servers.
+
+#### Extract to a directory — one CSV per locres file:
+```cmd
+UEExtractor.exe <dir_path> K:\output\ --path=HT/Content/Localization/Game/en/
+```
+When the second argument is a directory path (ends with `\` or `/`), each `.locres` file gets its own CSV named after it (e.g. `Game.csv`). If two locres files share the same name (from different pak chunks), the pak chunk name is appended: `Game_pakchunk0-Windows.csv`.
 
 #### Scan only a known internal path (much faster):
 ```cmd
@@ -140,6 +146,7 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--api:key=<key>` | `-a:key` | API key for OpenRouter or any server that requires authentication. |
 | `--api:url=<url>` | `-a:url` | Custom OpenAI-compatible base URL for a local model (e.g. `http://localhost:11434/v1/` for Ollama). Omit for OpenRouter. |
 | `--api:model=<model>` | `-a:model` | Model name to use (e.g. `tngtech/deepseek-r1t2-chimera:free` for OpenRouter or `llama3` for Ollama). |
+| `--batch-size=<n>` | `-bs` | Number of segments sent per translation request (default: 150). Lower for models with small context. |
 | `--update` | | Check for a new version on GitHub and update if available. |
 | `--help` | | Show help information. |
 

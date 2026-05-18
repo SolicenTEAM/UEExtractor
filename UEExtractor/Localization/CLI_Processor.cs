@@ -46,6 +46,7 @@ namespace Solicen.Localization.UE4
                 new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => UberTranslator.OpenRouterModel = model),
                 new Argument("--api:key", "-a:key", "Set API key for OpenRouter (or any server that requires authentication).", (key) => UberTranslator.OpenRouterApiKey = key),
                 new Argument("--api:url", "-a:url", "Set a custom OpenAI-compatible base URL (e.g. http://localhost:11434/v1/ for Ollama). Overrides OpenRouter.", (url) => UberTranslator.ApiBaseUrl = url),
+                new Argument("--batch-size", "-bs", $"Number of segments per translation request (default: {UberTranslator.BatchSize}).", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.BatchSize = n; }),
             };
 		}
 
@@ -107,6 +108,17 @@ namespace Solicen.Localization.UE4
 		public static void ProcessFolder(string folderPath, string? fileName = "", string? locresPath = "")
 		{
 			var exePath = new FileInfo(typeof(CLI_Processor).Assembly.Location).Directory;
+
+			// If fileName is a directory path, write per-locres CSVs into it
+			bool outputIsDirectory = !string.IsNullOrWhiteSpace(fileName) &&
+				(fileName.EndsWith("\\") || fileName.EndsWith("/") || Directory.Exists(fileName));
+
+			if (outputIsDirectory)
+			{
+				ProcessFolderToDirectory(folderPath, fileName!.TrimEnd('\\', '/'), locresPath);
+				return;
+			}
+
 			var csvPath = string.IsNullOrWhiteSpace(fileName)
 				? $"{Path.GetFileName(folderPath)}_locres.csv"
 				: $"{Path.ChangeExtension(fileName, ".csv")}";
@@ -168,8 +180,65 @@ namespace Solicen.Localization.UE4
 			UnrealLocres.WriteToCsv(Result, csvPath);
             CLI.Console.WriteLine($"\n[Green]Completed! File saved to: {csvPath}");
 
-			if (UnrealLocres.WriteLocres && locresPath != null) 
-				LocresWriter.LocresCompactWriter.WriteToFile(locresPath,Result.FromConcurrent().ToList());   
+			if (UnrealLocres.WriteLocres && locresPath != null)
+				LocresWriter.LocresCompactWriter.WriteToFile(locresPath,Result.FromConcurrent().ToList());
+			if (ProgramAutoExit) Environment.Exit(0);
+		}
+
+		// Writes one CSV per locres file into outputDir, merging with any existing CSV.
+		private static void ProcessFolderToDirectory(string folderPath, string outputDir, string? locresPath)
+		{
+			Directory.CreateDirectory(outputDir);
+			var groups = UnrealLocres.ProcessLocresGrouped(folderPath);
+
+			if (groups.Count == 0)
+			{
+                CLI.Console.WriteLine("[Yellow]No locres data found.");
+				return;
+			}
+
+			foreach (var (baseName, result) in groups)
+			{
+				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
+				UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
+
+				var finalResult = result;
+
+				if (File.Exists(csvPath))
+				{
+                    CLI.Console.WriteLine($"\n[Yellow]Found previous CSV: {csvPath}, merging...");
+					var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
+					foreach (var line in oldCSV)
+					{
+						if (finalResult.Any(x => x.Key == line.Key))
+						{
+							var rLine = finalResult.ToList().FirstOrDefault(x => x.Key == line.Key);
+							if (rLine.Key != null)
+							{
+								if (rLine.Value.Source != line.Source.Escape() && line.Translation == string.Empty)
+									finalResult[rLine.Key].Translation = line.Source;
+								else if (line.Translation != string.Empty)
+									finalResult[rLine.Key].Translation = line.Translation;
+							}
+						}
+						else
+						{
+							finalResult.TryAdd(line.Key, new LocresResult(line.Key, line.Source, line.Translation, line.Namespace));
+						}
+					}
+				}
+
+				if (UberTranslator.IsConfigured)
+				{
+					var tempRes = finalResult.Select(x => x.Value).ToArray();
+					UnrealLocres.ProcessTranslator(ref tempRes);
+					finalResult = tempRes.ToConcurrent();
+				}
+
+				UnrealLocres.WriteToCsv(finalResult, csvPath);
+                CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({finalResult.Count} entries)");
+			}
+
 			if (ProgramAutoExit) Environment.Exit(0);
 		}
 
