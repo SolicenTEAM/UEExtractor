@@ -7,15 +7,15 @@
     <Nullable>enable</Nullable>
     <StartupObject>UEExtractor.Program</StartupObject>
     <ApplicationIcon>unreal.ico</ApplicationIcon>
-    <Authors>Solicen</Authors>
-    <Company>Solicen</Company>
-    <Copyright>Solicen</Copyright>
-    <Version>1.0.7.6</Version>
-    <RepositoryUrl>https://github.com/SolicenTEAM/UEExtractor</RepositoryUrl>
+    <Authors>Nuked88;Solicen</Authors>
+    <Company>Nuked88</Company>
+    <Copyright>Nuked88;Solicen</Copyright>
+    <Version>1.1.0.0</Version>
+    <RepositoryUrl>https://github.com/Nuked88/UEExtractor</RepositoryUrl>
     <PackageIcon>unreal.ico</PackageIcon>
     <PackageIconUrl />
     <Description>Extract Locres from Unreal Engine build games.</Description>
-    <PackageProjectUrl>https://github.com/SolicenTEAM/UEExtractor</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/Nuked88/UEExtractor</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>

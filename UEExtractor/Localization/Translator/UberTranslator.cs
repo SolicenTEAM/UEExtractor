@@ -11,6 +11,9 @@
         // Example: http://localhost:11434/v1/  or  http://localhost:1234/v1/
         public static string ApiBaseUrl = string.Empty;
 
+        public static bool IsConfigured =>
+            !string.IsNullOrEmpty(OpenRouterApiKey) || !string.IsNullOrEmpty(ApiBaseUrl);
+
         public UberTranslator()
         {
             bool hasKey = !string.IsNullOrEmpty(OpenRouterApiKey);

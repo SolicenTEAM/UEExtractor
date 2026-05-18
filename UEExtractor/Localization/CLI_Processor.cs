@@ -72,7 +72,7 @@ namespace Solicen.Localization.UE4
                     // Обработка для получения .locres файла
                     string LocresCSV = args[0];
                     var Result = UnrealLocres.LoadFromCSV(LocresCSV); // Прочитать результат из LocresCSV
-                    if (UberTranslator.OpenRouterApiKey != string.Empty)
+                    if (UberTranslator.IsConfigured)
 					{
                         CLI.Console.WriteLine();
                         UnrealLocres.ProcessTranslator(ref Result);
@@ -158,7 +158,7 @@ namespace Solicen.Localization.UE4
 				}
 			}
 
-			if (UberTranslator.OpenRouterApiKey != string.Empty)
+			if (UberTranslator.IsConfigured)
 			{
 				var tempRes = Result.Select(x => x.Value).ToArray();
 				UnrealLocres.ProcessTranslator(ref tempRes);
