@@ -7,14 +7,23 @@
         public static string LanguageTo = "ru", LanguageFrom = "auto";
         public static string OpenRouterApiKey = string.Empty;
         public static string OpenRouterModel = "tngtech/deepseek-r1t2-chimera:free";
+        // Custom base URL for any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, etc.)
+        // Example: http://localhost:11434/v1/  or  http://localhost:1234/v1/
+        public static string ApiBaseUrl = string.Empty;
 
         public UberTranslator()
         {
-            if (!string.IsNullOrEmpty(OpenRouterApiKey))
+            bool hasKey = !string.IsNullOrEmpty(OpenRouterApiKey);
+            bool hasUrl = !string.IsNullOrEmpty(ApiBaseUrl);
+
+            if (hasKey || hasUrl)
             {
-                if (File.Exists(OpenRouterApiKey)) { OpenRouterApiKey = File.ReadAllLines(OpenRouterApiKey)[0]; }
-                // Используем наш новый, надежный клиент
-                OpenRouterClient = new OpenRouterApiClient(OpenRouterApiKey);
+                if (hasKey && File.Exists(OpenRouterApiKey))
+                    OpenRouterApiKey = File.ReadAllLines(OpenRouterApiKey)[0];
+
+                var key = !string.IsNullOrEmpty(OpenRouterApiKey) ? OpenRouterApiKey : "local";
+                var url = hasUrl ? ApiBaseUrl : "https://openrouter.ai/api/v1/";
+                OpenRouterClient = new OpenRouterApiClient(key, url);
             }
         }
 
@@ -25,8 +34,7 @@
 
             if (OpenRouterClient == null)
             {
-                CLI.Console.WriteLine("[Red][Error] OpenRouter API key is not configured. Please provide the API key.");
-                // Заполняем результат исходными значениями, чтобы не потерять данные
+                CLI.Console.WriteLine("[Red][Error] No API key or URL configured. Use --api=<key> for OpenRouter or --api:url=<url> for a local model.");
                 values = new Dictionary<string, string>(values);
                 return;
             }

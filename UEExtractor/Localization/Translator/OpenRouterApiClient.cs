@@ -50,19 +50,18 @@ namespace Solicen.Translator
 
         public string LastError { get; private set; }
 
-        public OpenRouterApiClient(string apiKey)
+        public OpenRouterApiClient(string apiKey, string baseUrl = "https://openrouter.ai/api/v1/")
         {
             _apiKey = apiKey;
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri("https://openrouter.ai/api/v1/"),
+                BaseAddress = new Uri(baseUrl.TrimEnd('/') + '/'),
                 Timeout = TimeSpan.FromSeconds(500)
             };
 
-            // Настраиваем заголовки, которые OpenRouter ожидает
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
-            _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", ""); // Рекомендуемый заголовок
-            _httpClient.DefaultRequestHeaders.Add("X-Title", "Kismet Editor"); // Рекомендуемый заголовок
+            _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "");
+            _httpClient.DefaultRequestHeaders.Add("X-Title", "Kismet Editor");
         }
 
         public async Task<OpenRouterResponse> ChatAsync(OpenRouterRequest request)

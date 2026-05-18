@@ -99,6 +99,12 @@ UEExtractor.exe <dir_path> [output_csv] [arguments...]
 UEExtractor.exe <csv_path> <output_locres>
 ```
 
+#### Translate with a local LLM (Ollama, LM Studio, vLLM, …):
+```cmd
+UEExtractor.exe <dir_path> --api:url=http://localhost:11434/v1/ --api:model=llama3 --lang:from=en --lang:to=it
+```
+Any server that exposes an OpenAI-compatible `/v1/chat/completions` endpoint works. No `--api` key is required for local servers.
+
 #### Scan only a known internal path (much faster):
 ```cmd
 UEExtractor.exe <dir_path> --path=HT/Content/Localization
@@ -132,7 +138,8 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--lang:from=<code>` | `-l:f` | Source language for translation (e.g. `en`). |
 | `--lang:to=<code>` | `-l:t` | Target language for translation (e.g. `ru`). |
 | `--api=<key>` | | OpenRouter API key for automatic translation. |
-| `--api:model=<model>` | `-a:model` | OpenRouter model to use (e.g. `tngtech/deepseek-r1t2-chimera:free`). |
+| `--api:url=<url>` | `-a:url` | Custom OpenAI-compatible base URL. Use this to point at a local model instead of OpenRouter (e.g. `http://localhost:11434/v1/` for Ollama). |
+| `--api:model=<model>` | `-a:model` | Model name to use (e.g. `tngtech/deepseek-r1t2-chimera:free` for OpenRouter or `llama3` for Ollama). |
 | `--update` | | Check for a new version on GitHub and update if available. |
 | `--help` | | Show help information. |
 
