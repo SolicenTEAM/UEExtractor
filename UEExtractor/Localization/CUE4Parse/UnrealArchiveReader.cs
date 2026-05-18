@@ -474,7 +474,7 @@ public class UnrealArchiveReader : IDisposable
 
         var locresFiles = _provider.Files.Keys
             .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Contains(pathFilter, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Replace('\\', '/').Contains(pathFilter.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         if (!string.IsNullOrEmpty(pathFilter))
@@ -542,7 +542,7 @@ public class UnrealArchiveReader : IDisposable
 
         var locresFiles = _provider.Files.Keys
             .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Contains(pathFilter, StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Replace('\\', '/').Contains(pathFilter.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         if (!string.IsNullOrEmpty(pathFilter))

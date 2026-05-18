@@ -157,7 +157,7 @@ namespace Solicen.Localization.UE4
 				var tempRes = Result.Select(x => x.Value).ToArray();
 				UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
 				Result = tempRes.ToConcurrent();
-				if (File.Exists(journalPath)) File.Delete(journalPath);
+				if (!TranslateOnly && File.Exists(journalPath)) File.Delete(journalPath);
 			}
 
 			UnrealLocres.WriteToCsv(Result, csvPath);
@@ -195,6 +195,11 @@ namespace Solicen.Localization.UE4
 				groups = UnrealLocres.ProcessLocresGrouped(folderPath);
 				if (groups.Count == 0)
 				{
+                    CLI.Console.WriteLine("[Yellow]No locres found on first attempt, retrying...");
+					groups = UnrealLocres.ProcessLocresGrouped(folderPath);
+				}
+				if (groups.Count == 0)
+				{
                     CLI.Console.WriteLine("[Yellow]No locres data found.");
 					return;
 				}
@@ -211,12 +216,13 @@ namespace Solicen.Localization.UE4
 				if (UberTranslator.IsConfigured)
 				{
 					// Write extracted CSV before translation so --translate-only can resume if stopped
-					UnrealLocres.WriteToCsv(finalResult, csvPath);
+					if (!TranslateOnly)
+						UnrealLocres.WriteToCsv(finalResult, csvPath);
 					var journalPath = csvPath + ".journal";
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
 					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
 					var translated = tempRes.ToConcurrent();
-					if (File.Exists(journalPath)) File.Delete(journalPath);
+					if (!TranslateOnly && File.Exists(journalPath)) File.Delete(journalPath);
 					UnrealLocres.WriteToCsv(translated, csvPath);
                     CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({translated.Count} entries)");
 				}
