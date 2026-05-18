@@ -472,14 +472,23 @@ public class UnrealArchiveReader : IDisposable
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
 
-        var locresFiles = _provider.Files.Keys
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+        var uniquePaths = _provider.Files.Keys
             .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Replace('\\', '/').Contains(pathFilter.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        // Expand to one entry per pak file per path
+        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.GameFile File)>();
+        foreach (var path in uniquePaths)
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresFiles.Add((path, gf));
 
         if (!string.IsNullOrEmpty(pathFilter))
             Console.WriteLine($"Path filter active: \"{pathFilter}\"");
-        Console.WriteLine($"Found {locresFiles.Count} .locres files to process");
+        Console.WriteLine($"Found {locresFiles.Count} .locres file(s) to process ({uniquePaths.Count} unique path(s) across paks)");
 
         if (locresFiles.Count == 0) return;
 
@@ -498,12 +507,12 @@ public class UnrealArchiveReader : IDisposable
             Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalFiles})   ");
         }
 
-        foreach (var locresPath in locresFiles)
+        foreach (var (locresPath, gameFile) in locresFiles)
         {
             try
             {
-                if (verbose) Console.WriteLine($"Reading: {locresPath}");
-                using var ar = _provider.CreateReader(locresPath);
+                if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
+                using var ar = gameFile.CreateReader();
                 var locres = new FTextLocalizationResource(ar);
                 foreach (var (nsKey, entries) in locres.Entries)
                 {
@@ -533,56 +542,68 @@ public class UnrealArchiveReader : IDisposable
     }
 
     // Returns locres entries grouped by (csvBaseName, pakChunkName) so callers can write
-    // one CSV per locres file. Duplicate basenames get the pak chunk name appended.
+    // one CSV per locres file. When the same virtual path exists in multiple pak files
+    // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
+    // separately via TryGetValues + gameFile.CreateReader() so no entries are silently dropped.
     public List<(string CsvBaseName, List<(string Ns, string Key, string Value)> Entries)>
         ReadLocresGrouped(string? pathFilter = null)
     {
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
 
-        var locresFiles = _provider.Files.Keys
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+
+        // Get unique virtual paths (Files.Keys may yield duplicates when the same path
+        // exists across multiple pak files — FileProviderDictionary enumerates all indices).
+        var uniquePaths = _provider.Files.Keys
             .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
-            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Replace('\\', '/').Contains(pathFilter.Replace('\\', '/'), StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        // Expand each unique path to one entry per pak file that contains it.
+        // TryGetValues returns one GameFile per mounted VFS (pak) at that path.
+        var locresEntries = new List<(string Path, CUE4Parse.FileProvider.GameFile File)>();
+        foreach (var path in uniquePaths)
+        {
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresEntries.Add((path, gf));
+        }
 
         if (!string.IsNullOrEmpty(pathFilter))
             Console.WriteLine($"Path filter active: \"{pathFilter}\"");
-        Console.WriteLine($"Found {locresFiles.Count} .locres files to process");
+        Console.WriteLine($"Found {locresEntries.Count} .locres file(s) to process ({uniquePaths.Count} unique path(s) across paks)");
 
-        // Detect duplicate basenames upfront to decide when to append pak name
-        var baseNames = locresFiles
-            .Select(p => Path.GetFileNameWithoutExtension(p))
-            .ToList();
-        var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase)
-            .Any(g => g.Count() > 1);
+        // Detect duplicate basenames to decide when to append pak name
+        var baseNames = locresEntries.Select(e => Path.GetFileNameWithoutExtension(e.Path)).ToList();
+        var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
         var result = new List<(string, List<(string, string, string)>)>();
         bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
 
-        for (int i = 0; i < locresFiles.Count; i++)
+        for (int i = 0; i < locresEntries.Count; i++)
         {
-            var locresPath = locresFiles[i];
+            var (locresPath, gameFile) = locresEntries[i];
             var baseName = Path.GetFileNameWithoutExtension(locresPath);
 
             if (hasDuplicateBase)
             {
                 // Append pak chunk name (e.g. "pakchunk0-Windows") to disambiguate
                 var pakName = string.Empty;
-                if (_provider.Files.TryGetValue(locresPath, out var gf) &&
-                    gf is CUE4Parse.UE4.VirtualFileSystem.VfsEntry ve)
+                if (gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry ve)
                     pakName = Path.GetFileNameWithoutExtension(ve.Vfs.Name);
 
-                if (!string.IsNullOrEmpty(pakName))
-                    baseName = $"{baseName}_{pakName}";
-                else
-                    baseName = $"{baseName}_{i}";
+                baseName = !string.IsNullOrEmpty(pakName) ? $"{baseName}_{pakName}" : $"{baseName}_{i}";
             }
 
             var entries = new List<(string, string, string)>();
             try
             {
-                if (verbose) Console.WriteLine($"Reading: {locresPath}");
-                using var ar = _provider.CreateReader(locresPath);
+                if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
+                // Read directly from this specific GameFile so we get this pak's version,
+                // not the highest-priority one returned by _provider.CreateReader(path).
+                using var ar = gameFile.CreateReader();
                 var locres = new FTextLocalizationResource(ar);
                 foreach (var (nsKey, ents) in locres.Entries)
                     foreach (var (textKey, entry) in ents)
