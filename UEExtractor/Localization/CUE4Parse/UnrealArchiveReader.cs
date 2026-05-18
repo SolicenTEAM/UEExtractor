@@ -3,6 +3,7 @@ using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
+using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -404,6 +405,14 @@ public class UnrealArchiveReader : IDisposable
                     "(e.g. -v=UE5_6 for a UE 5.6 game).");
             }
 
+            // When a path filter is active the folder may contain only .locres files (e.g.
+            // HT/Content/Localization). Don't abort — ProcessLocresFiles will handle them.
+            if (!string.IsNullOrEmpty(filterPath))
+            {
+                Console.WriteLine("No .uasset/.uexp files under the specified path. Will try .locres files.");
+                return;
+            }
+
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
 
@@ -449,6 +458,76 @@ public class UnrealArchiveReader : IDisposable
         });
 
         Console.WriteLine(); // newline after progress bar
+        if (errors > 0)
+            Console.WriteLine($"  Completed with {errors} error(s).");
+    }
+
+    // Reads .locres files directly from the virtual filesystem and calls processor with
+    // (namespace, key, localizedString) triples. Handles game-specific encryption automatically
+    // (e.g. NTE's encrypted locres via FNTEFTextLocalizationResource inside CUE4Parse).
+    public void ProcessLocresFiles(
+        Action<string, string, string> processor,
+        string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var locresFiles = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(pathFilter) || x.Contains(pathFilter, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (!string.IsNullOrEmpty(pathFilter))
+            Console.WriteLine($"Path filter active: \"{pathFilter}\"");
+        Console.WriteLine($"Found {locresFiles.Count} .locres files to process");
+
+        if (locresFiles.Count == 0) return;
+
+        int processed = 0;
+        int errors = 0;
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
+        int totalFiles = locresFiles.Count;
+
+        void PrintProgress()
+        {
+            int done = Volatile.Read(ref processed);
+            int pct = totalFiles > 0 ? (int)((long)done * 100 / totalFiles) : 100;
+            int barWidth = 30;
+            int filled = barWidth * pct / 100;
+            var bar = new string('█', filled) + new string('░', barWidth - filled);
+            Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalFiles})   ");
+        }
+
+        foreach (var locresPath in locresFiles)
+        {
+            try
+            {
+                if (verbose) Console.WriteLine($"Reading: {locresPath}");
+                using var ar = _provider.CreateReader(locresPath);
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, entries) in locres.Entries)
+                {
+                    foreach (var (textKey, entry) in entries)
+                    {
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            processor(nsKey.Str, textKey.Str, entry.LocalizedString);
+                    }
+                }
+                Interlocked.Increment(ref processed);
+                if (!verbose) PrintProgress();
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+                if (verbose)
+                    Console.WriteLine($"Error reading {locresPath}: {ex.Message}");
+                else
+                    PrintProgress();
+            }
+        }
+
+        Console.WriteLine();
         if (errors > 0)
             Console.WriteLine($"  Completed with {errors} error(s).");
     }

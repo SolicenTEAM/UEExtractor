@@ -183,6 +183,16 @@ namespace Solicen.Localization.UE4
                 }
             });
 
+            // Also read .locres files directly (handles games like NTE whose localization
+            // is stored as pre-compiled .locres binaries rather than inside .uasset files).
+            reader.ProcessLocresFiles((ns, key, localizedString) =>
+            {
+                if (string.IsNullOrWhiteSpace(localizedString)) return;
+                var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
+                if (!allResults.ContainsKey(compositeKey))
+                    allResults[compositeKey] = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+            }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+
             #region Zero Data All
             if (allResults.Count == 0) ZeroDataMessage();
             #endregion
