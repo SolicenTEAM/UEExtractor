@@ -1,6 +1,7 @@
 ﻿﻿using Solicen.CLI;
 using Solicen.GitHub.Updater;
 using Solicen.Translator;
+using System.Collections.Concurrent;
 
 namespace Solicen.Localization.UE4
 {
@@ -211,7 +212,7 @@ namespace Solicen.Localization.UE4
 		}
 
 		// O(1) merge using ConcurrentDictionary's built-in lookup
-		private static void MergeOldCsv(string csvPath, System.Collections.Concurrent.ConcurrentDictionary<string, LocresResult> result)
+		private static void MergeOldCsv(string csvPath, ConcurrentDictionary<string, LocresResult> result)
 		{
 			if (!File.Exists(csvPath)) return;
             CLI.Console.WriteLine("\n[Yellow]Found previous CSV file, merging...");
