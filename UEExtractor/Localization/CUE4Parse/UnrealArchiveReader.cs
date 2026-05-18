@@ -57,6 +57,10 @@ public class UnrealArchiveReader : IDisposable
             foreach (var guid in _provider.RequiredKeys)
                 Console.WriteLine($"  GUID: {guid}");
 
+            Console.WriteLine("Reader details (first 10):");
+            foreach (var r in _provider.UnloadedVfs.Take(10))
+                Console.WriteLine($"  [{r.GetType().Name}] {System.IO.Path.GetFileName(r.Name)} | Encrypted={r.IsEncrypted} | HasDirIdx={r.HasDirectoryIndex} | GUID={r.EncryptionKeyGuid}");
+
             LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
 
             Console.WriteLine($"UnloadedVfs after SubmitKey: {_provider.UnloadedVfs.Count}");
