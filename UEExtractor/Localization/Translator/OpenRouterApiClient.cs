@@ -64,35 +64,45 @@ namespace Solicen.Translator
             _httpClient.DefaultRequestHeaders.Add("X-Title", "Kismet Editor");
         }
 
-        public async Task<OpenRouterResponse> ChatAsync(OpenRouterRequest request)
+        public async Task<OpenRouterResponse> ChatAsync(OpenRouterRequest request, int maxRetries = 3)
         {
-            try
+            var jsonSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+            var jsonContent = JsonConvert.SerializeObject(request, jsonSettings);
+
+            int delay = 2000;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                // Сериализуем наш объект запроса в JSON. Null-поля будут игнорироваться.
-                var jsonSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-                var jsonContent = JsonConvert.SerializeObject(request, jsonSettings);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
-                var response = await _httpClient.PostAsync("chat/completions", content);
-
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    var responseJson = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<OpenRouterResponse>(responseJson);
-                }
-                else
-                {
-                    // Если произошла ошибка, сохраняем ее для диагностики
+                    var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                    var response = await _httpClient.PostAsync("chat/completions", content);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseJson = await response.Content.ReadAsStringAsync();
+                        return JsonConvert.DeserializeObject<OpenRouterResponse>(responseJson);
+                    }
+
                     var errorContent = await response.Content.ReadAsStringAsync();
                     LastError = $"{(int)response.StatusCode} {response.ReasonPhrase}: {errorContent}";
-                    return null;
+
+                    // Don't retry 4xx errors (client-side: bad key, bad model, etc.)
+                    if ((int)response.StatusCode < 500) return null;
+                }
+                catch (Exception ex)
+                {
+                    LastError = ex.Message;
+                }
+
+                if (attempt < maxRetries)
+                {
+                    CLI.Console.WriteLine($"[Yellow][Retry {attempt}/{maxRetries - 1}] Waiting {delay / 1000}s before retry... ({LastError})");
+                    await Task.Delay(delay);
+                    delay *= 2;
                 }
             }
-            catch (Exception ex)
-            {
-                LastError = ex.Message;
-                return null;
-            }
+
+            return null;
         }
     }
 }
