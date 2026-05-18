@@ -52,22 +52,29 @@ public class UnrealArchiveReader : IDisposable
 
             _provider.Initialize();
 
-            Console.WriteLine($"UnloadedVfs after Initialize: {_provider.UnloadedVfs.Count}");
-            Console.WriteLine($"RequiredKeys (encryption GUIDs needed): {_provider.RequiredKeys.Count}");
-            foreach (var guid in _provider.RequiredKeys)
-                Console.WriteLine($"  GUID: {guid}");
-
-            Console.WriteLine("Reader details (first 10):");
-            foreach (var r in _provider.UnloadedVfs.Take(10))
-                Console.WriteLine($"  [{r.GetType().Name}] {System.IO.Path.GetFileName(r.Name)} | Encrypted={r.IsEncrypted} | HasDirIdx={r.HasDirectoryIndex} | GUID={r.EncryptionKeyGuid}");
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+            {
+                Console.WriteLine($"UnloadedVfs after Initialize: {_provider.UnloadedVfs.Count}");
+                Console.WriteLine($"RequiredKeys (encryption GUIDs needed): {_provider.RequiredKeys.Count}");
+                foreach (var guid in _provider.RequiredKeys)
+                    Console.WriteLine($"  GUID: {guid}");
+                Console.WriteLine("Reader details (first 10):");
+                foreach (var r in _provider.UnloadedVfs.Take(10))
+                    Console.WriteLine($"  [{r.GetType().Name}] {System.IO.Path.GetFileName(r.Name)} | Encrypted={r.IsEncrypted} | HasDirIdx={r.HasDirectoryIndex} | GUID={r.EncryptionKeyGuid}");
+            }
 
             LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
 
-            Console.WriteLine($"UnloadedVfs after SubmitKey: {_provider.UnloadedVfs.Count}");
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+                Console.WriteLine($"UnloadedVfs after SubmitKey: {_provider.UnloadedVfs.Count}");
 
             int mounted = _provider.Mount();
-            Console.WriteLine($"Mount() newly mounted: {mounted}");
-            Console.WriteLine($"UnloadedVfs after Mount: {_provider.UnloadedVfs.Count}");
+
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+            {
+                Console.WriteLine($"Mount() newly mounted: {mounted}");
+                Console.WriteLine($"UnloadedVfs after Mount: {_provider.UnloadedVfs.Count}");
+            }
 
             _provider.LoadVirtualPaths();
 
@@ -398,25 +405,50 @@ public class UnrealArchiveReader : IDisposable
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
 
-        int totalAssets = assets.Count; 
-        int currentIndex = 1;
+        int totalAssets = assets.Count;
+        int processed = 0;
+        int errors = 0;
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
 
-        Parallel.ForEach(assets, assetPath => 
+        void PrintProgress()
+        {
+            int done = Volatile.Read(ref processed);
+            int pct = totalAssets > 0 ? (int)((long)done * 100 / totalAssets) : 100;
+            int barWidth = 30;
+            int filled = barWidth * pct / 100;
+            var bar = new string('█', filled) + new string('░', barWidth - filled);
+            Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalAssets})   ");
+        }
+
+        Parallel.ForEach(assets, assetPath =>
         {
             try
             {
-                Console.WriteLine($"[{currentIndex}/{totalAssets}] ..{assetPath}");
                 using var stream = LoadAsset(assetPath);
-                currentIndex++;
                 processor(assetPath, stream);
+                Interlocked.Increment(ref processed);
+                if (!verbose) PrintProgress();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{currentIndex}/{totalAssets}] Error processing {assetPath}: {ex.Message}");
-                if (ex is System.Security.SecurityException)
-                    Console.WriteLine(">> Possible encryption issue!");
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+                if (verbose)
+                {
+                    Console.WriteLine($"[{processed}/{totalAssets}] Error processing {assetPath}: {ex.Message}");
+                    if (ex is System.Security.SecurityException)
+                        Console.WriteLine(">> Possible encryption issue!");
+                }
+                else
+                {
+                    PrintProgress();
+                }
             }
         });
+
+        Console.WriteLine(); // newline after progress bar
+        if (errors > 0)
+            Console.WriteLine($"  Completed with {errors} error(s).");
     }
 
 

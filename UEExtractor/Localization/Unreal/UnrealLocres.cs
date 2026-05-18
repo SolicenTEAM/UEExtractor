@@ -47,6 +47,7 @@ namespace Solicen.Localization.UE4
         public static bool IncludeHashInKeyValue = false;
         public static string pDirectory = string.Empty;
         public static bool TableSeparator = false;
+        public static bool VerboseOutput = false;
         public static bool ContainsUpperUpper(string input)
         {
             var s = string.Join("", input.Where(x => x != ' '));
