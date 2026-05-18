@@ -513,26 +513,59 @@ namespace Solicen.Localization.UE4
             }
         }
 
-        public static void ProcessTranslator(ref LocresResult[] locres, Action<LocresResult[]>? onBatchComplete = null)
+        // journalPath: if set, completed batch pairs are appended to this file so a restart
+        // can skip already-translated strings without rewriting the full CSV each batch.
+        public static void ProcessTranslator(ref LocresResult[] locres,
+            Action<List<(string Source, string Translation)>>? onBatchComplete = null,
+            string? journalPath = null)
         {
+            // Pre-load journal so already-translated sources are skipped
+            if (journalPath != null && File.Exists(journalPath))
+            {
+                var cached = LoadJournal(journalPath);
+                foreach (var entry in locres)
+                    if (string.IsNullOrWhiteSpace(entry.Translation) && cached.TryGetValue(entry.Source, out var t))
+                        entry.Translation = t;
+            }
+
             var manager = new UberTranslator();
             var allValues = locres.GetUnique().Where(x => string.IsNullOrWhiteSpace(x.Translation))
                 .ToDictionary(x => x.Source, x => x.Translation);
 
             if (allValues.Count > 0)
             {
-                // Capture ref for use inside the lambda
                 var locresRef = locres;
-                Action<Dictionary<string, string>>? batchCallback = onBatchComplete == null ? null :
-                    translated =>
-                    {
-                        locresRef.ReplaceAll(translated);
-                        onBatchComplete(locresRef);
-                    };
-
-                manager.TranslateLines(ref allValues, onBatchComplete: batchCallback);
+                manager.TranslateLines(ref allValues, onBatchComplete: pairs =>
+                {
+                    // Apply to in-memory array
+                    var map = pairs.ToDictionary(p => p.Source, p => p.Translation);
+                    locresRef.ReplaceAll(map);
+                    // Append to journal (fast, no full-file rewrite)
+                    if (journalPath != null) AppendJournal(journalPath, pairs);
+                    onBatchComplete?.Invoke(pairs);
+                });
                 locres.ReplaceAll(allValues);
             }
+        }
+
+        private static Dictionary<string, string> LoadJournal(string path)
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var line in File.ReadLines(path))
+            {
+                var tab = line.IndexOf('\t');
+                if (tab > 0) dict[line[..tab]] = line[(tab + 1)..];
+            }
+            return dict;
+        }
+
+        private static readonly object _journalLock = new();
+        private static void AppendJournal(string path, List<(string Source, string Translation)> pairs)
+        {
+            lock (_journalLock)
+            using (var sw = new StreamWriter(path, append: true, System.Text.Encoding.UTF8))
+                foreach (var (src, tgt) in pairs)
+                    sw.WriteLine($"{src}\t{tgt}");
         }
 
         #region Output messages

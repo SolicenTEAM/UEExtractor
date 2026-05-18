@@ -47,6 +47,7 @@ namespace Solicen.Localization.UE4
                 new Argument("--api:key", "-a:key", "Set API key for OpenRouter (or any server that requires authentication).", (key) => UberTranslator.OpenRouterApiKey = key),
                 new Argument("--api:url", "-a:url", "Set a custom OpenAI-compatible base URL (e.g. http://localhost:11434/v1/ for Ollama). Overrides OpenRouter.", (url) => UberTranslator.ApiBaseUrl = url),
                 new Argument("--batch-size", "-bs", $"Number of segments per translation request (default: {UberTranslator.BatchSize}).", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.BatchSize = n; }),
+                new Argument("--parallel", "-par", "Number of concurrent translation requests (default: 1). Increase for faster translation.", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.MaxParallel = n; }),
             };
 		}
 
@@ -131,54 +132,15 @@ namespace Solicen.Localization.UE4
 			// Parsing and his result
 			var Result = UnrealLocres.ProcessDirectory(folderPath);
 
-			// If found previous CSV file load and analyze all rows and columns
-			if (File.Exists(csvPath))
-			{
-                CLI.Console.WriteLine("\n[Yellow]Found previous CSV file, analyzing, that take a while...");
-                var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
-				//Console.WriteLine($"Rows: [New:{Result.Count}] | [Old:{oldCSV.Length}]");
-				int LinesToMergeInt = oldCSV.Where(x => Result.Any(r => r.Key == x.Key)).ToArray().Length;
-				int NewLinesInt = oldCSV.Length - LinesToMergeInt;
-				int TotalInt = Result.Count + NewLinesInt;
-
-                CLI.Console.WriteLine($" - Extracted : {Result.Count}");
-                CLI.Console.WriteLine($" - To merge  : {LinesToMergeInt}");
-                CLI.Console.WriteLine($" - New rows  : {NewLinesInt}");
-                CLI.Console.WriteLine($" - Total     : {TotalInt}");
-		
-                foreach (var line in oldCSV)
-				{
-					if (Result.Any(x => x.Key == line.Key))
-					{
-						var rLine = Result.ToList().FirstOrDefault(x => x.Key == line.Key);
-                        if (rLine.Key != null)
-						{
-							// Adds Translation value from CSV [Source] Column.
-							if (rLine.Value.Source != line.Source.Escape() && line.Translation == string.Empty)
-                                Result[rLine.Key].Translation = line.Source;
-
-                            // Adds Translation value from CSV [Translation] Column.
-                            else if (line.Translation != string.Empty)
-                                Result[rLine.Key].Translation = line.Translation;                        
-                        }
-					}
-					else
-					{
-                        // If OldCSV line contains other keys add him to Result
-                        Result.TryAdd(line.Key, new LocresResult(line.Key, line.Source, line.Translation, line.Namespace));
-					}
-				}
-			}
+			MergeOldCsv(csvPath, Result);
 
 			if (UberTranslator.IsConfigured)
 			{
+				var journalPath = csvPath + ".journal";
 				var tempRes = Result.Select(x => x.Value).ToArray();
-				UnrealLocres.ProcessTranslator(ref tempRes, snapshot =>
-				{
-					UnrealLocres.WriteToCsv(snapshot.ToConcurrent(), csvPath);
-					CLI.Console.WriteLine($"\n[DarkGray]Progress saved to: {csvPath}");
-				});
+				UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
 				Result = tempRes.ToConcurrent();
+				if (File.Exists(journalPath)) File.Delete(journalPath);
 			}
 
 			UnrealLocres.WriteToCsv(Result, csvPath);
@@ -234,13 +196,11 @@ namespace Solicen.Localization.UE4
 
 				if (UberTranslator.IsConfigured)
 				{
+					var journalPath = csvPath + ".journal";
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
-					UnrealLocres.ProcessTranslator(ref tempRes, snapshot =>
-					{
-						UnrealLocres.WriteToCsv(snapshot.ToConcurrent(), csvPath);
-						CLI.Console.WriteLine($"\n[DarkGray]Progress saved to: {csvPath}");
-					});
+					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
 					finalResult = tempRes.ToConcurrent();
+					if (File.Exists(journalPath)) File.Delete(journalPath);
 				}
 
 				UnrealLocres.WriteToCsv(finalResult, csvPath);
@@ -248,6 +208,32 @@ namespace Solicen.Localization.UE4
 			}
 
 			if (ProgramAutoExit) Environment.Exit(0);
+		}
+
+		// O(1) merge using ConcurrentDictionary's built-in lookup
+		private static void MergeOldCsv(string csvPath, System.Collections.Concurrent.ConcurrentDictionary<string, LocresResult> result)
+		{
+			if (!File.Exists(csvPath)) return;
+            CLI.Console.WriteLine("\n[Yellow]Found previous CSV file, merging...");
+			var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
+			int merged = 0, added = 0;
+			foreach (var line in oldCSV)
+			{
+				if (result.TryGetValue(line.Key, out var existing))
+				{
+					if (existing.Source != line.Source.Escape() && line.Translation == string.Empty)
+						existing.Translation = line.Source;
+					else if (line.Translation != string.Empty)
+						existing.Translation = line.Translation;
+					merged++;
+				}
+				else
+				{
+					result.TryAdd(line.Key, new LocresResult(line.Key, line.Source, line.Translation, line.Namespace));
+					added++;
+				}
+			}
+            CLI.Console.WriteLine($" - Extracted: {result.Count - added}  Merged: {merged}  New from old: {added}  Total: {result.Count}");
 		}
 
 	}

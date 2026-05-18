@@ -11,6 +11,7 @@
         // Example: http://localhost:11434/v1/  or  http://localhost:1234/v1/
         public static string ApiBaseUrl = string.Empty;
         public static int BatchSize = 150;
+        public static int MaxParallel = 1;
 
         public static bool IsConfigured =>
             !string.IsNullOrEmpty(OpenRouterApiKey) || !string.IsNullOrEmpty(ApiBaseUrl);
@@ -30,11 +31,11 @@
             }
         }
 
-        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null, bool showWaringMsg = false, int delayBetweenMsg = 150, Action<Dictionary<string, string>>? onBatchComplete = null)
+        // onBatchComplete receives only the pairs translated in that batch (for efficient journaling)
+        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null,
+            bool showWaringMsg = false, int delayBetweenMsg = 150,
+            Action<List<(string Source, string Translation)>>? onBatchComplete = null)
         {
-            int SegmentIndex = 1; Dictionary<string, string> result = new Dictionary<string, string>();
-            int nullSegments = values.Where(s => string.IsNullOrWhiteSpace(s.Value)).ToArray().Length;
-
             if (OpenRouterClient == null)
             {
                 CLI.Console.WriteLine("[Red][Error] No API key or URL configured. Use --api:key=<key> for OpenRouter or --api:url=<url> for a local model.");
@@ -44,82 +45,91 @@
 
             var translatedBatch = TranslateBatchWithOpenRouterAsync(values, progress, onBatchComplete).GetAwaiter().GetResult();
             values = translatedBatch;
-            return;
         }
 
-        private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(Dictionary<string, string> values, IProgress<Tuple<int, int>> progress, Action<Dictionary<string, string>>? onBatchComplete = null)
+        private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(
+            Dictionary<string, string> values,
+            IProgress<Tuple<int, int>>? progress,
+            Action<List<(string Source, string Translation)>>? onBatchComplete = null)
         {
             const string separator = "|||";
-            int maxSegmentsPerRequest = BatchSize;
-            var result = new Dictionary<string, string>(values);
+            int batchSize = BatchSize;
+            var result = new ConcurrentDictionary<string, string>(values);
             var toTranslate = values.Where(kvp => string.IsNullOrWhiteSpace(kvp.Value)).ToList();
-            if (toTranslate.Count == 0) return result;
+            if (toTranslate.Count == 0) return new Dictionary<string, string>(result);
 
             int totalTranslated = 0;
+            var semaphore = new SemaphoreSlim(MaxParallel);
+            var endpoint = string.IsNullOrEmpty(ApiBaseUrl) ? "OpenRouter" : ApiBaseUrl;
 
-            // Разбиваем список на батчи по 150 сегментов
-            for (int i = 0; i < toTranslate.Count; i += maxSegmentsPerRequest)
+            // Split into chunks and process with bounded parallelism
+            var chunks = Enumerable.Range(0, (toTranslate.Count + batchSize - 1) / batchSize)
+                .Select(i => toTranslate.Skip(i * batchSize).Take(batchSize).ToList())
+                .ToList();
+
+            var tasks = chunks.Select(async (chunk, chunkIndex) =>
             {
-                var chunk = toTranslate.Skip(i).Take(maxSegmentsPerRequest).ToList();
-                if (chunk.Count == 0) continue;
-
-                // 1. Объединяем строки текущего батча в одну
-                var combinedText = string.Join(separator, chunk.Select(kvp => kvp.Key.Replace(separator, "")));
-
-                // 2. Формируем промпт для модели
-                var systemPrompt = $"You are an expert language translator. Translate the following text from '{LanguageFrom}' to '{LanguageTo}'. " +
-                    $"The texts are separated by '{separator}'. Maintain the exact same separation in your output. Keep the same punctuation. " +
-                    $"Provide only the translated text in a literary style, without any additional explanations or context. ";
-
-                var userPrompt = $"Please translate this:\n\n{combinedText}";
-                var request = new OpenRouterRequest
+                await semaphore.WaitAsync();
+                try
                 {
-                    Model = $"{OpenRouterModel}",
-                    Messages = new List<OpenRouterMessage>
+                    var combinedText = string.Join(separator, chunk.Select(kvp => kvp.Key.Replace(separator, "")));
+                    var systemPrompt =
+                        $"You are an expert language translator. Translate the following text from '{LanguageFrom}' to '{LanguageTo}'. " +
+                        $"The texts are separated by '{separator}'. Maintain the exact same separation in your output. Keep the same punctuation. " +
+                        $"Provide only the translated text in a literary style, without any additional explanations or context. ";
+
+                    var request = new OpenRouterRequest
                     {
-                        new OpenRouterMessage { Role = "system", Content = systemPrompt },
-                        new OpenRouterMessage { Role = "user", Content = userPrompt }
-                    }
-                };
-
-                var endpoint = string.IsNullOrEmpty(ApiBaseUrl) ? "OpenRouter" : ApiBaseUrl;
-                CLI.Console.StartProgress($"Translating batch {i / maxSegmentsPerRequest + 1} ({chunk.Count} segments) via {endpoint} [{OpenRouterModel}]...");
-                var response = await OpenRouterClient.ChatAsync(request);
-                CLI.Console.StopProgress();
-
-                if (response != null && response.Choices.Any())
-                {
-                    var translatedCombinedText = response.Choices.First().Message?.Content;
-                    string[] translatedSegments = translatedCombinedText.Split(new[] { separator }, StringSplitOptions.None);
-
-                    if (translatedSegments.Length == chunk.Count)
-                    {
-                        for (int j = 0; j < chunk.Count; j++)
+                        Model = OpenRouterModel,
+                        Messages = new List<OpenRouterMessage>
                         {
-                            var originalKey = chunk[j].Key;
-                            var translatedValue = translatedSegments[j].Trim();
-                            result[originalKey] = translatedValue;
-                            totalTranslated++;
-                            progress?.Report(new Tuple<int, int>(totalTranslated, toTranslate.Count));
-                            CLI.Console.WriteLine($"[DarkGray][{totalTranslated}/{toTranslate.Count}] : [O] : [White]'{originalKey.Escape()}' => '{translatedValue.Escape()}'");
+                            new OpenRouterMessage { Role = "system", Content = systemPrompt },
+                            new OpenRouterMessage { Role = "user", Content = $"Please translate this:\n\n{combinedText}" }
                         }
-                        // Save progress after every successful batch so a restart can resume
-                        onBatchComplete?.Invoke(result);
+                    };
+
+                    CLI.Console.StartProgress($"Batch {chunkIndex + 1}/{chunks.Count} ({chunk.Count} segments) → {endpoint} [{OpenRouterModel}]...");
+                    var response = await OpenRouterClient.ChatAsync(request);
+                    CLI.Console.StopProgress();
+
+                    if (response != null && response.Choices.Any())
+                    {
+                        var translated = response.Choices.First().Message?.Content ?? string.Empty;
+                        var segments = translated.Split(new[] { separator }, StringSplitOptions.None);
+
+                        if (segments.Length == chunk.Count)
+                        {
+                            var batchPairs = new List<(string Source, string Translation)>(chunk.Count);
+                            for (int j = 0; j < chunk.Count; j++)
+                            {
+                                var src = chunk[j].Key;
+                                var tgt = segments[j].Trim();
+                                result[src] = tgt;
+                                batchPairs.Add((src, tgt));
+                                int done = Interlocked.Increment(ref totalTranslated);
+                                progress?.Report(new Tuple<int, int>(done, toTranslate.Count));
+                                CLI.Console.WriteLine($"[DarkGray][{done}/{toTranslate.Count}] [White]'{src.Escape()}' => '{tgt.Escape()}'");
+                            }
+                            onBatchComplete?.Invoke(batchPairs);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[Red][Error] [White]Batch {chunkIndex + 1}: expected {chunk.Count} segments, got {segments.Length}. Skipped.");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine($"[Red][Error] [White]OpenRouter returned a different number of segments ({translatedSegments.Length}) than expected ({chunk.Count}). Batch failed.");
+                        Console.WriteLine($"[Red][Error] [White]Batch {chunkIndex + 1} failed: {OpenRouterClient.LastError}");
                     }
                 }
-                else
+                finally
                 {
-                   Console.WriteLine($"[Red][Error] [White]Failed to get a response from OpenRouter. Error: {OpenRouterClient.LastError}");
+                    semaphore.Release();
                 }
+            });
 
-                // Небольшая задержка между запросами, чтобы не превышать лимиты API
-                if (i + maxSegmentsPerRequest < toTranslate.Count) await Task.Delay(3000);
-            }
-            return result;
+            await Task.WhenAll(tasks);
+            return new Dictionary<string, string>(result);
         }
 
     }
