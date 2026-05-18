@@ -1,14 +1,14 @@
-﻿namespace Solicen.Translator
+using System.Collections.Concurrent;
+
+namespace Solicen.Translator
 {
     internal class UberTranslator
     {
-        private OpenRouterApiClient OpenRouterClient;
+        private readonly OpenRouterApiClient? OpenRouterClient;
 
         public static string LanguageTo = "ru", LanguageFrom = "auto";
         public static string OpenRouterApiKey = string.Empty;
         public static string OpenRouterModel = "tngtech/deepseek-r1t2-chimera:free";
-        // Custom base URL for any OpenAI-compatible endpoint (Ollama, LM Studio, vLLM, etc.)
-        // Example: http://localhost:11434/v1/  or  http://localhost:1234/v1/
         public static string ApiBaseUrl = string.Empty;
         public static int BatchSize = 150;
         public static int MaxParallel = 1;
@@ -32,28 +32,23 @@
         }
 
         // onBatchComplete receives only the pairs translated in that batch (for efficient journaling)
-        public void TranslateLines(ref Dictionary<string, string> values, IProgress<Tuple<int, int>> progress = null,
-            bool showWaringMsg = false, int delayBetweenMsg = 150,
+        public void TranslateLines(ref Dictionary<string, string> values,
             Action<List<(string Source, string Translation)>>? onBatchComplete = null)
         {
             if (OpenRouterClient == null)
             {
                 CLI.Console.WriteLine("[Red][Error] No API key or URL configured. Use --api:key=<key> for OpenRouter or --api:url=<url> for a local model.");
-                values = new Dictionary<string, string>(values);
                 return;
             }
 
-            var translatedBatch = TranslateBatchWithOpenRouterAsync(values, progress, onBatchComplete).GetAwaiter().GetResult();
-            values = translatedBatch;
+            values = TranslateBatchWithOpenRouterAsync(values, onBatchComplete).GetAwaiter().GetResult();
         }
 
         private async Task<Dictionary<string, string>> TranslateBatchWithOpenRouterAsync(
             Dictionary<string, string> values,
-            IProgress<Tuple<int, int>>? progress,
-            Action<List<(string Source, string Translation)>>? onBatchComplete = null)
+            Action<List<(string Source, string Translation)>>? onBatchComplete)
         {
             const string separator = "|||";
-            int batchSize = BatchSize;
             var result = new ConcurrentDictionary<string, string>(values);
             var toTranslate = values.Where(kvp => string.IsNullOrWhiteSpace(kvp.Value)).ToList();
             if (toTranslate.Count == 0) return new Dictionary<string, string>(result);
@@ -62,9 +57,8 @@
             var semaphore = new SemaphoreSlim(MaxParallel);
             var endpoint = string.IsNullOrEmpty(ApiBaseUrl) ? "OpenRouter" : ApiBaseUrl;
 
-            // Split into chunks and process with bounded parallelism
-            var chunks = Enumerable.Range(0, (toTranslate.Count + batchSize - 1) / batchSize)
-                .Select(i => toTranslate.Skip(i * batchSize).Take(batchSize).ToList())
+            var chunks = Enumerable.Range(0, (toTranslate.Count + BatchSize - 1) / BatchSize)
+                .Select(i => toTranslate.Skip(i * BatchSize).Take(BatchSize).ToList())
                 .ToList();
 
             var tasks = chunks.Select(async (chunk, chunkIndex) =>
@@ -81,20 +75,20 @@
                     var request = new OpenRouterRequest
                     {
                         Model = OpenRouterModel,
-                        Messages = new List<OpenRouterMessage>
-                        {
+                        Messages =
+                        [
                             new OpenRouterMessage { Role = "system", Content = systemPrompt },
                             new OpenRouterMessage { Role = "user", Content = $"Please translate this:\n\n{combinedText}" }
-                        }
+                        ]
                     };
 
                     CLI.Console.StartProgress($"Batch {chunkIndex + 1}/{chunks.Count} ({chunk.Count} segments) → {endpoint} [{OpenRouterModel}]...");
-                    var response = await OpenRouterClient.ChatAsync(request);
+                    var response = await OpenRouterClient!.ChatAsync(request);
                     CLI.Console.StopProgress();
 
-                    if (response != null && response.Choices.Any())
+                    if (response != null && response.Choices.Count > 0)
                     {
-                        var translated = response.Choices.First().Message?.Content ?? string.Empty;
+                        var translated = response.Choices[0].Message?.Content ?? string.Empty;
                         var segments = translated.Split(new[] { separator }, StringSplitOptions.None);
 
                         if (segments.Length == chunk.Count)
@@ -107,7 +101,6 @@
                                 result[src] = tgt;
                                 batchPairs.Add((src, tgt));
                                 int done = Interlocked.Increment(ref totalTranslated);
-                                progress?.Report(new Tuple<int, int>(done, toTranslate.Count));
                                 CLI.Console.WriteLine($"[DarkGray][{done}/{toTranslate.Count}] [White]'{src.Escape()}' => '{tgt.Escape()}'");
                             }
                             onBatchComplete?.Invoke(batchPairs);
@@ -131,6 +124,5 @@
             await Task.WhenAll(tasks);
             return new Dictionary<string, string>(result);
         }
-
     }
 }
