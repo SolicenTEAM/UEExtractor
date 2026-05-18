@@ -146,6 +146,9 @@ namespace Solicen.Localization.UE4
 			{
 				Result = UnrealLocres.ProcessDirectory(folderPath);
 				MergeOldCsv(csvPath, Result);
+				// Write extracted CSV before translation so --translate-only can resume if stopped
+				if (UberTranslator.IsConfigured)
+					UnrealLocres.WriteToCsv(Result, csvPath);
 			}
 
 			if (UberTranslator.IsConfigured)
@@ -207,6 +210,8 @@ namespace Solicen.Localization.UE4
 
 				if (UberTranslator.IsConfigured)
 				{
+					// Write extracted CSV before translation so --translate-only can resume if stopped
+					UnrealLocres.WriteToCsv(finalResult, csvPath);
 					var journalPath = csvPath + ".journal";
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
 					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
