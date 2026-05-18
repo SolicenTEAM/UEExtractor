@@ -137,8 +137,8 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--table:only:key=<name>` | `-t:o:k` | Include only entries whose key/name matches the given value. |
 | `--lang:from=<code>` | `-l:f` | Source language for translation (e.g. `en`). |
 | `--lang:to=<code>` | `-l:t` | Target language for translation (e.g. `ru`). |
-| `--api=<key>` | | OpenRouter API key for automatic translation. |
-| `--api:url=<url>` | `-a:url` | Custom OpenAI-compatible base URL. Use this to point at a local model instead of OpenRouter (e.g. `http://localhost:11434/v1/` for Ollama). |
+| `--api:key=<key>` | `-a:key` | API key for OpenRouter or any server that requires authentication. |
+| `--api:url=<url>` | `-a:url` | Custom OpenAI-compatible base URL for a local model (e.g. `http://localhost:11434/v1/` for Ollama). Omit for OpenRouter. |
 | `--api:model=<model>` | `-a:model` | Model name to use (e.g. `tngtech/deepseek-r1t2-chimera:free` for OpenRouter or `llama3` for Ollama). |
 | `--update` | | Check for a new version on GitHub and update if available. |
 | `--help` | | Show help information. |

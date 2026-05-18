@@ -34,14 +34,24 @@ namespace Solicen.CLI
         // Проверяет, соответствует ли строковый аргумент этому правилу
         public bool Matches(string arg)
         {
-            // Проверяем полное совпадение для флагов (аргументов без значений)
+            // Для флагов — только точное совпадение
             if (!HasValue)
             {
-                return Key.Equals(arg, StringComparison.OrdinalIgnoreCase) || (!string.IsNullOrEmpty(ShortKey) && ShortKey.Equals(arg, StringComparison.OrdinalIgnoreCase));
+                return Key.Equals(arg, StringComparison.OrdinalIgnoreCase) ||
+                       (!string.IsNullOrEmpty(ShortKey) && ShortKey.Equals(arg, StringComparison.OrdinalIgnoreCase));
             }
-            // Проверяем, начинается ли аргумент с ключа для аргументов со значением
-            return arg.StartsWith(Key, StringComparison.OrdinalIgnoreCase) ||
-                   (!string.IsNullOrEmpty(ShortKey) && arg.StartsWith(ShortKey, StringComparison.OrdinalIgnoreCase));
+            // Для аргументов со значением: совпадение точное или с '=' (--key=value / --key value)
+            // StartsWith(key) alone would match --api:url when key is --api, so we require
+            // the next char (if any) to be '=' to avoid prefix collisions.
+            return MatchesKey(arg, Key) ||
+                   (!string.IsNullOrEmpty(ShortKey) && MatchesKey(arg, ShortKey));
+        }
+
+        private static bool MatchesKey(string arg, string key)
+        {
+            if (arg.Equals(key, StringComparison.OrdinalIgnoreCase)) return true;
+            if (arg.StartsWith(key + "=", StringComparison.OrdinalIgnoreCase)) return true;
+            return false;
         }
     }
 }
