@@ -147,6 +147,8 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--api:url=<url>` | `-a:url` | Custom OpenAI-compatible base URL for a local model (e.g. `http://localhost:11434/v1/` for Ollama). Omit for OpenRouter. |
 | `--api:model=<model>` | `-a:model` | Model name to use (e.g. `tngtech/deepseek-r1t2-chimera:free` for OpenRouter or `llama3` for Ollama). |
 | `--batch-size=<n>` | `-bs` | Number of segments sent per translation request (default: 150). Lower for models with small context. |
+| `--parallel=<n>` | `-par` | Number of concurrent translation requests (default: 1). Increase for faster translation with local models. |
+| `--translate-only` | `-t:o` | Skip extraction entirely and translate the existing CSV file(s) from a previous run. Resumes from where translation stopped. |
 | `--update` | | Check for a new version on GitHub and update if available. |
 | `--help` | | Show help information. |
 

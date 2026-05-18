@@ -8,6 +8,7 @@ namespace Solicen.Localization.UE4
 	class CLI_Processor
 	{
         private static bool ProgramAutoExit = false;
+        private static bool TranslateOnly = false;
         private static readonly List<Argument> arguments;
 
 		static CLI_Processor()
@@ -49,6 +50,7 @@ namespace Solicen.Localization.UE4
                 new Argument("--api:url", "-a:url", "Set a custom OpenAI-compatible base URL (e.g. http://localhost:11434/v1/ for Ollama). Overrides OpenRouter.", (url) => UberTranslator.ApiBaseUrl = url),
                 new Argument("--batch-size", "-bs", $"Number of segments per translation request (default: {UberTranslator.BatchSize}).", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.BatchSize = n; }),
                 new Argument("--parallel", "-par", "Number of concurrent translation requests (default: 1). Increase for faster translation.", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.MaxParallel = n; }),
+                new Argument("--translate-only", "-t:o", "Skip extraction and translate existing CSV file(s) from previous run.", () => TranslateOnly = true),
             };
 		}
 
@@ -127,13 +129,24 @@ namespace Solicen.Localization.UE4
 
 			csvPath =  Path.Combine(exePath + "\\", csvPath);
 
-			// CSV for skipped_lines during parsing lines to locresCSV.
-			UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath,"_skipped_lines.csv"));
+			UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
 
-			// Parsing and his result
-			var Result = UnrealLocres.ProcessDirectory(folderPath);
-
-			MergeOldCsv(csvPath, Result);
+			ConcurrentDictionary<string, LocresResult> Result;
+			if (TranslateOnly)
+			{
+				if (!File.Exists(csvPath))
+				{
+                    CLI.Console.WriteLine($"[Red][Error] --translate-only requires an existing CSV: {csvPath}");
+					return;
+				}
+                CLI.Console.WriteLine($"[Yellow]--translate-only: loading {csvPath}...");
+				Result = UnrealLocres.LoadFromCSV(csvPath).ToConcurrent();
+			}
+			else
+			{
+				Result = UnrealLocres.ProcessDirectory(folderPath);
+				MergeOldCsv(csvPath, Result);
+			}
 
 			if (UberTranslator.IsConfigured)
 			{
@@ -156,56 +169,57 @@ namespace Solicen.Localization.UE4
 		private static void ProcessFolderToDirectory(string folderPath, string outputDir, string? locresPath)
 		{
 			Directory.CreateDirectory(outputDir);
-			var groups = UnrealLocres.ProcessLocresGrouped(folderPath);
 
-			if (groups.Count == 0)
+			List<(string BaseName, ConcurrentDictionary<string, LocresResult> Result)> groups;
+
+			if (TranslateOnly)
 			{
-                CLI.Console.WriteLine("[Yellow]No locres data found.");
-				return;
+				var existing = Directory.GetFiles(outputDir, "*.csv")
+					.Where(f => !f.EndsWith("_skipped_lines.csv"))
+					.ToList();
+				if (existing.Count == 0)
+				{
+                    CLI.Console.WriteLine($"[Red][Error] --translate-only: no CSV files found in {outputDir}");
+					return;
+				}
+                CLI.Console.WriteLine($"[Yellow]--translate-only: found {existing.Count} CSV(s) in {outputDir}");
+				groups = existing
+					.Select(f => (Path.GetFileNameWithoutExtension(f), UnrealLocres.LoadFromCSV(f).ToConcurrent()))
+					.ToList();
+			}
+			else
+			{
+				groups = UnrealLocres.ProcessLocresGrouped(folderPath);
+				if (groups.Count == 0)
+				{
+                    CLI.Console.WriteLine("[Yellow]No locres data found.");
+					return;
+				}
+				// Merge with existing CSVs (O(1) lookup)
+				foreach (var (baseName, result) in groups)
+					MergeOldCsv(Path.Combine(outputDir, $"{baseName}.csv"), result);
 			}
 
-			foreach (var (baseName, result) in groups)
+			foreach (var (baseName, finalResult) in groups)
 			{
 				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
 				UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
-
-				var finalResult = result;
-
-				if (File.Exists(csvPath))
-				{
-                    CLI.Console.WriteLine($"\n[Yellow]Found previous CSV: {csvPath}, merging...");
-					var oldCSV = UnrealLocres.LoadFromCSV(csvPath);
-					foreach (var line in oldCSV)
-					{
-						if (finalResult.Any(x => x.Key == line.Key))
-						{
-							var rLine = finalResult.ToList().FirstOrDefault(x => x.Key == line.Key);
-							if (rLine.Key != null)
-							{
-								if (rLine.Value.Source != line.Source.Escape() && line.Translation == string.Empty)
-									finalResult[rLine.Key].Translation = line.Source;
-								else if (line.Translation != string.Empty)
-									finalResult[rLine.Key].Translation = line.Translation;
-							}
-						}
-						else
-						{
-							finalResult.TryAdd(line.Key, new LocresResult(line.Key, line.Source, line.Translation, line.Namespace));
-						}
-					}
-				}
 
 				if (UberTranslator.IsConfigured)
 				{
 					var journalPath = csvPath + ".journal";
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
 					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
-					finalResult = tempRes.ToConcurrent();
+					var translated = tempRes.ToConcurrent();
 					if (File.Exists(journalPath)) File.Delete(journalPath);
+					UnrealLocres.WriteToCsv(translated, csvPath);
+                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({translated.Count} entries)");
 				}
-
-				UnrealLocres.WriteToCsv(finalResult, csvPath);
-                CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({finalResult.Count} entries)");
+				else
+				{
+					UnrealLocres.WriteToCsv(finalResult, csvPath);
+                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({finalResult.Count} entries)");
+				}
 			}
 
 			if (ProgramAutoExit) Environment.Exit(0);
