@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -35,14 +35,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\CUE4Parse\CUE4Parse\CUE4Parse.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="unreal.ico">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CUE4Parse\CUE4Parse\CUE4Parse.csproj" />
   </ItemGroup>
 
 </Project>
