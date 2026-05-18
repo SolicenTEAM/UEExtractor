@@ -98,6 +98,20 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
+    // Maps normalized folder/exe names to game-specific EGame values.
+    // These games require a specific EGame to handle custom pak formats, encryption, or offsets.
+    private static readonly Dictionary<string, EGame> _knownGames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["NevernessToEverness"]    = EGame.GAME_NevernessToEverness,
+        ["NevernessToeEverness"]   = EGame.GAME_NevernessToEverness, // typo seen in some installs
+        ["AshEchoes"]              = EGame.GAME_AshEchoes,
+        ["WutheringWaves"]         = EGame.GAME_WutheringWaves,
+        ["InZOI"]                  = EGame.GAME_InZOI,
+        ["MarvelRivals"]           = EGame.GAME_MarvelRivals,
+        ["DeadByDaylight"]         = EGame.GAME_DeadByDaylight,
+        ["FragPunk"]               = EGame.GAME_FragPunk,
+    };
+
     private EGame ParseVersion(string UEVersion)
     {
         if (Enum.TryParse<EGame>(UEVersion, out EGame result))
@@ -109,6 +123,31 @@ public class UnrealArchiveReader : IDisposable
             return EGame.GAME_UE4_LATEST;
         }
 
+    }
+
+    private EGame DetectKnownGame(string dir, EGame fallback)
+    {
+        // 1. Check folder name (e.g. "Neverness To Everness" → "NevernessToEverness")
+        var folderName = Path.GetFileName(dir.TrimEnd(Path.DirectorySeparatorChar))
+                            ?.Replace(" ", "").Replace("-", "").Replace("_", "");
+        if (folderName != null && _knownGames.TryGetValue(folderName, out var byFolder))
+        {
+            Console.WriteLine($"GameType: detected '{folderName}' → {byFolder}");
+            return byFolder;
+        }
+
+        // 2. Check exe name in top-level directory
+        foreach (var exe in Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly))
+        {
+            var name = Path.GetFileNameWithoutExtension(exe).Replace("-", "").Replace("_", "");
+            if (_knownGames.TryGetValue(name, out var byExe))
+            {
+                Console.WriteLine($"GameType: detected '{name}.exe' → {byExe}");
+                return byExe;
+            }
+        }
+
+        return fallback;
     }
 
     private EGame LoadEngineVersion(string dir)
@@ -144,9 +183,9 @@ public class UnrealArchiveReader : IDisposable
 
             Console.WriteLine($"UE::File: {engineFile}");
             Console.WriteLine($"UE::Version: {version}");
-            return ParseVersion(version);
+            return DetectKnownGame(dir, ParseVersion(version));
         }
-        return EGame.GAME_UE5_LATEST;
+        return DetectKnownGame(dir, EGame.GAME_UE5_LATEST);
     }
 
     private void LoadAesKey(string gameDirectory)
@@ -162,19 +201,22 @@ public class UnrealArchiveReader : IDisposable
         }
         else if (File.Exists(aesKeyPath))
         {
-            var keyString = File.ReadAllText(aesKeyPath);
+            var keyString = File.ReadAllText(aesKeyPath).Trim();
             if (!string.IsNullOrEmpty(keyString))
             {
+                // Normalise: ensure "0x" prefix then check length
+                if (!keyString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                    keyString = "0x" + keyString;
                 if (keyString.Length == 66)
                 {
                     var key = new FAesKey(keyString);
                     _provider.SubmitKey(new Guid(), key);
                     _isEncrypted = true;
-                    Console.WriteLine("AES key loaded successfully");
+                    Console.WriteLine($"AES key loaded: {keyString[..8]}...{keyString[^4..]}");
                 }
                 else
                 {
-                    throw new FormatException("Invalid AES key format. Expected 32-character hex string");
+                    throw new FormatException($"Invalid AES key length: {keyString.Length} chars (expected 66). Check aes.txt.");
                 }
             }
         }
