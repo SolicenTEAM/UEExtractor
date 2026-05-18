@@ -5,6 +5,8 @@ VisualStudioVersion = 18.2.11430.68 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UEExtractor", "UEExtractor.csproj", "{CA41DC1E-F510-42C4-917C-A154C1A3E7C7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CUE4Parse", "..\CUE4Parse\CUE4Parse\CUE4Parse.csproj", "{3D7A2F1C-8B4E-4D6A-9C3F-2E1A5B8D0F7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{CA41DC1E-F510-42C4-917C-A154C1A3E7C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA41DC1E-F510-42C4-917C-A154C1A3E7C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA41DC1E-F510-42C4-917C-A154C1A3E7C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D7A2F1C-8B4E-4D6A-9C3F-2E1A5B8D0F7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D7A2F1C-8B4E-4D6A-9C3F-2E1A5B8D0F7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D7A2F1C-8B4E-4D6A-9C3F-2E1A5B8D0F7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D7A2F1C-8B4E-4D6A-9C3F-2E1A5B8D0F7C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
