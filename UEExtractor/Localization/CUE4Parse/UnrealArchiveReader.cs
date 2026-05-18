@@ -100,16 +100,42 @@ public class UnrealArchiveReader : IDisposable
 
     // Maps normalized folder/exe names to game-specific EGame values.
     // These games require a specific EGame to handle custom pak formats, encryption, or offsets.
+    // CUE4Parse automatically configures CustomEncryption for games that need it (e.g. MarvelRivals, DeadByDaylight).
     private static readonly Dictionary<string, EGame> _knownGames = new(StringComparer.OrdinalIgnoreCase)
     {
+        // Neverness To Everness — custom pak index offset (FPakInfo -1)
         ["NevernessToEverness"]    = EGame.GAME_NevernessToEverness,
-        ["NevernessToeEverness"]   = EGame.GAME_NevernessToEverness, // typo seen in some installs
+        ["NevernessToeEverness"]   = EGame.GAME_NevernessToEverness,
+        ["HT"]                     = EGame.GAME_NevernessToEverness, // internal name
+
+        // Ash Echoes — custom file provider
         ["AshEchoes"]              = EGame.GAME_AshEchoes,
+
+        // Wuthering Waves — partial encryption pak format
         ["WutheringWaves"]         = EGame.GAME_WutheringWaves,
+        ["KuroGames"]              = EGame.GAME_WutheringWaves,
+
+        // inZOI — custom FPakInfo offset
         ["InZOI"]                  = EGame.GAME_InZOI,
+        ["inZOI"]                  = EGame.GAME_InZOI,
+
+        // Marvel Rivals — custom encryption (MarvelAes, auto-set by CUE4Parse)
         ["MarvelRivals"]           = EGame.GAME_MarvelRivals,
+        ["MarvelsSRivals"]         = EGame.GAME_MarvelRivals,
+
+        // Dead by Daylight — custom encryption (DBDAes, auto-set by CUE4Parse)
         ["DeadByDaylight"]         = EGame.GAME_DeadByDaylight,
+        ["DeadbyDaylight"]         = EGame.GAME_DeadByDaylight,
+
+        // FragPunk — custom global IoStore handling
         ["FragPunk"]               = EGame.GAME_FragPunk,
+
+        // Infinity Nikki — custom encryption (InfinityNikkiAes, auto-set by CUE4Parse)
+        ["InfinityNikki"]          = EGame.GAME_InfinityNikki,
+
+        // Snowbreak: Containment Zone
+        ["Snowbreak"]              = EGame.GAME_Snowbreak,
+        ["SnowbreakContainmentZone"] = EGame.GAME_Snowbreak,
     };
 
     private EGame ParseVersion(string UEVersion)
