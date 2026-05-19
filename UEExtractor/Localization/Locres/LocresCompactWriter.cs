@@ -93,7 +93,10 @@ namespace LocresWriter
         // ── CityHash64 helper for v3 key hashes ──────────────────────────
 
         private static uint KeyHash(string s)
-            => (uint)CityHash.CityHash64(Encoding.Unicode.GetBytes(s));
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            return (uint)CityHash.CityHash64(Encoding.Unicode.GetBytes(s));
+        }
 
         // ── actualKey helper ─────────────────────────────────────────────
 
