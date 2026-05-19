@@ -137,7 +137,13 @@ namespace LocresWriter
 
                     foreach (var entry in keys)
                     {
-                        WriteKeyString(w, entry.Key);
+                        // Strip namespace prefix from compositeKey to recover the actual locres key.
+                        // e.g. "NS::NS::Key" with Namespace="NS" → actual key = "NS::Key"
+                        var actualKey = !string.IsNullOrEmpty(entry.Namespace) &&
+                                        entry.Key.StartsWith(entry.Namespace + "::", StringComparison.Ordinal)
+                            ? entry.Key[(entry.Namespace.Length + 2)..]
+                            : entry.Key;
+                        WriteKeyString(w, actualKey);
                         w.Write(LocresSharp.Crc.StrCrc32(LocresHelper.UnEscapeKey(entry.Source)));
                         w.Write(strIdx);
                         strIdx++;

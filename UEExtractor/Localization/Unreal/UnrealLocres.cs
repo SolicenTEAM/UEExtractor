@@ -478,8 +478,9 @@ namespace Solicen.Localization.UE4
                 {
                     var _keyNamespace = row.Columns[0];
 
-                    var _Namespace = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[0] : string.Empty;
-                    var _Key = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[1] : _keyNamespace;
+                    var firstSep = _keyNamespace.IndexOf("::");
+                    var _Namespace = firstSep >= 0 ? _keyNamespace[..firstSep] : string.Empty;
+                    var _Key = _keyNamespace; // preserve full composite key for locres round-trip
 
                     var _Source = row.Columns[1];
                     var _Translation = row.Columns[2];
