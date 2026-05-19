@@ -142,8 +142,8 @@ def main():
     print(f"{'─'*60}")
     for label, pos, n in [
         ("Pos  17-24 (std offset / NTE ver+bool+off)", 17, 16),
-        ("Pos  25-32 (std ns_count / NTE offset)",     25, 8),
-        ("Pos  45-56 (around error position 49)",      45, 16),
+        ("Pos  25-40 (key section area)",              25, 16),
+        ("Pos  41-56",                                 41, 16),
     ]:
         if pos < size:
             print(f"  {label}")
