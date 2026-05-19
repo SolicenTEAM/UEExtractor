@@ -217,8 +217,8 @@ namespace LocresWriter
 
                 Solicen.CLI.Console.WriteLine($"[Green]Locres verified: {nsCount} namespace(s), {totalEntries} entr{(totalEntries == 1 ? "y" : "ies")}, {strings.Count(s => s.Length > 0)} non-empty string(s).");
 
-                // Print first 3 entries as sanity check
-                int shown = Math.Min(3, keyIndex.Count);
+                // Print first 30 entries as sanity check
+                int shown = Math.Min(30, keyIndex.Count);
                 for (int i = 0; i < shown; i++)
                 {
                     var (ns, key, idx) = keyIndex[i];
