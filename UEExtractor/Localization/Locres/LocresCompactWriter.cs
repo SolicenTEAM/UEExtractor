@@ -12,6 +12,11 @@ namespace LocresWriter
         };
 
         private const byte VersionCompact = 0x01;
+
+        // When true, writes the NTE (Neverness to Everness) locres header:
+        // magic(16) + ue_version(1) + nte_version_int32(4) + offset_int64(8) = 29 bytes.
+        // nte_version=1 means strings are NOT encrypted (< 10000 threshold).
+        public static bool NTEFormat = false;
         /// <summary>
         /// Секция ключей: записывает строку.
         /// Пустая строка: Int32(0) и больше ничего.
@@ -125,8 +130,11 @@ namespace LocresWriter
                 }
             }
 
-            // Header = 16 (magic) + 1 (version) + 8 (offset) = 25
-            long stringTableOffset = 25 + keySectionSize;
+            // Header size:
+            //   Standard : 16 (magic) + 1 (version) + 8 (offset)           = 25 bytes
+            //   NTE      : 16 (magic) + 1 (version) + 4 (nte_ver) + 8 (offset) = 29 bytes
+            int headerSize = NTEFormat ? 29 : 25;
+            long stringTableOffset = headerSize + keySectionSize;
 
             using (var ms = new MemoryStream())
             using (var w = new BinaryWriter(ms, Encoding.UTF8))
@@ -134,6 +142,8 @@ namespace LocresWriter
                 // === HEADER ===
                 w.Write(LocresMagic);
                 w.Write(VersionCompact);
+                if (NTEFormat)
+                    w.Write((int)1); // nte_version=1: unencrypted (< 10000 threshold)
                 w.Write(stringTableOffset);
 
                 // === СЕКЦИЯ КЛЮЧЕЙ ===
@@ -200,6 +210,7 @@ namespace LocresWriter
 
                 r.ReadBytes(16); // magic
                 r.ReadByte();    // version
+                if (NTEFormat) r.ReadInt32(); // nte_version
                 r.ReadInt64();   // string table offset
 
                 int nsCount = r.ReadInt32();
