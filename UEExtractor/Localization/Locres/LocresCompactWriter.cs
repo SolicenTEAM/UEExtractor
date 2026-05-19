@@ -171,10 +171,104 @@ namespace LocresWriter
         }
 
         public static void WriteToFile(string path, List<LocresResult> entries)
-            => File.WriteAllBytes(path, Write(entries));
+        {
+            var data = Write(entries);
+            File.WriteAllBytes(path, data);
+            PrintVerification(data);
+        }
 
         public static void WriteToFile(string path, LocresResult[] entries)
-            => File.WriteAllBytes(path, Write(entries.ToList()));
+            => WriteToFile(path, entries.ToList());
+
+        // Reads back the written binary and prints a verification summary.
+        private static void PrintVerification(byte[] data)
+        {
+            try
+            {
+                using var ms = new MemoryStream(data);
+                using var r = new BinaryReader(ms);
+
+                r.ReadBytes(16); // magic
+                r.ReadByte();    // version
+                r.ReadInt64();   // string table offset
+
+                int nsCount = r.ReadInt32();
+                int totalEntries = 0;
+                var keyIndex = new List<(string Ns, string Key, int StrIdx)>();
+
+                for (int i = 0; i < nsCount; i++)
+                {
+                    var ns = ReadKeyString(r);
+                    int keyCount = r.ReadInt32();
+                    totalEntries += keyCount;
+                    for (int j = 0; j < keyCount; j++)
+                    {
+                        var key = ReadKeyString(r);
+                        r.ReadInt32(); // hash
+                        int strIdx = r.ReadInt32();
+                        keyIndex.Add((ns, key, strIdx));
+                    }
+                }
+
+                uint strCount = r.ReadUInt32();
+                var strings = new List<string>((int)strCount);
+                for (int i = 0; i < (int)strCount; i++)
+                    strings.Add(ReadValueString(r));
+
+                Solicen.CLI.Console.WriteLine($"[Green]Locres verified: {nsCount} namespace(s), {totalEntries} entr{(totalEntries == 1 ? "y" : "ies")}, {strings.Count(s => s.Length > 0)} non-empty string(s).");
+
+                // Print first 3 entries as sanity check
+                int shown = Math.Min(3, keyIndex.Count);
+                for (int i = 0; i < shown; i++)
+                {
+                    var (ns, key, idx) = keyIndex[i];
+                    var val = idx < strings.Count ? strings[idx] : "?";
+                    Solicen.CLI.Console.WriteLine($"[DarkGray]  [{ns}] {key} = {(val.Length > 60 ? val[..60] + "…" : val)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Solicen.CLI.Console.WriteLine($"[Red][Verify] Failed to read back locres: {ex.Message}");
+            }
+        }
+
+        private static string ReadKeyString(BinaryReader r)
+        {
+            int len = r.ReadInt32();
+            if (len == 0) return string.Empty;
+            if (len > 0)
+            {
+                var bytes = r.ReadBytes(len - 1);
+                r.ReadByte(); // null terminator
+                return Encoding.ASCII.GetString(bytes);
+            }
+            else
+            {
+                int charCount = (-len) - 1;
+                var bytes = r.ReadBytes(charCount * 2);
+                r.ReadInt16(); // null terminator
+                return Encoding.Unicode.GetString(bytes);
+            }
+        }
+
+        private static string ReadValueString(BinaryReader r)
+        {
+            int len = r.ReadInt32();
+            if (len == 0) return string.Empty;
+            if (len > 0)
+            {
+                var bytes = r.ReadBytes(len - 1);
+                r.ReadByte();
+                return Encoding.ASCII.GetString(bytes);
+            }
+            else
+            {
+                int charCount = (-len) - 1;
+                var bytes = r.ReadBytes(charCount * 2);
+                r.ReadInt16();
+                return Encoding.Unicode.GetString(bytes);
+            }
+        }
     }
 
 }
