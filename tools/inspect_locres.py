@@ -29,13 +29,99 @@ def read_fstring(data, pos):
         pos += (-length) * 2
         return raw.decode('utf-16-le', errors='replace'), pos
 
-def read_key_fstring(data, pos):
-    """Same encoding as read_fstring (used for key section)."""
-    return read_fstring(data, pos)
-
 def hex_bytes(data, pos, n):
     chunk = data[pos:pos+n]
     return ' '.join(f'{b:02X}' for b in chunk)
+
+def walk_key_section_v1(data, pos, stored_offset, label):
+    """Walk standard v1 key section: NamespaceCount + [FString + KeyCount + [FString + srcHash + strIdx]]"""
+    print(f"\n{'─'*60}")
+    print(f"KEY SECTION WALK – {label}")
+    print(f"{'─'*60}")
+    size = len(data)
+    if size < pos + 4:
+        print("  Not enough data"); return
+    ns_count = struct.unpack_from('<I', data, pos)[0]; pos += 4
+    if ns_count > 100000:
+        print(f"  NamespaceCount = {ns_count}  ← implausible, wrong layout?"); return
+    print(f"  NamespaceCount: {ns_count}")
+    total_keys = 0; walked_ok = True
+    for i in range(ns_count):
+        ns, pos = read_fstring(data, pos)
+        if ns is None: print(f"  [NS {i}] READ ERROR"); walked_ok = False; break
+        kc = struct.unpack_from('<I', data, pos)[0]; pos += 4
+        total_keys += kc
+        if i < 5: print(f"  [NS {i}] '{ns}'  keys={kc}")
+        for j in range(kc):
+            k, pos = read_fstring(data, pos)
+            if k is None: walked_ok = False; break
+            pos += 8  # sourceHash(4) + strIdx(4)
+            if i < 5 and j < 2: print(f"    [Key {j}] '{k}'")
+        if not walked_ok: break
+    if walked_ok:
+        print(f"\n  After walking ALL {ns_count} namespaces ({total_keys} keys total):")
+        print(f"  Actual key section end pos = {pos}")
+        print(f"  Stored stringTableOffset   = {stored_offset:,}")
+        if pos == stored_offset:
+            print(f"  ✓ Offset matches")
+        else:
+            diff = stored_offset - pos
+            print(f"  ✗ MISMATCH: offset is {abs(diff)} bytes {'too large' if diff > 0 else 'too small'}")
+
+def walk_key_section_v3(data, pos, stored_offset, label):
+    """Walk v3 key section: EntriesCount + NamespaceCount + [StrHash + FString + KeyCount + [StrHash + FString + srcHash + strIdx]]"""
+    print(f"\n{'─'*60}")
+    print(f"KEY SECTION WALK – {label} (v3/CityHash64)")
+    print(f"{'─'*60}")
+    size = len(data)
+    if size < pos + 8:
+        print("  Not enough data"); return
+    entries_count = struct.unpack_from('<I', data, pos)[0]; pos += 4
+    ns_count      = struct.unpack_from('<I', data, pos)[0]; pos += 4
+    print(f"  EntriesCount (total keys): {entries_count}")
+    if ns_count > 100000:
+        print(f"  NamespaceCount = {ns_count}  ← implausible, wrong layout?"); return
+    print(f"  NamespaceCount: {ns_count}")
+    total_keys = 0; walked_ok = True
+    for i in range(ns_count):
+        ns_hash = struct.unpack_from('<I', data, pos)[0]; pos += 4  # CityHash64 low32
+        ns, pos = read_fstring(data, pos)
+        if ns is None: print(f"  [NS {i}] READ ERROR"); walked_ok = False; break
+        kc = struct.unpack_from('<I', data, pos)[0]; pos += 4
+        total_keys += kc
+        if i < 5: print(f"  [NS {i}] hash=0x{ns_hash:08X} '{ns}'  keys={kc}")
+        for j in range(kc):
+            k_hash = struct.unpack_from('<I', data, pos)[0]; pos += 4  # CityHash64 low32
+            k, pos = read_fstring(data, pos)
+            if k is None: walked_ok = False; break
+            pos += 8  # sourceHash(4) + strIdx(4)
+            if i < 5 and j < 2: print(f"    [Key {j}] hash=0x{k_hash:08X} '{k}'")
+        if not walked_ok: break
+    if walked_ok:
+        print(f"\n  After walking ALL {ns_count} namespaces ({total_keys} keys total):")
+        print(f"  Actual key section end pos = {pos}")
+        print(f"  Stored stringTableOffset   = {stored_offset:,}")
+        if pos == stored_offset:
+            print(f"  ✓ Offset matches – key section is CORRECT")
+        else:
+            diff = stored_offset - pos
+            print(f"  ✗ MISMATCH: offset is {abs(diff)} bytes {'too large' if diff > 0 else 'too small'}")
+
+def print_string_table(data, offset, count, has_refcount, n_show=10):
+    """Print first n_show strings from the string table, skipping RefCount if present."""
+    p = offset + 4  # skip the count uint32
+    shown = 0
+    for i in range(count):
+        s, p = read_fstring(data, p)
+        if s is None: break
+        if has_refcount:
+            ref = struct.unpack_from('<i', data, p)[0]; p += 4
+        else:
+            ref = None
+        if shown < n_show:
+            ref_str = f"  refcnt={ref}" if ref is not None else ""
+            print(f"       String[{i}] = {repr(s[:80])}{ref_str}")
+            shown += 1
 
 def main():
     if len(sys.argv) < 2:
@@ -56,84 +142,81 @@ def main():
     print(f"[0x00] Magic      : {'OK' if magic_ok else 'MISMATCH'}")
     print(f"       Raw        : {hex_bytes(data, 0, 16)}")
 
-    # --- Version ---
+    # --- UE Version ---
     version = data[16]
     version_names = {0: 'Legacy', 1: 'Compact', 2: 'Optimized_CRC32', 3: 'Optimized_CityHash64'}
+    is_v3 = version >= 3
     print(f"[0x10] UE version : {version} ({version_names.get(version, 'Unknown')})")
 
     # ----------------------------------------------------------------
-    # STANDARD COMPACT layout  (our writer)
-    #   pos 17: int64 stringTableOffset
-    #   pos 25: int32 namespaceCount  (key section starts here)
+    # Determine layout: Standard vs NTE
+    # Standard Compact v1:   magic(16)+ue_ver(1)+offset(8)              = 25 bytes header
+    # NTE v1 unencrypted:    magic(16)+ue_ver(1)+nte_ver(4)+offset(8)   = 29 bytes header
+    # NTE v3 encrypted:      magic(16)+ue_ver(1)+nte_ver(4)+enc(4)+offset(8) = 33 bytes header
+    # ----------------------------------------------------------------
+
+    # Peek at pos 17 as int32 to detect NTE version field
+    peek_int32 = struct.unpack_from('<i', data, 17)[0] if size >= 21 else 0
+
+    # NTE versions are 1 or 10000+; standard offset would be a large number (>= 25)
+    is_nte = (peek_int32 == 1) or (peek_int32 >= 10000)
+
+    # ----------------------------------------------------------------
+    # STANDARD COMPACT interpretation
     # ----------------------------------------------------------------
     print(f"\n{'─'*60}")
-    print("INTERPRETATION A – Standard Compact (our current writer)")
+    print("INTERPRETATION A – Standard Compact")
     print(f"{'─'*60}")
-    std_offset = struct.unpack_from('<q', data, 17)[0]
+    std_offset = struct.unpack_from('<q', data, 17)[0] if size >= 25 else -1
     print(f"[0x11] String table offset (int64) = {std_offset:,}  (0x{std_offset:X})")
-    ns_count_std = struct.unpack_from('<i', data, 25)[0] if size >= 29 else -1
-    print(f"[0x19] Namespace count @ pos 25 = {ns_count_std}")
-
-    # Peek at what's stored at std_offset
     if 0 <= std_offset < size:
         str_count_std = struct.unpack_from('<I', data, std_offset)[0]
         print(f"       String count at offset   = {str_count_std:,}")
-        p = std_offset + 4
-        for idx in range(min(3, str_count_std)):
-            s, p = read_fstring(data, p)
-            if s is None: break
-            print(f"       String[{idx}] = {repr(s[:80])}")
+        print_string_table(data, std_offset, min(5, str_count_std), has_refcount=is_v3, n_show=5)
     else:
         print(f"       Offset {std_offset:,} is OUT OF FILE (file is {size:,} bytes)  ← WRONG OFFSET")
 
     # ----------------------------------------------------------------
-    # NTE COMPACT layout
-    #   pos 17: int32 nte_version
-    #   pos 21: bool isEncrypted  (only if nte_version >= 10100)
-    #           OR no bool if nte_version in [10000,10099]
-    #           OR no bool if nte_version < 10000
-    #   then  : int64 stringTableOffset
+    # NTE COMPACT interpretation
     # ----------------------------------------------------------------
     print(f"\n{'─'*60}")
     print("INTERPRETATION B – NTE Compact (game's custom reader)")
     print(f"{'─'*60}")
-    nte_version = struct.unpack_from('<i', data, 17)[0]
+    nte_version = struct.unpack_from('<i', data, 17)[0] if size >= 21 else 0
     print(f"[0x11] NTE version (int32) @ 17 = {nte_version}")
 
     if nte_version >= 10100:
-        # UE4 serializes bool as int32 (4 bytes), so isEncrypted lives at pos 21..24
+        # UE4 serializes bool as int32 (4 bytes)
         is_encrypted = bool(struct.unpack_from('<i', data, 21)[0])
         nte_offset_pos = 25
+        key_section_start = 33
         print(f"[0x15] isEncrypted (int32) @ 21 = {is_encrypted}")
     elif nte_version >= 10000:
         is_encrypted = True
         nte_offset_pos = 21
+        key_section_start = 29
         print(f"       isEncrypted               = True (implicit, version 10000-10099)")
     else:
         is_encrypted = False
         nte_offset_pos = 21
+        key_section_start = 29
         print(f"       isEncrypted               = False (version < 10000, unencrypted)")
-
-    nte_key_section_start = nte_offset_pos + 8  # right after the int64 offset field
 
     if nte_offset_pos + 8 <= size:
         nte_offset = struct.unpack_from('<q', data, nte_offset_pos)[0]
         print(f"[0x{nte_offset_pos:02X}] String table offset (int64) = {nte_offset:,}  (0x{nte_offset:X})")
-        ns_count_nte = struct.unpack_from('<i', data, nte_key_section_start)[0] if size >= nte_key_section_start + 4 else -1
-        print(f"[0x{nte_key_section_start:02X}] Namespace count @ pos {nte_key_section_start} = {ns_count_nte}")
+        print(f"       Key section starts @ pos {key_section_start}")
 
         if 0 <= nte_offset < size:
             str_count_nte = struct.unpack_from('<I', data, nte_offset)[0]
             print(f"       String count at NTE offset = {str_count_nte:,}")
-            p = nte_offset + 4
-            for idx in range(min(30, str_count_nte)):
-                s, p = read_fstring(data, p)
-                if s is None: break
-                print(f"       String[{idx}] = {repr(s[:80])}")
+            print_string_table(data, nte_offset, min(10, str_count_nte),
+                               has_refcount=is_v3, n_show=10)
         else:
             print(f"       NTE offset {nte_offset:,} is OUT OF FILE  ← WRONG OFFSET")
     else:
         print("       Not enough bytes to read NTE offset")
+        nte_offset = -1
 
     # ----------------------------------------------------------------
     # RAW BYTES at key positions
@@ -142,70 +225,30 @@ def main():
     print("RAW BYTES at critical positions")
     print(f"{'─'*60}")
     for label, pos, n in [
-        ("Pos  17-24 (std offset / NTE ver+bool+off)", 17, 16),
-        ("Pos  25-40 (key section area)",              25, 16),
-        ("Pos  41-56",                                 41, 16),
+        ("Pos  17-32 (NTE header area)",     17, 16),
+        ("Pos  33-48 (key section start)",   33, 16),
+        ("Pos  49-64",                       49, 16),
     ]:
         if pos < size:
             print(f"  {label}")
             print(f"    HEX: {hex_bytes(data, pos, min(n, size-pos))}")
 
     # ----------------------------------------------------------------
-    # WALK the key section – try BOTH layouts, report which matches
+    # KEY SECTION WALK
+    # Walk using the correct layout based on detected format.
     # ----------------------------------------------------------------
-    for layout_name, walk_start in [("Standard (pos 25)", 25), ("NTE (pos 29)", 29)]:
-        print(f"\n{'─'*60}")
-        print(f"KEY SECTION WALK – {layout_name}")
-        print(f"{'─'*60}")
-        pos = walk_start
-        if size < pos + 4:
-            print("  Not enough data")
-            continue
-        ns_count = struct.unpack_from('<i', data, pos)[0]
-        pos += 4
-        if ns_count < 0 or ns_count > 100000:
-            print(f"  Namespace count = {ns_count}  ← implausible, wrong layout?")
-            continue
-        print(f"  Namespace count: {ns_count}")
-        walked_ok = True
-        total_keys = 0
-        for i in range(min(ns_count, 5)):
-            ns, pos = read_key_fstring(data, pos)
-            if ns is None:
-                print(f"  [NS {i}] READ ERROR at pos {pos}")
-                walked_ok = False; break
-            kc = struct.unpack_from('<i', data, pos)[0]; pos += 4
-            total_keys += kc
-            print(f"  [NS {i}] '{ns}'  keys={kc}")
-            for j in range(min(kc, 2)):
-                k, pos = read_key_fstring(data, pos)
-                pos += 8  # hash + strIdx
-                if k is None:
-                    walked_ok = False; break
-                print(f"    [Key {j}] '{k}'")
-            if not walked_ok: break
-            if kc > 2:
-                for j in range(kc - 2):
-                    _, pos = read_key_fstring(data, pos)
-                    pos += 8
-        if walked_ok and ns_count > 5:
-            for i in range(5, ns_count):
-                _, pos = read_key_fstring(data, pos)
-                kc = struct.unpack_from('<i', data, pos)[0]; pos += 4
-                total_keys += kc
-                for j in range(kc):
-                    _, pos = read_key_fstring(data, pos)
-                    pos += 8
-        if walked_ok:
-            ref_offset = std_offset if walk_start == 25 else nte_offset
-            print(f"\n  After walking ALL {ns_count} namespaces ({total_keys} keys total):")
-            print(f"  Actual key section end pos = {pos}")
-            print(f"  Stored stringTableOffset   = {ref_offset:,}")
-            if pos == ref_offset:
-                print(f"  ✓ Offset matches – this layout is CORRECT")
-            else:
-                diff = ref_offset - pos
-                print(f"  ✗ MISMATCH: offset is {abs(diff)} bytes {'too large' if diff > 0 else 'too small'}")
+    if is_nte and nte_offset > 0:
+        if is_v3:
+            walk_key_section_v3(data, key_section_start, nte_offset, "NTE encrypted v3")
+        else:
+            walk_key_section_v1(data, key_section_start, nte_offset, "NTE v1 unencrypted")
+    else:
+        # Standard: key section at pos 25
+        if is_v3:
+            walk_key_section_v3(data, 25, std_offset, "Standard v3")
+        else:
+            walk_key_section_v1(data, 25, std_offset, "Standard v1")
+
     print()
 
 if __name__ == '__main__':
