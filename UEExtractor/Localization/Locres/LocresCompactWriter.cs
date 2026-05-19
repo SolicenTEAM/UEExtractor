@@ -199,6 +199,15 @@ namespace LocresWriter
                 }
             }
 
+            // Assert: actual key section size must match the pre-calculated offset
+            w.Flush();
+            long actualKSEnd = ms.Position;
+            if (actualKSEnd != stringTableOffset)
+                Solicen.CLI.Console.WriteLine(
+                    $"[Red][BUG] keySectionSize mismatch! calculated stringTableOffset={stringTableOffset}, actual pos after key section={actualKSEnd} (diff={(actualKSEnd - stringTableOffset):+0;-0})");
+            else
+                Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] keySectionSize OK ({keySectionSize} bytes), offset={stringTableOffset}");
+
             // === STRING TABLE ===
             w.Write((uint)totalStrings);
             for (int gi = 0; gi < nsGroups.Count; gi++)
