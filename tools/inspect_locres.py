@@ -78,9 +78,11 @@ def main():
     if 0 <= std_offset < size:
         str_count_std = struct.unpack_from('<I', data, std_offset)[0]
         print(f"       String count at offset   = {str_count_std:,}")
-        # First string
-        s, _ = read_fstring(data, std_offset + 4)
-        print(f"       First string at offset+4 = {repr(s[:80]) if s is not None else 'READ ERROR'}")
+        p = std_offset + 4
+        for idx in range(min(3, str_count_std)):
+            s, p = read_fstring(data, p)
+            if s is None: break
+            print(f"       String[{idx}] = {repr(s[:80])}")
     else:
         print(f"       Offset {std_offset:,} is OUT OF FILE (file is {size:,} bytes)  ← WRONG OFFSET")
 
@@ -122,8 +124,11 @@ def main():
         if 0 <= nte_offset < size:
             str_count_nte = struct.unpack_from('<I', data, nte_offset)[0]
             print(f"       String count at NTE offset = {str_count_nte:,}")
-            s, _ = read_fstring(data, nte_offset + 4)
-            print(f"       First string at offset+4   = {repr(s[:80]) if s is not None else 'READ ERROR'}")
+            p = nte_offset + 4
+            for idx in range(min(10, str_count_nte)):
+                s, p = read_fstring(data, p)
+                if s is None: break
+                print(f"       String[{idx}] = {repr(s[:80])}")
         else:
             print(f"       NTE offset {nte_offset:,} is OUT OF FILE  ← WRONG OFFSET")
     else:
