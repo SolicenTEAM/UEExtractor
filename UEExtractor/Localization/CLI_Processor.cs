@@ -208,6 +208,10 @@ namespace Solicen.Localization.UE4
 					MergeOldCsv(Path.Combine(outputDir, $"{baseName}.csv"), result);
 			}
 
+			// Shared translation cache for all CSVs in this directory.
+			// Using one journal means translations done for pak0 are reused for pak1, etc.
+			var sharedJournalPath = Path.Combine(outputDir, "translation_cache.journal");
+
 			foreach (var (baseName, finalResult) in groups)
 			{
 				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
@@ -215,14 +219,11 @@ namespace Solicen.Localization.UE4
 
 				if (UberTranslator.IsConfigured)
 				{
-					// Write extracted CSV before translation so --translate-only can resume if stopped
 					if (!TranslateOnly)
 						UnrealLocres.WriteToCsv(finalResult, csvPath);
-					var journalPath = csvPath + ".journal";
 					var tempRes = finalResult.Select(x => x.Value).ToArray();
-					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: journalPath);
+					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: sharedJournalPath);
 					var translated = tempRes.ToConcurrent();
-					if (!TranslateOnly && File.Exists(journalPath)) File.Delete(journalPath);
 					UnrealLocres.WriteToCsv(translated, csvPath);
                     CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({translated.Count} entries)");
 				}
