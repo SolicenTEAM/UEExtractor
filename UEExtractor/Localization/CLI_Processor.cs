@@ -79,6 +79,23 @@ namespace Solicen.Localization.UE4
                     // Обработка для получения .locres файла
                     string LocresCSV = args[0];
                     var Result = UnrealLocres.LoadFromCSV(LocresCSV); // Прочитать результат из LocresCSV
+
+                    // Restore game-computed StrHash values from sidecar (if available).
+                    // Without these, the game's v3 key lookup will miss and fall back to default language.
+                    var hashes = UnrealLocres.LoadHashSidecar(LocresCSV);
+                    if (hashes.Count > 0)
+                    {
+                        foreach (var r in Result)
+                        {
+                            // r.Key is the full composite key (e.g. "Adler_SkillDes::adddes1")
+                            if (hashes.TryGetValue(r.Key, out var h))
+                            {
+                                r.NsHash  = h.NsHash;
+                                r.KeyHash = h.KeyHash;
+                            }
+                        }
+                    }
+
                     if (UberTranslator.IsConfigured)
 					{
                         CLI.Console.WriteLine();
@@ -147,6 +164,8 @@ namespace Solicen.Localization.UE4
 			else
 			{
 				Result = UnrealLocres.ProcessDirectory(folderPath);
+				// Save game-computed StrHash values so import can produce a correct v3 locres.
+				UnrealLocres.SaveHashSidecar(csvPath, Result.Values);
 				MergeOldCsv(csvPath, Result);
 				// Write extracted CSV before translation so --translate-only can resume if stopped
 				if (UberTranslator.IsConfigured)

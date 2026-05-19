@@ -1,6 +1,7 @@
 ﻿using Solicen.Translator;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
 
 namespace Solicen.Localization.UE4
 {
@@ -185,12 +186,18 @@ namespace Solicen.Localization.UE4
 
             // Also read .locres files directly (handles games like NTE whose localization
             // is stored as pre-compiled .locres binaries rather than inside .uasset files).
-            reader.ProcessLocresFiles((ns, key, localizedString) =>
+            // Use hash-aware variant to preserve game-computed StrHash values for v3 round-trips.
+            reader.ProcessLocresFilesWithHashes((ns, nsHash, key, keyHash, localizedString) =>
             {
                 if (string.IsNullOrWhiteSpace(localizedString)) return;
                 var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
                 if (!allResults.ContainsKey(compositeKey))
-                    allResults[compositeKey] = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+                {
+                    var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+                    r.NsHash  = nsHash;
+                    r.KeyHash = keyHash;
+                    allResults[compositeKey] = r;
+                }
             }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
 
             #region Zero Data All
@@ -490,8 +497,48 @@ namespace Solicen.Localization.UE4
                 }
                 
 
-            });       
+            });
             return result.ToArray();
+        }
+
+        // Sidecar format: JSON object mapping compositeKey → [nsHash, keyHash]
+        public static string HashSidecarPath(string csvPath)
+            => Path.ChangeExtension(csvPath, ".locreshashes");
+
+        public static void SaveHashSidecar(string csvPath, IEnumerable<LocresResult> results)
+        {
+            var path = HashSidecarPath(csvPath);
+            var dict = new Dictionary<string, uint[]>();
+            foreach (var r in results)
+            {
+                if (r.NsHash == 0 && r.KeyHash == 0) continue;
+                // r.Key is already the full composite key (e.g. "Adler_SkillDes::adddes1")
+                dict[r.Key] = new[] { r.NsHash, r.KeyHash };
+            }
+            if (dict.Count == 0) return;
+            File.WriteAllText(path, JsonSerializer.Serialize(dict), Encoding.UTF8);
+            Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] Hash sidecar saved: {Path.GetFileName(path)} ({dict.Count} entries)");
+        }
+
+        public static Dictionary<string, (uint NsHash, uint KeyHash)> LoadHashSidecar(string csvPath)
+        {
+            var path = HashSidecarPath(csvPath);
+            var result = new Dictionary<string, (uint, uint)>(StringComparer.Ordinal);
+            if (!File.Exists(path)) return result;
+            try
+            {
+                var raw = JsonSerializer.Deserialize<Dictionary<string, uint[]>>(File.ReadAllText(path));
+                if (raw == null) return result;
+                foreach (var (k, v) in raw)
+                    if (v.Length >= 2)
+                        result[k] = (v[0], v[1]);
+                Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] Hash sidecar loaded: {Path.GetFileName(path)} ({result.Count} entries)");
+            }
+            catch (Exception ex)
+            {
+                Solicen.CLI.Console.WriteLine($"[Yellow][Locres] Could not load hash sidecar: {ex.Message}");
+            }
+            return result;
         }
 
         public static byte[] Combine(byte[] remainder, byte[] buffer, int bytesRead)

@@ -90,12 +90,13 @@ namespace LocresWriter
             return Convert.ToBase64String(enc).Replace('+', '-').Replace('/', '_');
         }
 
-        // ── CityHash64 helper for v3 key hashes ──────────────────────────
-
+        // ── CityHash64 helper for v3 key hashes (fallback only) ─────────
+        // Prefer game-preserved StrHash values (LocresResult.NsHash/KeyHash) over this.
+        // The exact truncation of CityHash64 depends on the UE version used to build the locres;
+        // using the original game's stored hash is the only reliable option.
         private static uint KeyHash(string s)
         {
             if (string.IsNullOrEmpty(s)) return 0;
-            // UE4 stores the HIGH 32 bits of CityHash64 (not the low 32 bits)
             return (uint)(CityHash.CityHash64(Encoding.Unicode.GetBytes(s)) >> 32);
         }
 
@@ -191,7 +192,13 @@ namespace LocresWriter
             for (int gi = 0; gi < nsGroups.Count; gi++)
             {
                 var (ns, keys) = nsGroups[gi];
-                if (v3) w.Write(KeyHash(ns));
+                if (v3)
+                {
+                    // Use game-preserved NsHash if available, fall back to computed.
+                    uint nsHash = keys.Count > 0 && keys[0].NsHash != 0
+                        ? keys[0].NsHash : KeyHash(ns);
+                    w.Write(nsHash);
+                }
                 WriteKeyString(w, ns);
                 w.Write((uint)keys.Count);
 
@@ -199,7 +206,12 @@ namespace LocresWriter
                 {
                     var entry  = keys[ki];
                     var aKey   = actualKeys[gi][ki];
-                    if (v3) w.Write(KeyHash(aKey));
+                    if (v3)
+                    {
+                        // Use game-preserved KeyHash if available, fall back to computed.
+                        uint keyHash = entry.KeyHash != 0 ? entry.KeyHash : KeyHash(aKey);
+                        w.Write(keyHash);
+                    }
                     WriteKeyString(w, aKey);
                     w.Write(LocresSharp.Crc.StrCrc32(LocresHelper.UnEscapeKey(entry.Source)));
                     w.Write(strIdx++);

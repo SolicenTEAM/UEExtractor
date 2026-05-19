@@ -541,6 +541,59 @@ public class UnrealArchiveReader : IDisposable
             Console.WriteLine($"  Completed with {errors} error(s).");
     }
 
+    // Hash-aware variant: callback receives (ns, nsHash, key, keyHash, localizedString).
+    // Use this to preserve the original game-computed StrHash values for v3 locres round-trips.
+    public void ProcessLocresFilesWithHashes(
+        Action<string, uint, string, uint, string> processor,
+        string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+        var uniquePaths = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
+        foreach (var path in uniquePaths)
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresFiles.Add((path, gf));
+
+        if (locresFiles.Count == 0) return;
+
+        int processed = 0, errors = 0;
+        int totalFiles = locresFiles.Count;
+
+        foreach (var (locresPath, gameFile) in locresFiles)
+        {
+            try
+            {
+                using var ar = gameFile.CreateReader();
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, entries) in locres.Entries)
+                {
+                    foreach (var (textKey, entry) in entries)
+                    {
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            processor(nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString);
+                    }
+                }
+                Interlocked.Increment(ref processed);
+            }
+            catch
+            {
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+            }
+        }
+        if (errors > 0)
+            Console.WriteLine($"  ProcessLocresFilesWithHashes completed with {errors} error(s).");
+    }
+
     // Returns locres entries grouped by (csvBaseName, pakChunkName) so callers can write
     // one CSV per locres file. When the same virtual path exists in multiple pak files
     // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
