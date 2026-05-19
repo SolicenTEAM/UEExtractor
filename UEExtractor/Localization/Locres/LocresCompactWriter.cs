@@ -81,8 +81,14 @@ namespace LocresWriter
 
         public static byte[] Write(List<LocresResult> entries)
         {
-            // Группируем по Namespace, сохраняя порядок появления
-            // Включаем ВСЕ записи, в том числе с пустым Namespace
+            // Filter out entries with empty key to avoid "invalid localized string index" warnings
+            int skipped = entries.Count(e => string.IsNullOrEmpty(e.Key));
+            if (skipped > 0)
+            {
+                Solicen.CLI.Console.WriteLine($"[Yellow][Locres] Skipping {skipped} entries with empty key.");
+                entries = entries.Where(e => !string.IsNullOrEmpty(e.Key)).ToList();
+            }
+
             var nsGroups = new List<(string ns, List<LocresResult> keys)>();
             var nsOrder = new Dictionary<string, int>();
 
