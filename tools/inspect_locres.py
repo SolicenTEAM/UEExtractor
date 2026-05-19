@@ -101,9 +101,10 @@ def main():
     print(f"[0x11] NTE version (int32) @ 17 = {nte_version}")
 
     if nte_version >= 10100:
-        is_encrypted = bool(data[21])
-        nte_offset_pos = 22
-        print(f"[0x15] isEncrypted (bool) @ 21  = {is_encrypted}")
+        # UE4 serializes bool as int32 (4 bytes), so isEncrypted lives at pos 21..24
+        is_encrypted = bool(struct.unpack_from('<i', data, 21)[0])
+        nte_offset_pos = 25
+        print(f"[0x15] isEncrypted (int32) @ 21 = {is_encrypted}")
     elif nte_version >= 10000:
         is_encrypted = True
         nte_offset_pos = 21

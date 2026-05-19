@@ -158,10 +158,11 @@ namespace LocresWriter
             }
 
             // ── Header size ───────────────────────────────────────────────
-            // Standard   : magic(16) + ue_ver(1) + offset(8)              = 25
-            // NTE no-enc : magic(16) + ue_ver(1) + nte_ver(4) + offset(8) = 29
-            // NTE enc    : magic(16) + ue_ver(1) + nte_ver(4) + bool(1) + offset(8) = 30
-            int headerSize = encrypted ? 30 : (NTEFormat ? 29 : 25);
+            // Standard   : magic(16) + ue_ver(1) + offset(8)                    = 25
+            // NTE no-enc : magic(16) + ue_ver(1) + nte_ver(4) + offset(8)       = 29
+            // NTE enc    : magic(16) + ue_ver(1) + nte_ver(4) + int32(4) + offset(8) = 33
+            // NOTE: UE4 serializes bool as int32 (4 bytes), not 1 byte.
+            int headerSize = encrypted ? 33 : (NTEFormat ? 29 : 25);
             long stringTableOffset = headerSize + keySectionSize;
 
             using var ms = new MemoryStream();
@@ -173,7 +174,7 @@ namespace LocresWriter
             if (NTEFormat || encrypted)
                 w.Write(encrypted ? 10100 : 1); // NTE version int32
             if (encrypted)
-                w.Write((byte)1); // isEncrypted = true
+                w.Write((int)1); // isEncrypted = true (UE4 serializes bool as int32, 4 bytes)
             w.Write(stringTableOffset);
 
             // === KEY SECTION ===
@@ -259,7 +260,7 @@ namespace LocresWriter
                 if (NTEFormat || NTEEncrypted)
                 {
                     int nteVer = r.ReadInt32();
-                    if (nteVer >= 10100) r.ReadByte(); // isEncrypted bool
+                    if (nteVer >= 10100) r.ReadInt32(); // isEncrypted (UE4 bool = int32)
                 }
                 r.ReadInt64(); // offset
 
