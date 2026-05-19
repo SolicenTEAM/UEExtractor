@@ -95,15 +95,21 @@ namespace LocresWriter
         private static uint KeyHash(string s)
         {
             if (string.IsNullOrEmpty(s)) return 0;
-            return (uint)CityHash.CityHash64(Encoding.Unicode.GetBytes(s));
+            // UE4 stores the HIGH 32 bits of CityHash64 (not the low 32 bits)
+            return (uint)(CityHash.CityHash64(Encoding.Unicode.GetBytes(s)) >> 32);
         }
 
         // ── actualKey helper ─────────────────────────────────────────────
 
         private static string ActualKey(string ns, string compositeKey)
-            => !string.IsNullOrEmpty(ns) && compositeKey.StartsWith(ns + "::", StringComparison.Ordinal)
-               ? compositeKey[(ns.Length + 2)..]
-               : compositeKey;
+        {
+            // Strip all leading occurrences of "ns::" to handle cases where
+            // the CSV write/read cycle double-prefixes composite keys.
+            string key = compositeKey;
+            while (!string.IsNullOrEmpty(ns) && key.StartsWith(ns + "::", StringComparison.Ordinal))
+                key = key[(ns.Length + 2)..];
+            return key;
+        }
 
         // ── Main write entry point ───────────────────────────────────────
 
