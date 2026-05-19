@@ -109,7 +109,11 @@ namespace LocresWriter
 
                 foreach (var entry in keys)
                 {
-                    keySectionSize += KeyStringSize(entry.Key); // key name
+                    var actualKeySz = !string.IsNullOrEmpty(ns) &&
+                                      entry.Key.StartsWith(ns + "::", StringComparison.Ordinal)
+                        ? entry.Key[(ns.Length + 2)..]
+                        : entry.Key;
+                    keySectionSize += KeyStringSize(actualKeySz); // key name
                     keySectionSize += 4;  // hash
                     keySectionSize += 4;  // string index
                 }
