@@ -125,7 +125,7 @@ def main():
             str_count_nte = struct.unpack_from('<I', data, nte_offset)[0]
             print(f"       String count at NTE offset = {str_count_nte:,}")
             p = nte_offset + 4
-            for idx in range(min(10, str_count_nte)):
+            for idx in range(min(30, str_count_nte)):
                 s, p = read_fstring(data, p)
                 if s is None: break
                 print(f"       String[{idx}] = {repr(s[:80])}")
