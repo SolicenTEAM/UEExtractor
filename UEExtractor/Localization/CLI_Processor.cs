@@ -27,10 +27,8 @@ namespace Solicen.Localization.UE4
 
 				new Argument("--locres", null, "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
 				new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
-				new Argument("--nte", null, "Write locres in NTE (Neverness to Everness) format (adds nte_version int32 before the offset).", () => LocresWriter.LocresCompactWriter.NTEFormat = true),
-				new Argument("--nte-enc", null, "Write locres in NTE encrypted format (v3 + AES-256-ECB, matches Polish mod format).", () => { LocresWriter.LocresCompactWriter.NTEFormat = true; LocresWriter.LocresCompactWriter.NTEEncrypted = true; }),
-			
-				new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
+
+				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessVersion),
                 new Argument("--skip-uexp", "-s:xp","skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 				new Argument("--skip-uasset", "-s:et","skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 				new Argument("--underscore", "-un","do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
@@ -60,7 +58,18 @@ namespace Solicen.Localization.UE4
 		static void ProcessVersion(string version)
         {
 			if (string.IsNullOrWhiteSpace(version)) return;
-			version = char.IsDigit(version[0]) ? "UE" + version : version;	
+
+			// Detect NTE (Neverness to Everness) game name → enable NTE encrypted locres output.
+			// Accepts: GAME_NevernessToEverness, NevernessToEverness, NTE (case-insensitive).
+			var normalized = version.Replace("_", "").Replace("-", "").Replace(" ", "").ToUpperInvariant();
+			if (normalized == "NTE" || normalized.Contains("NEVERNESS"))
+			{
+				LocresWriter.LocresCompactWriter.NTEFormat    = true;
+				LocresWriter.LocresCompactWriter.NTEEncrypted = true;
+				return; // pak auto-detection handles the UE version for NTE
+			}
+
+			version = char.IsDigit(version[0]) ? "UE" + version : version;
 			UnrealLocres.UEVersion = version.Replace(".", "_");
             UnrealLocres.EngineSpecified = true;
 			UnrealArchiveReader.EngineSpecified = true;

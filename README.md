@@ -101,7 +101,7 @@ UEExtractor.exe <csv_path> <output_locres>
 
 #### Patch mode — perfect locres reconstruction for NTE-encrypted games:
 ```cmd
-UEExtractor.exe <original.locres> <translations.csv> --nte-enc
+UEExtractor.exe <original.locres> <translations.csv> -v=GAME_NevernessToEverness
 ```
 The **patch mode** is the recommended approach for games like *Neverness to Everness* that use NTE-encrypted v3 `.locres` files.
 
@@ -124,7 +124,7 @@ UEExtractor.exe "L:\Game" K:\output\ --path=HT/Content/Localization/Game/en/ ^
 UEExtractor.exe "L:\Game" K:\output\ --path=HT/Content/Localization/Game/en/ --extract-locres
 
 :: Step 3 – Patch the original locres with Italian translations
-UEExtractor.exe Game.locres K:\output\Game.csv --nte-enc
+UEExtractor.exe Game.locres K:\output\Game.csv -v=GAME_NevernessToEverness
 :: → produces Game_patched.locres (deploy this to the game's Localization/it/ folder)
 ```
 
@@ -132,17 +132,6 @@ UEExtractor.exe Game.locres K:\output\Game.csv --nte-enc
 > The hash sidecar (`.locreshashes`) is saved automatically during extraction and loaded during import.
 > It preserves the game-original CityHash64 key hashes so the game's TMap lookup succeeds even for
 > games that use non-standard hash truncation (like NTE).
-
-#### Write NTE-encrypted locres (legacy / from CSV):
-```cmd
-UEExtractor.exe <csv_path> --nte-enc
-```
-Writes a v3 CityHash64 locres with NTE encryption from an existing CSV. Use **patch mode** above instead when you have the original `.locres` file.
-
-#### Write NTE unencrypted locres:
-```cmd
-UEExtractor.exe <csv_path> --nte
-```
 
 #### Translate with a local LLM (Ollama, LM Studio, vLLM, …):
 ```cmd
@@ -166,7 +155,7 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 
 | Argument | Short | Description |
 |----------|-------|-------------|
-| `--version=<ver>` | `-v` | Set the engine version (e.g. `-v=UE5_6`, `-v=Stalker2`). Auto-detected when omitted. |
+| `--version=<ver>` | `-v` | Set the engine version or game name. Auto-detected when omitted. Use `-v=GAME_NevernessToEverness` (or `-v=NTE`) to enable NTE encrypted locres output. Examples: `-v=UE5_6`, `-v=Stalker2`. |
 | `--aes=<key>` | `-a` | 32-character hex AES key (must start with `0x`). |
 | `--path=<virtual_path>` | `-path` | Restrict processing to assets under a specific internal path (e.g. `--path=HT/Content/Localization`). Case-insensitive substring match. |
 | `--verbose` | `-vb` | Show per-file processing details and diagnostic info instead of the progress bar. |
@@ -174,8 +163,6 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--skip-uasset` | `-s:et` | Skip `.uasset` files during processing. |
 | `--locres` | | Write a `.locres` file after parsing. |
 | `--extract-locres` | | Dump the raw `.locres` binaries from the pak to the output directory (useful for inspection or as patch template). |
-| `--nte` | | Write the output locres in NTE unencrypted format (adds `nte_version` int32 before the offset). |
-| `--nte-enc` | | Write the output locres in NTE encrypted format (v3 + AES-256-ECB). Required for *Neverness to Everness* mods. |
 | `--all` | `-all` | Process all folders in the archive (including effects, meshes, sounds, etc.). |
 | `--underscore` | `-un` | Do not skip lines with underscores: **ex_string** |
 | `--upper-upper` | `-up` | Skip lines with ALL UPPERCASE: **EXAMPLE** |
