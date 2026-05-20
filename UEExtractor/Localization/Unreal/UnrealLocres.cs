@@ -226,9 +226,10 @@ namespace Solicen.Localization.UE4
                 var dict = new ConcurrentDictionary<string, LocresResult>();
                 foreach (var (ns, nsHash, key, keyHash, value) in g.Entries)
                 {
-                    if (IsNotAllowedString(value)) continue;
+                    if (string.IsNullOrEmpty(key)) continue; // skip malformed entries only
                     var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
-                    var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(value), Namespace: ns)
+                    var escaped = string.IsNullOrEmpty(value) ? string.Empty : LocresHelper.EscapeKey(value);
+                    var r = new LocresResult(compositeKey, escaped, Namespace: ns)
                         { NsHash = nsHash, KeyHash = keyHash };
                     dict.TryAdd(compositeKey, r);
                 }
@@ -579,7 +580,9 @@ namespace Solicen.Localization.UE4
             }
 
             var manager = new UberTranslator();
-            var allValues = locres.GetUnique().Where(x => string.IsNullOrWhiteSpace(x.Translation))
+            var allValues = locres.GetUnique()
+                .Where(x => !string.IsNullOrWhiteSpace(x.Source))
+                .Where(x => string.IsNullOrWhiteSpace(x.Translation))
                 .ToDictionary(x => x.Source, x => x.Translation);
 
             if (allValues.Count > 0)

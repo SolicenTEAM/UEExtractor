@@ -240,7 +240,7 @@ namespace LocresWriter
                     if (encrypted)
                     {
                         WriteValueString(w, EncryptNTEString(plain));
-                        w.Write(-1); // RefCount = -1 (no ref tracking)
+                        w.Write(1); // RefCount = 1 (matches NTE game format; game may reject refcnt<=0)
                     }
                     else
                     {
