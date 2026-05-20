@@ -325,18 +325,20 @@ namespace LocresWriter
             {
                 foreach (var e in Solicen.Localization.UE4.UnrealLocres.LoadFromCSV(csvPath))
                 {
-                    if (string.IsNullOrWhiteSpace(e.Translation)) continue;
+                    // Use Translation if available, otherwise fall back to Source.
+                    var text = !string.IsNullOrWhiteSpace(e.Translation) ? e.Translation : e.Source;
+                    if (string.IsNullOrWhiteSpace(text)) continue;
                     // Strip double namespace prefix that WriteToCsv adds.
                     // After stripping, bare is already "ns::key" (or just "key" for empty ns).
                     var bare = e.Key;
                     if (!string.IsNullOrEmpty(e.Namespace) && bare.StartsWith(e.Namespace + "::"))
                         bare = bare[(e.Namespace.Length + 2)..];
-                    // bare is now the correct composite key for lookup (ns::key or key)
                     translations[bare] =
-                        Solicen.Localization.UE4.LocresHelper.UnEscapeKey(e.Translation);
+                        Solicen.Localization.UE4.LocresHelper.UnEscapeKey(text);
                 }
+                int withTranslation = translations.Count;
                 Solicen.CLI.Console.WriteLine(
-                    $"[DarkGray][Patch] Translations loaded: {translations.Count}.");
+                    $"[DarkGray][Patch] Translations loaded: {withTranslation}.");
             }
 
             // Build output: header + key section identical + new string table
