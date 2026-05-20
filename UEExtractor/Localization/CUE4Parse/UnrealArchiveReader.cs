@@ -632,7 +632,7 @@ public class UnrealArchiveReader : IDisposable
         var baseNames = locresEntries.Select(e => Path.GetFileNameWithoutExtension(e.Path)).ToList();
         var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
-        var result = new List<(string, List<(string, string, string)>)>();
+        var result = new List<(string, List<(string, uint, string, uint, string)>)>();
         bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
 
         for (int i = 0; i < locresEntries.Count; i++)
