@@ -88,8 +88,12 @@ namespace Solicen.Localization.UE4
                     {
                         foreach (var r in Result)
                         {
-                            // r.Key is the full composite key (e.g. "Adler_SkillDes::adddes1")
-                            if (hashes.TryGetValue(r.Key, out var h))
+                            // r.Key may be double-prefixed ("NS::NS::key") due to WriteToCsv.
+                            // Sidecar was saved with single-prefix ("NS::key"), so strip one level.
+                            var lookupKey = r.Key;
+                            if (!string.IsNullOrEmpty(r.Namespace) && lookupKey.StartsWith(r.Namespace + "::", StringComparison.Ordinal))
+                                lookupKey = lookupKey[(r.Namespace.Length + 2)..];
+                            if (hashes.TryGetValue(lookupKey, out var h))
                             {
                                 r.NsHash  = h.NsHash;
                                 r.KeyHash = h.KeyHash;
