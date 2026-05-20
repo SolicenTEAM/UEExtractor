@@ -568,10 +568,31 @@ public class UnrealArchiveReader : IDisposable
         int processed = 0, errors = 0;
         int totalFiles = locresFiles.Count;
 
+        // Where to save raw locres dumps (same dir as the skipped-lines CSV)
+        string? extractDir = Solicen.Localization.UE4.UnrealLocres.ExtractLocres
+            ? System.IO.Path.GetDirectoryName(Solicen.Localization.UE4.UnrealLocres.SkippedCSV?.FilePath)
+            : null;
+
         foreach (var (locresPath, gameFile) in locresFiles)
         {
             try
             {
+                // Dump raw bytes before parsing so we get the original encrypted file
+                if (extractDir != null)
+                {
+                    try
+                    {
+                        var rawBytes = _provider.SaveAsset(locresPath);
+                        var dest = System.IO.Path.Combine(extractDir, System.IO.Path.GetFileName(locresPath));
+                        System.IO.File.WriteAllBytes(dest, rawBytes);
+                        Console.WriteLine($"[Locres] Extracted: {dest}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Locres] Could not extract {locresPath}: {ex.Message}");
+                    }
+                }
+
                 using var ar = gameFile.CreateReader();
                 var locres = new FTextLocalizationResource(ar);
                 foreach (var (nsKey, entries) in locres.Entries)
