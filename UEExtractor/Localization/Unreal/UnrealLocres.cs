@@ -224,11 +224,13 @@ namespace Solicen.Localization.UE4
             return groups.Select(g =>
             {
                 var dict = new ConcurrentDictionary<string, LocresResult>();
-                foreach (var (ns, key, value) in g.Entries)
+                foreach (var (ns, nsHash, key, keyHash, value) in g.Entries)
                 {
                     if (IsNotAllowedString(value)) continue;
                     var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
-                    dict.TryAdd(compositeKey, new LocresResult(compositeKey, LocresHelper.EscapeKey(value), Namespace: ns));
+                    var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(value), Namespace: ns)
+                        { NsHash = nsHash, KeyHash = keyHash };
+                    dict.TryAdd(compositeKey, r);
                 }
                 return (g.CsvBaseName, dict);
             }).Where(x => x.dict.Count > 0).ToList();

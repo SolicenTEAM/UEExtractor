@@ -224,9 +224,13 @@ namespace Solicen.Localization.UE4
                     CLI.Console.WriteLine("[Yellow]No locres data found.");
 					return;
 				}
-				// Merge with existing CSVs (O(1) lookup)
+				// Save hash sidecar for each locres so import can restore correct StrHash values
 				foreach (var (baseName, result) in groups)
-					MergeOldCsv(Path.Combine(outputDir, $"{baseName}.csv"), result);
+				{
+					var hashCsvPath = Path.Combine(outputDir, $"{baseName}.csv");
+					UnrealLocres.SaveHashSidecar(hashCsvPath, result.Values);
+					MergeOldCsv(hashCsvPath, result);
+				}
 			}
 
 			// Shared translation cache for all CSVs in this directory.

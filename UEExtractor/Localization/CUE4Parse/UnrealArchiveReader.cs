@@ -598,7 +598,7 @@ public class UnrealArchiveReader : IDisposable
     // one CSV per locres file. When the same virtual path exists in multiple pak files
     // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
     // separately via TryGetValues + gameFile.CreateReader() so no entries are silently dropped.
-    public List<(string CsvBaseName, List<(string Ns, string Key, string Value)> Entries)>
+    public List<(string CsvBaseName, List<(string Ns, uint NsHash, string Key, uint KeyHash, string Value)> Entries)>
         ReadLocresGrouped(string? pathFilter = null)
     {
         if (!_hasValidFiles)
@@ -650,7 +650,7 @@ public class UnrealArchiveReader : IDisposable
                 baseName = !string.IsNullOrEmpty(pakName) ? $"{baseName}_{pakName}" : $"{baseName}_{i}";
             }
 
-            var entries = new List<(string, string, string)>();
+            var entries = new List<(string, uint, string, uint, string)>();
             try
             {
                 if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
@@ -661,7 +661,7 @@ public class UnrealArchiveReader : IDisposable
                 foreach (var (nsKey, ents) in locres.Entries)
                     foreach (var (textKey, entry) in ents)
                         if (!string.IsNullOrEmpty(entry.LocalizedString))
-                            entries.Add((nsKey.Str, textKey.Str, entry.LocalizedString));
+                            entries.Add((nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString));
             }
             catch (Exception ex)
             {
