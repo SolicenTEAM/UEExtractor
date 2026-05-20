@@ -75,7 +75,22 @@ namespace Solicen.Localization.UE4
             if (onlyArgs.Length > 0)
 			{
                 string? locres = null;
-                if (onlyArgs[0].Contains(".csv")) 
+                if (onlyArgs[0].EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Patch mode: UEExtractor.exe original.locres [translations.csv] --nte-enc
+                    // Preserves original structure (all entries, hashes, ordering),
+                    // replaces only the strings with Italian translations from the CSV.
+                    string templateLocres = onlyArgs[0];
+                    string? csvPath = onlyArgs.Length > 1 && onlyArgs[1].EndsWith(".csv", StringComparison.OrdinalIgnoreCase)
+                        ? onlyArgs[1] : null;
+                    string outputPath = Path.GetFileNameWithoutExtension(templateLocres) + "_patched.locres";
+                    CLI.Console.WriteLine($"[Yellow][Patch] Template: {templateLocres}");
+                    if (csvPath != null) CLI.Console.WriteLine($"[Yellow][Patch] Translations: {csvPath}");
+                    else CLI.Console.WriteLine($"[Yellow][Patch] No CSV provided – output will be identical to template.");
+                    LocresWriter.LocresCompactWriter.Patch(templateLocres, csvPath, outputPath);
+                    if (ProgramAutoExit) Environment.Exit(0);
+                }
+                else if (onlyArgs[0].Contains(".csv"))
 				{
                     // Обработка для получения .locres файла
                     string LocresCSV = args[0];

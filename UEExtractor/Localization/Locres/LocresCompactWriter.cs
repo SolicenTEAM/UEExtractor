@@ -263,7 +263,129 @@ namespace LocresWriter
         public static void WriteToFile(string path, LocresResult[] entries)
             => WriteToFile(path, entries.ToList());
 
-        // ── Self-verification ─────────────────────────────────────────────
+        // ── Patch mode: use original locres as structural template ────────────
+        // Reads the original NTE-encrypted locres, preserves key section byte-for-byte,
+        // replaces only the strings with Italian translations from a CSV.
+        // Output is structurally identical to the original (same namespaces, hashes, order).
+        public static void Patch(string templatePath, string? csvPath, string outputPath)
+        {
+            var template = File.ReadAllBytes(templatePath);
+
+            using var ms = new MemoryStream(template);
+            using var r  = new BinaryReader(ms);
+
+            r.ReadBytes(16); // magic
+            byte ueVer    = r.ReadByte();
+            int  nteVer   = r.ReadInt32();
+            bool isEnc    = r.ReadInt32() != 0;
+            long strOff   = r.ReadInt64();
+
+            if (ueVer != VersionCityHash64 || nteVer < 10100 || !isEnc)
+                throw new InvalidDataException(
+                    $"Only NTE encrypted v3 locres is supported. ueVer={ueVer} nteVer={nteVer} enc={isEnc}");
+
+            // Parse key section → strIdx → (namespace, key)
+            uint totalEntries = r.ReadUInt32();
+            uint nsCount      = r.ReadUInt32();
+            var  strIdxToKey  = new Dictionary<int, (string Ns, string Key)>((int)totalEntries);
+
+            for (uint i = 0; i < nsCount; i++)
+            {
+                r.ReadUInt32(); // nsHash
+                string ns       = ReadKeyString(r);
+                uint   keyCount = r.ReadUInt32();
+                for (uint j = 0; j < keyCount; j++)
+                {
+                    r.ReadUInt32(); // keyHash
+                    string key    = ReadKeyString(r);
+                    r.ReadInt32(); // sourceHash
+                    int    strIdx = r.ReadInt32();
+                    strIdxToKey[strIdx] = (ns, key);
+                }
+            }
+            Solicen.CLI.Console.WriteLine(
+                $"[DarkGray][Patch] Key section: {nsCount} namespace(s), {strIdxToKey.Count} entries.");
+
+            // Read original string table (fallback for untranslated entries)
+            ms.Seek(strOff, SeekOrigin.Begin);
+            uint strCount     = r.ReadUInt32();
+            var  origStrings  = new string[(int)strCount];
+            for (int i = 0; i < (int)strCount; i++)
+            {
+                string encoded = ReadValueString(r);
+                r.ReadInt32(); // RefCount
+                origStrings[i] = DecryptNTEString(encoded);
+            }
+            Solicen.CLI.Console.WriteLine(
+                $"[DarkGray][Patch] Original strings read: {origStrings.Length}.");
+
+            // Load translations from CSV: compositeKey (ns::key) → Italian text
+            var translations = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!string.IsNullOrEmpty(csvPath) && File.Exists(csvPath))
+            {
+                foreach (var e in Solicen.Localization.UE4.UnrealLocres.LoadFromCSV(csvPath))
+                {
+                    if (string.IsNullOrWhiteSpace(e.Translation)) continue;
+                    // Strip double namespace prefix that WriteToCsv may have added
+                    var bare = e.Key;
+                    if (!string.IsNullOrEmpty(e.Namespace) && bare.StartsWith(e.Namespace + "::"))
+                        bare = bare[(e.Namespace.Length + 2)..];
+                    var composite = string.IsNullOrEmpty(e.Namespace) ? bare : $"{e.Namespace}::{bare}";
+                    translations[composite] =
+                        Solicen.Localization.UE4.LocresHelper.UnEscapeKey(e.Translation);
+                }
+                Solicen.CLI.Console.WriteLine(
+                    $"[DarkGray][Patch] Translations loaded: {translations.Count}.");
+            }
+
+            // Build output: header + key section identical + new string table
+            using var outMs = new MemoryStream(template.Length + 4096);
+            outMs.Write(template, 0, (int)strOff); // header + key section unchanged
+            using var w = new BinaryWriter(outMs);
+
+            w.Write(strCount);
+            int nTranslated = 0, nKept = 0;
+            for (int i = 0; i < (int)strCount; i++)
+            {
+                string plain = origStrings.Length > i ? origStrings[i] : string.Empty;
+                if (strIdxToKey.TryGetValue(i, out var nsKey))
+                {
+                    string ck = string.IsNullOrEmpty(nsKey.Ns)
+                        ? nsKey.Key : $"{nsKey.Ns}::{nsKey.Key}";
+                    if (translations.TryGetValue(ck, out var t) && !string.IsNullOrEmpty(t))
+                    {
+                        plain = t;
+                        nTranslated++;
+                    }
+                    else nKept++;
+                }
+                WriteValueString(w, EncryptNTEString(plain));
+                w.Write(1); // RefCount = 1
+            }
+
+            w.Flush();
+            var data = outMs.ToArray();
+            File.WriteAllBytes(outputPath, data);
+            Solicen.CLI.Console.WriteLine(
+                $"[Green][Patch] Translated: {nTranslated}  Kept original: {nKept}  Total: {strCount}");
+            PrintVerification(data);
+        }
+
+        private static string DecryptNTEString(string base64)
+        {
+            if (string.IsNullOrEmpty(base64)) return string.Empty;
+            try
+            {
+                var enc = Convert.FromBase64String(base64.Replace('-', '+').Replace('_', '/'));
+                using var aes = System.Security.Cryptography.Aes.Create();
+                aes.Mode    = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                var dec = aes.CreateDecryptor(NTEKey, null).TransformFinalBlock(enc, 0, enc.Length);
+                return Encoding.UTF8.GetString(dec).Split("HottaLocresSplit")[0];
+            }
+            catch { return string.Empty; }
+        }
+
 
         private static void PrintVerification(byte[] data)
         {
