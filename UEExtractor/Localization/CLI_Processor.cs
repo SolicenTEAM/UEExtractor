@@ -26,6 +26,7 @@ namespace Solicen.Localization.UE4
 				new Argument("--hash", "-h","include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
 
 				new Argument("--locres", null, "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
+				new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
 				new Argument("--nte", null, "Write locres in NTE (Neverness to Everness) format (adds nte_version int32 before the offset).", () => LocresWriter.LocresCompactWriter.NTEFormat = true),
 				new Argument("--nte-enc", null, "Write locres in NTE encrypted format (v3 + AES-256-ECB, matches Polish mod format).", () => { LocresWriter.LocresCompactWriter.NTEFormat = true; LocresWriter.LocresCompactWriter.NTEEncrypted = true; }),
 			
