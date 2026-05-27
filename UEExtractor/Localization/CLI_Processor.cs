@@ -14,20 +14,19 @@ namespace Solicen.Localization.UE4
 			GitProvider.RepoName = "UEExtractor";
 			GitProvider.UserName = "SolicenTEAM";
 
-			arguments = new List<Argument>
+            arguments = new List<Argument>
 			{
-				new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
-				new Argument("--all", "-all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
+                new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
+                new Argument("--all", "-all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
 				new Argument("--picky", "-p", "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
 				new Argument("--url", "-url", "include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
 				new Argument("--headmark", "-m", "include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
 				new Argument("--hash", "-h","include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
 
 				new Argument("--locres", null, "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
-
-
+			
 				new Argument("--version", "-v", "Set the engine version for correct processing (e.g., -v=5.1).", ProcessVersion),
-				new Argument("--skip-uexp", "-s:xp","skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
+                new Argument("--skip-uexp", "-s:xp","skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 				new Argument("--skip-uasset", "-s:et","skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 				new Argument("--underscore", "-un","do not skip lines with underscores.", () => UnrealUepx.SkipUnderscore = false),
 				new Argument("--upper-upper", "-up","skip lines with UpperUpper.", () => UnrealUepx.SkipUpperUpper = true),
@@ -37,16 +36,13 @@ namespace Solicen.Localization.UE4
 				new Argument("--table-format", "-tf", "replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 				new Argument("--auto-exit", "-exit", "Exit automatically after execution", () => ProgramAutoExit = true),
 				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
-				new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
-				new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key),
+                new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
+                new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key),
 
-				new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
-				new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
-				new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => UberTranslator.OpenRouterModel = model),
-				new Argument("--api", null, "Set API key for OpenRouter.", (key) => UberTranslator.OpenRouterApiKey = key),
-
-				//Arguments for debug
-				new Argument("--process-only", null, "Process assets with only this one name.", (name) => UnrealArchiveReader.ProcessOnlyWithName = name),
+                new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
+                new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
+                new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => UberTranslator.OpenRouterModel = model),
+                new Argument("--api", null, "Set API key for OpenRouter.", (key) => UberTranslator.OpenRouterApiKey = key),
             };
 		}
 
