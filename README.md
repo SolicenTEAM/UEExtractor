@@ -20,7 +20,7 @@ Will be imported or converted to `.locres` file.
 key,source,Translation
 4A6FDB1549E45F6C5D8D739129686E2F,Default,
 ```
-*Importing a **Translation column** from CSV is possible via [UE4localizationsTool](https://github.com/amrshaheen61/UE4LocalizationsTool).*
+*Importing a **Translation column** from CSV also possible via [UE4localizationsTool](https://github.com/amrshaheen61/UE4LocalizationsTool).*
 
 ## Preparation:
 ### For games running on Unreal Engine 4 before [ZenLoader](https://dev.epicgames.com/documentation/en-us/unreal-engine/zen-loader-in-unreal-engine).
@@ -44,6 +44,7 @@ First, follow the steps described above, and only then continue.
 > You need to get the `.usmap` file to access the game's resources and archives.
 > - As before, you can find this file on the Internet, if you don't have it.
 > - Check [nexusmods](https://www.nexusmods.com/) and modding forums for its availability.
+> - Or direct dump this file with [UE4SS-Experimental](https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest), see [extracting usmap guide](https://github.com/Dmgvol/UE_Modding/blob/main/TheBasics/Extractingusmap.md).
 
 1. Place the `.usmap` file in the main directory of the game (or a subdir), and the tool will find it automatically.
 2. The preparation for the work is completed.
@@ -55,14 +56,14 @@ Game-specific pak formats, index offsets, and custom encryption are applied auto
 
 | Game | Notes |
 |------|-------|
-| Neverness To Everness | Custom pak index offset; `.locres` files are encrypted (handled automatically) |
+| Neverness To Everness | Custom pak index offset; `.locres` files are encrypted |
 | Ash Echoes | Custom file provider |
 | Wuthering Waves / KuroGames | Partial-encryption pak format |
 | inZOI | Custom FPakInfo offset |
-| Marvel Rivals | Custom encryption (auto-configured by CUE4Parse, no AES key needed) |
-| Dead by Daylight | Custom encryption (auto-configured by CUE4Parse, no AES key needed) |
+| Marvel Rivals | Custom encryption (auto-configured by CUE4Parse) |
+| Dead by Daylight | Custom encryption (auto-configured by CUE4Parse)
 | FragPunk | Custom global IoStore handling |
-| Infinity Nikki | Custom encryption (auto-configured by CUE4Parse, no AES key needed) |
+| Infinity Nikki | Custom encryption (auto-configured by CUE4Parse) |
 | Snowbreak: Containment Zone | — |
 
 > [!TIP]

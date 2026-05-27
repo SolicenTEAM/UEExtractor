@@ -20,7 +20,7 @@
 key,source,Translation
 4A6FDB1549E45F6C5D8D739129686E2F,Default,
 ```
-*Импорт колонки **Translation** из CSV в `.locres` возможен через [UE4localizationsTool](https://github.com/amrshaheen61/UE4LocalizationsTool).*
+*Импорт колонки **Translation** из CSV в `.locres` также возможен через [UE4localizationsTool](https://github.com/amrshaheen61/UE4LocalizationsTool).*
 
 ## Подготовка:
 ### Для игр на Unreal Engine 4 до [ZenLoader](https://dev.epicgames.com/documentation/en-us/unreal-engine/zen-loader-in-unreal-engine).
@@ -28,7 +28,7 @@ key,source,Translation
 
 > [!TIP]
 > **Версия движка и тип игры определяются автоматически** по исполняемому файлу игры.
-> - Для многих известных игр (см. [Поддерживаемые игры](#поддерживаемые-игры)) флаг `-v` вообще не нужен.
+> - Для многих известных игр (см. [Поддерживаемые игры](#поддерживаемые-игры)) флаг `-v` не нужен.
 > - Вы всё равно можете переопределить версию через `-v=UE5_1`, если автоопределение даёт неверный результат.
 > - Все значения версий UE берутся из библиотеки CUE4Parse; нужную версию можно узнать через FModel.
 
@@ -44,6 +44,7 @@ key,source,Translation
 > Вам нужно получить файл `.usmap` для доступа к игровым архивам и ресурсам.
 > - Как и раньше, вы можете найти этот файл в интернете, если у вас его ещё нет.
 > - Посмотрите на [nexusmods](https://www.nexusmods.com/) и форумах, посвящённых модам.
+> - Или создайте дамп файл при помощи [UE4SS-Experimental](https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest), подробнее в [гайде по извлечению usmap](https://github.com/Dmgvol/UE_Modding/blob/main/TheBasics/Extractingusmap.md).
 
 1. Положите файл `.usmap` в главную папку игры (или любую подпапку) — он будет найден автоматически.
 2. Подготовка к работе завершена.
@@ -55,14 +56,14 @@ key,source,Translation
 
 | Игра | Примечания |
 |------|-----------|
-| Neverness To Everness | Особое смещение индекса пака; файлы `.locres` зашифрованы (обрабатывается автоматически) |
+| Neverness To Everness | Особое смещение индекса пака; файлы `.locres` зашифрованы |
 | Ash Echoes | Кастомный провайдер файлов |
 | Wuthering Waves / KuroGames | Формат пака с частичным шифрованием |
 | inZOI | Особое смещение FPakInfo |
-| Marvel Rivals | Кастомное шифрование (настраивается CUE4Parse автоматически, AES ключ не нужен) |
-| Dead by Daylight | Кастомное шифрование (настраивается CUE4Parse автоматически, AES ключ не нужен) |
+| Marvel Rivals | Кастомное шифрование (из CUE4Parse) |
+| Dead by Daylight | Кастомное шифрование (из CUE4Parse) |
 | FragPunk | Особая обработка глобального IoStore |
-| Infinity Nikki | Кастомное шифрование (настраивается CUE4Parse автоматически, AES ключ не нужен) |
+| Infinity Nikki | Кастомное шифрование (из CUE4Parse) |
 | Snowbreak: Containment Zone | — |
 
 > [!TIP]
