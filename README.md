@@ -198,4 +198,4 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 - [Ambi](https://github.com/JunkBeat) for his original script and idea to research.
 - [Saipan](https://github.com/Saipan0) for help in researching the creation of a locres file.
 - [FabianFG](https://github.com/FabianFG) for **CUE4Parse** library and FModel code example.
-- [Nuked88](https://github.com/Nuked88) for for excellent work and changes in his fork.
+- [Nuked88](https://github.com/Nuked88) for excellent work and changes in his fork.
