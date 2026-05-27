@@ -6,8 +6,8 @@ namespace Solicen.Localization.UE4
     public class UnrealUepx
     {
         #region Console Settings
-        public static bool SkipUpperUpper = false;
-        public static bool SkipUnderscore = true;
+        public static bool SkipUppercase = false;
+        public static bool SkipUnderscore = false;
         public static bool IncludeInvalidData = false;
         public static bool IncludeHashInKeyValue = false;
         public static bool IncludeUrlInKeyValue = false;
@@ -182,7 +182,7 @@ namespace Solicen.Localization.UE4
                         Console.WriteLine($"DecoderFallbackException: Unable to decode string at position {i}");
                     }
 
-                    if (ContainsUpperUpper(decodedString) && SkipUpperUpper) {
+                    if (ContainsUpperUpper(decodedString) && SkipUppercase) {
                         Console.WriteLine($"SKIP: {hashDecoded}:{decodedString} | UpperUpper");
                         UnrealLocres.SkippedCSV.WriteLine($"{hashDecoded},{decodedString}");
                         i = endPos; continue; }

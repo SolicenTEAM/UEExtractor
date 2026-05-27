@@ -158,6 +158,7 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 |----------|-------|-------------|
 | `--version=<ver>` | `-v` | Set the engine version or game name. Auto-detected when omitted. Use `-v=GAME_NevernessToEverness` (or `-v=NTE`) to enable NTE encrypted locres output. Examples: `-v=UE5_6`, `-v=Stalker2`. |
 | `--aes=<key>` | `-a` | 32-character hex AES key (must start with `0x`). |
+| `--aes:auto` | `-a:auto` | Automatic extraction AES key into aes.txt at the root of the game (for directories only) |
 | `--path=<virtual_path>` | `-p` | Restrict processing to assets under a specific internal path (e.g. `--path=HT/Content/Localization`). Case-insensitive substring match. |
 | `--verbose` | `-vb` | Show per-file processing details and diagnostic info instead of the progress bar. |
 | `--skip-uexp` | `-s:xp` | Skip `.uexp` files during processing. |
@@ -165,8 +166,8 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--locres` | `-l`| Write a `.locres` file after parsing. |
 | `--extract-locres` | | Dump the raw `.locres` binaries from the pak to the output directory (useful for inspection or as patch template). |
 | `--all` | `-all` | Process all folders in the archive (including effects, meshes, sounds, etc.). |
-| `--underscore` | `-un` | Do not skip lines with underscores: **ex_string** |
-| `--upper-upper` | `-up` | Skip lines with ALL UPPERCASE: **EXAMPLE** |
+| `--no-underscore` | `-n:un` | Skip lines with underscores: **ex_string** |
+| `--no-uppercase` | `-n:up` | Skip lines with ALL UPPERCASE: **EXAMPLE** |
 | `--no-parallel` | `-n:p` | Disable parallel processing (slower; may surface additional data). |
 | `--table-format` | `-tf` | Replace the standard `,` separator with `\|`. |
 | `--headmark` | `-m` | Include header and footer in the `.csv`. |
