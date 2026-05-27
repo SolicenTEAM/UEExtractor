@@ -4,7 +4,7 @@
 
 Сделано с ❤️ для **всех** переводчиков и разработчиков переводов.
 
-Это инструмент на **.NET 9.0** для извлечения текста из любой игры на [Unreal Engine](https://www.unrealengine.com/) (4.0 - 5.8).<br>Используется [CUE4Parse](https://github.com/FabianFG/CUE4Parse) для работы с Unreal Engine архивами **`.pak`** и **`.utoc`**.
+Это инструмент на **.NET 10.0** для извлечения текста из любой игры на [Unreal Engine](https://www.unrealengine.com/) (4.0 - 5.8).<br>Используется [CUE4Parse](https://github.com/FabianFG/CUE4Parse) для работы с Unreal Engine архивами **`.pak`** и **`.utoc`**.
 
 С его помощью вы получите файл `locresCSV` для локализации игры на основе её ресурсов.
 
