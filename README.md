@@ -157,11 +157,11 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 |----------|-------|-------------|
 | `--version=<ver>` | `-v` | Set the engine version or game name. Auto-detected when omitted. Use `-v=GAME_NevernessToEverness` (or `-v=NTE`) to enable NTE encrypted locres output. Examples: `-v=UE5_6`, `-v=Stalker2`. |
 | `--aes=<key>` | `-a` | 32-character hex AES key (must start with `0x`). |
-| `--path=<virtual_path>` | `-path` | Restrict processing to assets under a specific internal path (e.g. `--path=HT/Content/Localization`). Case-insensitive substring match. |
+| `--path=<virtual_path>` | `-p` | Restrict processing to assets under a specific internal path (e.g. `--path=HT/Content/Localization`). Case-insensitive substring match. |
 | `--verbose` | `-vb` | Show per-file processing details and diagnostic info instead of the progress bar. |
 | `--skip-uexp` | `-s:xp` | Skip `.uexp` files during processing. |
 | `--skip-uasset` | `-s:et` | Skip `.uasset` files during processing. |
-| `--locres` | | Write a `.locres` file after parsing. |
+| `--locres` | `-l`| Write a `.locres` file after parsing. |
 | `--extract-locres` | | Dump the raw `.locres` binaries from the pak to the output directory (useful for inspection or as patch template). |
 | `--all` | `-all` | Process all folders in the archive (including effects, meshes, sounds, etc.). |
 | `--underscore` | `-un` | Do not skip lines with underscores: **ex_string** |
@@ -174,7 +174,7 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--qmarks` | `-q` | Forcibly add quotation marks around text strings. |
 | `--hash` | `-h` | Include hash in the key: `[key][hash],<string>`. |
 | `--url` | `-url` | Include file path in the key: `[url][key],<string>`. |
-| `--picky` | `-p` | Picky mode — displays more detailed per-file information. |
+| `--picky` |  | Picky mode — displays more detailed per-file information. |
 | `--table:only:key=<name>` | `-t:o:k` | Include only entries whose key/name matches the given value. |
 | `--lang:from=<code>` | `-l:f` | Source language for translation (e.g. `en`). |
 | `--lang:to=<code>` | `-l:t` | Target language for translation (e.g. `ru`). |
@@ -195,4 +195,4 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 - [Ambi](https://github.com/JunkBeat) for his original script and idea to research.
 - [Saipan](https://github.com/Saipan0) for help in researching the creation of a locres file.
 - [FabianFG](https://github.com/FabianFG) for **CUE4Parse** library and FModel code example.
-
+- [Nuked88](https://github.com/Nuked88) for for excellent work and changes in his fork.

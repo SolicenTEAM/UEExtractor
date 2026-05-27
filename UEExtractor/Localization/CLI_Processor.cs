@@ -20,12 +20,12 @@ namespace Solicen.Localization.UE4
 			{
                 new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
                 new Argument("--all", "-all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
-				new Argument("--picky", "-p", "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
+				new Argument("--picky", null, "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
 				new Argument("--url", "-url", "include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
 				new Argument("--headmark", "-m", "include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
 				new Argument("--hash", "-h","include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
 
-				new Argument("--locres", null, "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
+				new Argument("--locres", "-l", "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
 				new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
 
 				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessVersion),
@@ -39,7 +39,7 @@ namespace Solicen.Localization.UE4
 				new Argument("--table-format", "-tf", "replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 				new Argument("--auto-exit", "-exit", "Exit automatically after execution", () => ProgramAutoExit = true),
 				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true),
-				new Argument("--path", "-path", "Restrict processing to assets under a specific virtual path (e.g. --path=HT/Content/Localization).", (p) => UnrealLocres.FilterPath = p),
+				new Argument("--path", "-p", "Restrict processing to assets under a specific virtual path (e.g. --path=HT/Content/Localization).", (p) => UnrealLocres.FilterPath = p),
 				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
                 new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
                 new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key),
@@ -55,6 +55,8 @@ namespace Solicen.Localization.UE4
             };
 		}
 
+
+		static bool IsNTE(string str) => (str == "NTE" || str.Contains("NEVERNESS"));
 		static void ProcessVersion(string version)
         {
 			if (string.IsNullOrWhiteSpace(version)) return;
@@ -62,7 +64,7 @@ namespace Solicen.Localization.UE4
 			// Detect NTE (Neverness to Everness) game name → enable NTE encrypted locres output.
 			// Accepts: GAME_NevernessToEverness, NevernessToEverness, NTE (case-insensitive).
 			var normalized = version.Replace("_", "").Replace("-", "").Replace(" ", "").ToUpperInvariant();
-			if (normalized == "NTE" || normalized.Contains("NEVERNESS"))
+			if (IsNTE(normalized))
 			{
 				LocresWriter.LocresCompactWriter.NTEFormat    = true;
 				LocresWriter.LocresCompactWriter.NTEEncrypted = true;
