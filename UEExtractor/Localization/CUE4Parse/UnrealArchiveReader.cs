@@ -21,6 +21,8 @@ public class UnrealArchiveReader : IDisposable
     private bool _isZenloader = false;
     public static bool EngineSpecified = false;
 
+    public static string ProcessOnlyWithName = string.Empty;
+
     public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
     {
         UE_VER = VER;
@@ -281,7 +283,8 @@ public class UnrealArchiveReader : IDisposable
             .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
             .ToList();
 
-        //assets = assets.Where(x => x.Contains("Widget_InputSelector") == true).ToList();
+        if (ProcessOnlyWithName != string.Empty)
+            assets = assets.Where(x => x.Contains(ProcessOnlyWithName) == true).ToList();
 
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
@@ -320,7 +323,6 @@ public class UnrealArchiveReader : IDisposable
         });
     }
 
-
     public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
     {
         if (path.EndsWith(".uasset"))
@@ -338,7 +340,6 @@ public class UnrealArchiveReader : IDisposable
             }
         }
     }
-
 
     public void GetLocalizedStrings(string assetPath, Action<List<(string Namespace, string Key, string SourceString)>> processor)
     {
