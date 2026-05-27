@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# Inspect locres file python tool from Nuked88 Fork: https://github.com/Nuked88/UEExtractor
+# It has been retained as a useful diagnostic tool, all rights reserved for their creator - Nuked88 
 """
 Diagnoses a .locres file: shows header bytes, interprets both standard-compact
 and NTE-compact layouts, validates the stored string-table offset.
