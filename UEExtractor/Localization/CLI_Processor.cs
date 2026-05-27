@@ -9,6 +9,8 @@ namespace Solicen.Localization.UE4
 	{
         private static bool ProgramAutoExit = false;
         private static bool TranslateOnly = false;
+		private static bool ExtractAES = false;
+
         private static readonly List<Argument> arguments;
 
 		static CLI_Processor()
@@ -19,6 +21,8 @@ namespace Solicen.Localization.UE4
             arguments = new List<Argument>
 			{
                 new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
+                new Argument("--aes:auto", "-a:auto", "automatic extraction AES key into aes.txt at the root of the game (for directories only)", () => ExtractAES = true),
+
                 new Argument("--all", "-all", "processing all folders in archive", () => UnrealLocres.AllFolders = true),
 				new Argument("--picky", null, "picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
 				new Argument("--url", "-url", "include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
@@ -54,7 +58,6 @@ namespace Solicen.Localization.UE4
                 new Argument("--translate-only", "-t:o", "Skip extraction and translate existing CSV file(s) from previous run.", () => TranslateOnly = true),
             };
 		}
-
 
 		static bool IsNTE(string str) => (str == "NTE" || str.Contains("NEVERNESS"));
 		static void ProcessVersion(string version)
@@ -158,9 +161,9 @@ namespace Solicen.Localization.UE4
 			}
 		}
 
-
 		public static void ProcessFolder(string folderPath, string? fileName = "", string? locresPath = "")
 		{
+			if (ExtractAES) { ProcessDumpAESKey(folderPath); }
 			var exePath = new FileInfo(typeof(CLI_Processor).Assembly.Location).Directory;
 
 			// If fileName is a directory path, write per-locres CSVs into it
@@ -218,6 +221,26 @@ namespace Solicen.Localization.UE4
 			if (UnrealLocres.WriteLocres && locresPath != null)
 				LocresWriter.LocresCompactWriter.WriteToFile(locresPath,Result.FromConcurrent().ToList());
 			if (ProgramAutoExit) Environment.Exit(0);
+		}
+
+		public static void ProcessDumpAESKey(string path)
+		{
+			var ShippingExeFile = Directory.GetFiles(path, "*.exe", SearchOption.AllDirectories)
+				.Where(x => x.Contains("\\Binaries\\Win64\\")).FirstOrDefault(x => x.Contains("-Shipping.exe"));
+			if (ShippingExeFile != null)
+			{
+                var dumper = new AESDumper();
+                var key = dumper.ExtractKey(ShippingExeFile);
+				if (key != null)
+				{
+                    dumper.ExtractKeyToFile(ShippingExeFile, path + "\\aes.txt");
+					if (UnrealLocres.VerboseOutput)
+					{
+                        CLI.Console.WriteLine($"[Green]Extracted AES Key: {key}");
+                        CLI.Console.WriteLine($"[Green]Saved: {path + "\\aes.txt"}");
+                    }
+                }
+            }
 		}
 
 		// Writes one CSV per locres file into outputDir, merging with any existing CSV.
