@@ -1,5 +1,7 @@
-﻿using Solicen.Localization.UE4;
+using Solicen.Localization.UE4;
+using System.Security.Cryptography;
 using System.Text;
+using CUE4Parse.Utils;
 
 namespace LocresWriter
 {
@@ -11,27 +13,32 @@ namespace LocresWriter
             0x4A, 0x15, 0x90, 0x9D, 0xC3, 0x37, 0x7F, 0x1B
         };
 
-        private const byte VersionCompact = 0x01;
+        private const byte VersionCompact          = 0x01;
+        private const byte VersionCityHash64       = 0x03;
+
+        // NTE AES-256-ECB key (from CUE4Parse NTE handler)
+        private static readonly byte[] NTEKey = Convert.FromHexString(
+            "396d4330686f704b4e6a5377694364684e56375974435765754476484c513238");
+
         /// <summary>
-        /// Секция ключей: записывает строку.
-        /// Пустая строка: Int32(0) и больше ничего.
-        /// Непустая: Int32(strlen+1) + ASCII bytes + 0x00
-        /// Для Unicode: отрицательная длина + UTF-16LE + 0x00 0x00
+        /// Standard Compact v1 (default).
+        /// Set NTEFormat=true for NTE unencrypted (v1, nte_ver=1).
+        /// Set NTEEncrypted=true (implies NTEFormat) for NTE encrypted v3 (nte_ver=10100).
         /// </summary>
+        public static bool NTEFormat    = false;
+        public static bool NTEEncrypted = false;
+
+        // ── FString helpers ──────────────────────────────────────────────
+
         private static void WriteKeyString(BinaryWriter w, string s)
         {
-            if (s.Length == 0)
-            {
-                w.Write((int)0);
-                return;
-            }
-
+            if (s.Length == 0) { w.Write(0); return; }
             bool ascii = s.All(c => c < 128);
             if (ascii)
             {
-                w.Write((int)(s.Length + 1));
+                w.Write(s.Length + 1);
                 w.Write(Encoding.ASCII.GetBytes(s));
-                w.Write((byte)0x00);
+                w.Write((byte)0);
             }
             else
             {
@@ -43,49 +50,82 @@ namespace LocresWriter
 
         private static int KeyStringSize(string s)
         {
-            if (s.Length == 0)
-                return 4; // только Int32(0)
-
-            bool ascii = s.All(c => c < 128);
-            return ascii
-                ? 4 + s.Length + 1
-                : 4 + s.Length * 2 + 2;
+            if (s.Length == 0) return 4;
+            return s.All(c => c < 128) ? 4 + s.Length + 1 : 4 + s.Length * 2 + 2;
         }
 
-        /// <summary>
-        /// Строковая таблица: Int32(strlen) + bytes + 0x00
-        /// Длина НЕ включает нулевой терминатор
-        /// </summary>
         private static void WriteValueString(BinaryWriter w, string s)
         {
-            if (s.Length == 0)
-            {
-                w.Write((int)0);
-                return;
-            }
-
+            if (s.Length == 0) { w.Write(0); return; }
             bool ascii = s.All(c => c < 128);
             if (ascii)
             {
-                w.Write((int)s.Length+1);
+                w.Write(s.Length + 1);
                 w.Write(Encoding.ASCII.GetBytes(s));
-                w.Write((byte)0x00);
+                w.Write((byte)0);
             }
             else
             {
-                w.Write(-s.Length-1);
+                w.Write(-(s.Length + 1));
                 w.Write(Encoding.Unicode.GetBytes(s));
                 w.Write((short)0);
             }
         }
 
+        // ── NTE encryption ───────────────────────────────────────────────
+
+        // Encrypts a plain string the same way NTE's game writes it:
+        //   UTF-8(plain + "HottaLocresSplit") → zero-pad to 16 → AES-256-ECB → Base64-URL-safe
+        private static string EncryptNTEString(string plain)
+        {
+            var plainBytes = Encoding.UTF8.GetBytes(plain + "HottaLocresSplit");
+            int padded = ((plainBytes.Length + 15) / 16) * 16;
+            var buf = new byte[padded];
+            plainBytes.CopyTo(buf, 0);
+
+            using var aes = System.Security.Cryptography.Aes.Create();
+            aes.Mode    = CipherMode.ECB;
+            aes.Padding = PaddingMode.None;
+            var enc = aes.CreateEncryptor(NTEKey, null).TransformFinalBlock(buf, 0, buf.Length);
+            return Convert.ToBase64String(enc).Replace('+', '-').Replace('/', '_');
+        }
+
+        // ── CityHash64 helper for v3 key hashes (fallback only) ─────────
+        // Prefer game-preserved StrHash values (LocresResult.NsHash/KeyHash) over this.
+        // The exact truncation of CityHash64 depends on the UE version used to build the locres;
+        // using the original game's stored hash is the only reliable option.
+        private static uint KeyHash(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            return (uint)(CityHash.CityHash64(Encoding.Unicode.GetBytes(s)) >> 32);
+        }
+
+        // ── actualKey helper ─────────────────────────────────────────────
+
+        private static string ActualKey(string ns, string compositeKey)
+        {
+            // Strip all leading occurrences of "ns::" to handle cases where
+            // the CSV write/read cycle double-prefixes composite keys.
+            string key = compositeKey;
+            while (!string.IsNullOrEmpty(ns) && key.StartsWith(ns + "::", StringComparison.Ordinal))
+                key = key[(ns.Length + 2)..];
+            return key;
+        }
+
+        // ── Main write entry point ───────────────────────────────────────
+
         public static byte[] Write(List<LocresResult> entries)
         {
-            // Группируем по Namespace, сохраняя порядок появления
-            // Включаем ВСЕ записи, в том числе с пустым Namespace
-            var nsGroups = new List<(string ns, List<LocresResult> keys)>();
-            var nsOrder = new Dictionary<string, int>();
+            int skipped = entries.Count(e => string.IsNullOrEmpty(e.Key));
+            if (skipped > 0)
+            {
+                Solicen.CLI.Console.WriteLine($"[Yellow][Locres] Skipping {skipped} entries with empty key.");
+                entries = entries.Where(e => !string.IsNullOrEmpty(e.Key)).ToList();
+            }
 
+            // Group by namespace preserving order
+            var nsGroups = new List<(string ns, List<LocresResult> keys)>();
+            var nsOrder  = new Dictionary<string, int>();
             foreach (var e in entries)
             {
                 if (!nsOrder.TryGetValue(e.Namespace, out int idx))
@@ -97,78 +137,377 @@ namespace LocresWriter
                 nsGroups[idx].keys.Add(e);
             }
 
-            // Общее количество строк
             int totalStrings = entries.Count;
+            bool v3          = NTEEncrypted; // v3 key format with StrHash + EntriesCount
+            bool encrypted   = NTEEncrypted;
 
-            // Вычисляем размер секции ключей
-            int keySectionSize = 4; // NamespaceCount
-            foreach (var (ns, keys) in nsGroups)
+            // Pre-compute actualKeys (needed for size and write)
+            var actualKeys = nsGroups.Select(g =>
+                g.keys.Select(e => ActualKey(g.ns, e.Key)).ToList()).ToList();
+
+            // ── keySectionSize ────────────────────────────────────────────
+            int keySectionSize = 0;
+            if (v3) keySectionSize += 4; // EntriesCount
+            keySectionSize += 4;          // NamespaceCount
+            for (int gi = 0; gi < nsGroups.Count; gi++)
             {
-                keySectionSize += KeyStringSize(ns);  // namespace name
-                keySectionSize += 4;                   // KeyCount
-
-                foreach (var entry in keys)
+                var (ns, keys) = nsGroups[gi];
+                if (v3) keySectionSize += 4;  // ns StrHash
+                keySectionSize += KeyStringSize(ns);
+                keySectionSize += 4; // KeyCount
+                for (int ki = 0; ki < keys.Count; ki++)
                 {
-                    keySectionSize += KeyStringSize(entry.Key); // key name
-                    keySectionSize += 4;  // hash
-                    keySectionSize += 4;  // string index
+                    if (v3) keySectionSize += 4;  // key StrHash
+                    keySectionSize += KeyStringSize(actualKeys[gi][ki]);
+                    keySectionSize += 4; // sourceHash
+                    keySectionSize += 4; // strIdx
                 }
             }
 
-            // Header = 16 (magic) + 1 (version) + 8 (offset) = 25
-            long stringTableOffset = 25 + keySectionSize;
+            // ── Header size ───────────────────────────────────────────────
+            // Standard   : magic(16) + ue_ver(1) + offset(8)                    = 25
+            // NTE no-enc : magic(16) + ue_ver(1) + nte_ver(4) + offset(8)       = 29
+            // NTE enc    : magic(16) + ue_ver(1) + nte_ver(4) + int32(4) + offset(8) = 33
+            // NOTE: UE4 serializes bool as int32 (4 bytes), not 1 byte.
+            int headerSize = encrypted ? 33 : (NTEFormat ? 29 : 25);
+            long stringTableOffset = headerSize + keySectionSize;
 
-            using (var ms = new MemoryStream())
-            using (var w = new BinaryWriter(ms, Encoding.UTF8))
+            using var ms = new MemoryStream();
+            using var w  = new BinaryWriter(ms, Encoding.UTF8);
+
+            // === HEADER ===
+            w.Write(LocresMagic);
+            w.Write(encrypted ? VersionCityHash64 : VersionCompact);
+            if (NTEFormat || encrypted)
+                w.Write(encrypted ? 10100 : 1); // NTE version int32
+            if (encrypted)
+                w.Write((int)1); // isEncrypted = true (UE4 serializes bool as int32, 4 bytes)
+            w.Write(stringTableOffset);
+
+            // === KEY SECTION ===
+            if (v3) w.Write((uint)totalStrings); // EntriesCount
+            w.Write((uint)nsGroups.Count);
+
+            int strIdx = 0;
+            for (int gi = 0; gi < nsGroups.Count; gi++)
             {
-                // === HEADER ===
-                w.Write(LocresMagic);
-                w.Write(VersionCompact);
-                w.Write(stringTableOffset);
-
-                // === СЕКЦИЯ КЛЮЧЕЙ ===
-                w.Write((int)nsGroups.Count);
-
-                int strIdx = 0;
-                foreach (var (ns, keys) in nsGroups)
+                var (ns, keys) = nsGroups[gi];
+                if (v3)
                 {
-                    WriteKeyString(w, ns);
-                    w.Write((int)keys.Count);
-
-                    foreach (var entry in keys)
-                    {
-                        WriteKeyString(w, entry.Key);
-                        w.Write(LocresSharp.Crc.StrCrc32(LocresHelper.UnEscapeKey(entry.Source)));
-                        w.Write(strIdx);
-                        strIdx++;
-                    }
+                    // Use game-preserved NsHash if available, fall back to computed.
+                    uint nsHash = keys.Count > 0 && keys[0].NsHash != 0
+                        ? keys[0].NsHash : KeyHash(ns);
+                    w.Write(nsHash);
                 }
+                WriteKeyString(w, ns);
+                w.Write((uint)keys.Count);
 
-                // === СЕКЦИЯ СТРОК ===
-                w.Write((uint)totalStrings);
-
-                foreach (var (ns, keys) in nsGroups)
+                for (int ki = 0; ki < keys.Count; ki++)
                 {
-                    foreach (var entry in keys)
+                    var entry  = keys[ki];
+                    var aKey   = actualKeys[gi][ki];
+                    if (v3)
                     {
-                        string value = string.IsNullOrEmpty(entry.Translation)
-                            ? entry.Source
-                            : entry.Translation;
-
-                        WriteValueString(w, LocresHelper.UnEscapeKey(value));
+                        // Use game-preserved KeyHash if available, fall back to computed.
+                        uint keyHash = entry.KeyHash != 0 ? entry.KeyHash : KeyHash(aKey);
+                        w.Write(keyHash);
                     }
+                    WriteKeyString(w, aKey);
+                    w.Write(LocresSharp.Crc.StrCrc32(LocresHelper.UnEscapeKey(entry.Source)));
+                    w.Write(strIdx++);
                 }
-
-                w.Flush();
-                return ms.ToArray();
             }
+
+            // Assert: actual key section size must match the pre-calculated offset
+            w.Flush();
+            long actualKSEnd = ms.Position;
+            if (actualKSEnd != stringTableOffset)
+                Solicen.CLI.Console.WriteLine(
+                    $"[Red][BUG] keySectionSize mismatch! calculated stringTableOffset={stringTableOffset}, actual pos after key section={actualKSEnd} (diff={(actualKSEnd - stringTableOffset):+0;-0})");
+            else
+                Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] keySectionSize OK ({keySectionSize} bytes), offset={stringTableOffset}");
+
+            // === STRING TABLE ===
+            w.Write((uint)totalStrings);
+            for (int gi = 0; gi < nsGroups.Count; gi++)
+            {
+                foreach (var entry in nsGroups[gi].keys)
+                {
+                    string value = string.IsNullOrEmpty(entry.Translation)
+                        ? entry.Source : entry.Translation;
+                    string plain = LocresHelper.UnEscapeKey(value);
+
+                    if (encrypted)
+                    {
+                        WriteValueString(w, EncryptNTEString(plain));
+                        w.Write(1); // RefCount = 1 (matches NTE game format; game may reject refcnt<=0)
+                    }
+                    else
+                    {
+                        WriteValueString(w, plain);
+                    }
+                }
+            }
+
+            w.Flush();
+            return ms.ToArray();
         }
 
         public static void WriteToFile(string path, List<LocresResult> entries)
-            => File.WriteAllBytes(path, Write(entries));
+        {
+            var data = Write(entries);
+            File.WriteAllBytes(path, data);
+            PrintVerification(data);
+        }
 
         public static void WriteToFile(string path, LocresResult[] entries)
-            => File.WriteAllBytes(path, Write(entries.ToList()));
-    }
+            => WriteToFile(path, entries.ToList());
 
+        // ── Patch mode: use original locres as structural template ────────────
+        // Reads the original NTE-encrypted locres, preserves key section byte-for-byte,
+        // replaces only the strings with Italian translations from a CSV.
+        // Output is structurally identical to the original (same namespaces, hashes, order).
+        public static void Patch(string templatePath, string? csvPath, string outputPath)
+        {
+            var template = File.ReadAllBytes(templatePath);
+
+            using var ms = new MemoryStream(template);
+            using var r  = new BinaryReader(ms);
+
+            r.ReadBytes(16); // magic
+            byte ueVer    = r.ReadByte();
+            int  nteVer   = r.ReadInt32();
+            bool isEnc    = r.ReadInt32() != 0;
+            long strOff   = r.ReadInt64();
+
+            if (ueVer != VersionCityHash64 || nteVer < 10100 || !isEnc)
+                throw new InvalidDataException(
+                    $"Only NTE encrypted v3 locres is supported. ueVer={ueVer} nteVer={nteVer} enc={isEnc}");
+
+            // Parse key section → strIdx → (namespace, key)
+            uint totalEntries = r.ReadUInt32();
+            uint nsCount      = r.ReadUInt32();
+            var  strIdxToKey  = new Dictionary<int, (string Ns, string Key)>((int)totalEntries);
+
+            for (uint i = 0; i < nsCount; i++)
+            {
+                r.ReadUInt32(); // nsHash
+                string ns       = ReadKeyString(r);
+                uint   keyCount = r.ReadUInt32();
+                for (uint j = 0; j < keyCount; j++)
+                {
+                    r.ReadUInt32(); // keyHash
+                    string key    = ReadKeyString(r);
+                    r.ReadInt32(); // sourceHash
+                    int    strIdx = r.ReadInt32();
+                    strIdxToKey[strIdx] = (ns, key);
+                }
+            }
+            Solicen.CLI.Console.WriteLine(
+                $"[DarkGray][Patch] Key section: {nsCount} namespace(s), {strIdxToKey.Count} entries.");
+
+            // Read original string table (fallback for untranslated entries)
+            ms.Seek(strOff, SeekOrigin.Begin);
+            uint strCount     = r.ReadUInt32();
+            var  origStrings  = new string[(int)strCount];
+            for (int i = 0; i < (int)strCount; i++)
+            {
+                string encoded = ReadValueString(r);
+                r.ReadInt32(); // RefCount
+                origStrings[i] = DecryptNTEString(encoded);
+            }
+            Solicen.CLI.Console.WriteLine(
+                $"[DarkGray][Patch] Original strings read: {origStrings.Length}.");
+
+            // Load translations from CSV: compositeKey (ns::key) → Italian text
+            var translations = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (!string.IsNullOrEmpty(csvPath) && File.Exists(csvPath))
+            {
+                foreach (var e in Solicen.Localization.UE4.UnrealLocres.LoadFromCSV(csvPath))
+                {
+                    // Use Translation if available, otherwise fall back to Source.
+                    var text = !string.IsNullOrWhiteSpace(e.Translation) ? e.Translation : e.Source;
+                    if (string.IsNullOrWhiteSpace(text)) continue;
+                    // Strip double namespace prefix that WriteToCsv adds.
+                    // After stripping, bare is already "ns::key" (or just "key" for empty ns).
+                    var bare = e.Key;
+                    if (!string.IsNullOrEmpty(e.Namespace) && bare.StartsWith(e.Namespace + "::"))
+                        bare = bare[(e.Namespace.Length + 2)..];
+                    translations[bare] =
+                        Solicen.Localization.UE4.LocresHelper.UnEscapeKey(text);
+                }
+                int withTranslation = translations.Count;
+                Solicen.CLI.Console.WriteLine(
+                    $"[DarkGray][Patch] Translations loaded: {withTranslation}.");
+            }
+
+            // Build output: header + key section identical + new string table
+            using var outMs = new MemoryStream(template.Length + 4096);
+            outMs.Write(template, 0, (int)strOff); // header + key section unchanged
+            using var w = new BinaryWriter(outMs);
+
+            w.Write(strCount);
+            int nTranslated = 0, nKept = 0;
+            for (int i = 0; i < (int)strCount; i++)
+            {
+                string plain = origStrings.Length > i ? origStrings[i] : string.Empty;
+                if (strIdxToKey.TryGetValue(i, out var nsKey))
+                {
+                    string ck = string.IsNullOrEmpty(nsKey.Ns)
+                        ? nsKey.Key : $"{nsKey.Ns}::{nsKey.Key}";
+                    if (translations.TryGetValue(ck, out var t) && !string.IsNullOrEmpty(t))
+                    {
+                        plain = t;
+                        nTranslated++;
+                    }
+                    else nKept++;
+                }
+                WriteValueString(w, EncryptNTEString(plain));
+                w.Write(1); // RefCount = 1
+            }
+
+            w.Flush();
+            var data = outMs.ToArray();
+            File.WriteAllBytes(outputPath, data);
+            Solicen.CLI.Console.WriteLine(
+                $"[Green][Patch] Translated: {nTranslated}  Kept original: {nKept}  Total: {strCount}");
+            PrintVerification(data);
+        }
+
+        private static string DecryptNTEString(string base64)
+        {
+            if (string.IsNullOrEmpty(base64)) return string.Empty;
+            try
+            {
+                var enc = Convert.FromBase64String(base64.Replace('-', '+').Replace('_', '/'));
+                using var aes = System.Security.Cryptography.Aes.Create();
+                aes.Mode    = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                var dec = aes.CreateDecryptor(NTEKey, null).TransformFinalBlock(enc, 0, enc.Length);
+                return Encoding.UTF8.GetString(dec).Split("HottaLocresSplit")[0];
+            }
+            catch { return string.Empty; }
+        }
+
+
+        private static void PrintVerification(byte[] data)
+        {
+            try
+            {
+                using var ms = new MemoryStream(data);
+                using var r  = new BinaryReader(ms);
+
+                r.ReadBytes(16); // magic
+                byte ueVer = r.ReadByte();
+                bool isV3  = ueVer >= 3;
+                if (NTEFormat || NTEEncrypted)
+                {
+                    int nteVer = r.ReadInt32();
+                    if (nteVer >= 10100) r.ReadInt32(); // isEncrypted (UE4 bool = int32)
+                }
+                r.ReadInt64(); // offset
+
+                if (isV3) r.ReadUInt32(); // EntriesCount
+                int nsCount      = (int)r.ReadUInt32();
+                int totalEntries = 0;
+                var keyIndex     = new List<(string Ns, string Key, int StrIdx)>();
+
+                for (int i = 0; i < nsCount; i++)
+                {
+                    if (isV3) r.ReadUInt32(); // ns StrHash
+                    var ns       = ReadKeyString(r);
+                    int keyCount = (int)r.ReadUInt32();
+                    totalEntries += keyCount;
+                    for (int j = 0; j < keyCount; j++)
+                    {
+                        if (isV3) r.ReadUInt32(); // key StrHash
+                        var key    = ReadKeyString(r);
+                        r.ReadInt32(); // sourceHash
+                        int sIdx   = r.ReadInt32();
+                        keyIndex.Add((ns, key, sIdx));
+                    }
+                }
+
+                uint strCount = r.ReadUInt32();
+                var strings   = new List<string>((int)strCount);
+                for (int i = 0; i < (int)strCount; i++)
+                {
+                    strings.Add(ReadValueString(r));
+                    if (isV3) r.ReadInt32(); // RefCount
+                }
+
+                bool enc = NTEEncrypted;
+                Solicen.CLI.Console.WriteLine(
+                    $"[Green]Locres verified: {nsCount} namespace(s), {totalEntries} entr{(totalEntries == 1 ? "y" : "ies")}, " +
+                    $"{strings.Count(s => s.Length > 0)} non-empty string(s){(enc ? " [NTE encrypted v3]" : NTEFormat ? " [NTE v1]" : "")}.");
+
+                int shown = Math.Min(30, keyIndex.Count);
+                for (int i = 0; i < shown; i++)
+                {
+                    var (ns, key, idx) = keyIndex[i];
+                    string raw = idx < strings.Count ? strings[idx] : "?";
+                    // For encrypted mode, raw is the Base64 ciphertext; try to decrypt for display
+                    string display = enc ? TryDecryptForDisplay(raw) : raw;
+                    Solicen.CLI.Console.WriteLine(
+                        $"[DarkGray]  [{ns}] {key} = {(display.Length > 60 ? display[..60] + "…" : display)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Solicen.CLI.Console.WriteLine($"[Red][Verify] Failed to read back locres: {ex.Message}");
+            }
+        }
+
+        private static string TryDecryptForDisplay(string base64)
+        {
+            try
+            {
+                var enc = Convert.FromBase64String(base64.Replace('-', '+').Replace('_', '/'));
+                using var aes = System.Security.Cryptography.Aes.Create();
+                aes.Mode    = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                var dec = aes.CreateDecryptor(NTEKey, null).TransformFinalBlock(enc, 0, enc.Length);
+                return Encoding.UTF8.GetString(dec).Split("HottaLocresSplit")[0];
+            }
+            catch { return $"[enc:{base64[..Math.Min(20,base64.Length)]}…]"; }
+        }
+
+        private static string ReadKeyString(BinaryReader r)
+        {
+            int len = r.ReadInt32();
+            if (len == 0) return string.Empty;
+            if (len > 0)
+            {
+                var bytes = r.ReadBytes(len - 1);
+                r.ReadByte();
+                return Encoding.ASCII.GetString(bytes);
+            }
+            else
+            {
+                int chars = (-len) - 1;
+                var bytes = r.ReadBytes(chars * 2);
+                r.ReadInt16();
+                return Encoding.Unicode.GetString(bytes);
+            }
+        }
+
+        private static string ReadValueString(BinaryReader r)
+        {
+            int len = r.ReadInt32();
+            if (len == 0) return string.Empty;
+            if (len > 0)
+            {
+                var bytes = r.ReadBytes(len - 1);
+                r.ReadByte();
+                return Encoding.ASCII.GetString(bytes);
+            }
+            else
+            {
+                int chars = (-len) - 1;
+                var bytes = r.ReadBytes(chars * 2);
+                r.ReadInt16();
+                return Encoding.Unicode.GetString(bytes);
+            }
+        }
+    }
 }

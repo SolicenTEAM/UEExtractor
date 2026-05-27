@@ -353,100 +353,148 @@
     </section>
 
     <!-- CLI Reference -->
-    <section class="cli-reference" id="cli">
-      <div class="container">
-        <div class="section-header">
-          <h2 class="section-title" data-en="CLI Reference" data-ru="Справочник CLI">CLI Reference</h2>
-          <p class="section-subtitle" data-en="Searchable argument list" data-ru="Список аргументов с поиском">Searchable argument list</p>
-        </div>
-        <div class="cli-search">
-          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="cliSearch" placeholder="Search arguments..." data-en-placeholder="Search arguments..." data-ru-placeholder="Поиск аргументов..." />
-        </div>
-        <div class="cli-grid" id="cliGrid">
-          <div class="cli-item" data-keywords="version ue">
-            <div class="cli-args"><code>-v=UE5.1</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--version=Stalker2</code></div>
-            <div class="cli-desc" data-en="Specify the Unreal Engine version used in the game. Overrides auto-detection." data-ru="Укажите версию Unreal Engine, используемую в игре. Переопределяет автоопределение.">Specify the Unreal Engine version used in the game. Overrides auto-detection.</div>
-          </div>
-          <div class="cli-item" data-keywords="aes encryption key">
-            <div class="cli-args"><code>-a=[key]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--aes=[key]</code></div>
-            <div class="cli-desc" data-en="32-character hex string as AES key. Key must start with 0x." data-ru="32-символьная hex-строка как ключ AES. Ключ должен начинаться с 0x.">32-character hex string as AES key. Key must start with 0x.</div>
-          </div>
-          <div class="cli-item" data-keywords="skip uexp">
-            <div class="cli-args"><code>--skip-uexp</code></div>
-            <div class="cli-desc" data-en="Skip .uexp files during the extraction process." data-ru="Пропустить файлы .uexp во время процесса извлечения.">Skip .uexp files during the extraction process.</div>
-          </div>
-          <div class="cli-item" data-keywords="skip uasset">
-            <div class="cli-args"><code>--skip-uasset</code></div>
-            <div class="cli-desc" data-en="Skip .uasset files during the extraction process." data-ru="Пропустить файлы .uasset во время процесса извлечения.">Skip .uasset files during the extraction process.</div>
-          </div>
-          <div class="cli-item" data-keywords="locres output">
-            <div class="cli-args"><code>--locres</code></div>
-            <div class="cli-desc" data-en="Write .locres file after parsing the directory." data-ru="Записать файл .locres после парсинга директории.">Write .locres file after parsing the directory.</div>
-          </div>
-          <div class="cli-item" data-keywords="underscore">
-            <div class="cli-args"><code>--underscore</code></div>
-            <div class="cli-desc" data-en="Do not skip lines with underscores (e.g., ex_string)." data-ru="Не пропускать строки с подчеркиваниями (например, ex_string).">Do not skip lines with underscores (e.g., ex_string).</div>
-          </div>
-          <div class="cli-item" data-keywords="upper">
-            <div class="cli-args"><code>--upper-upper</code></div>
-            <div class="cli-desc" data-en="Skip lines that are UPPERCASE (e.g., EXAMPLE)." data-ru="Пропускать строки, написанные ЗАГЛАВНЫМИ буквами (например, EXAMPLE).">Skip lines that are UPPERCASE (e.g., EXAMPLE).</div>
-          </div>
-          <div class="cli-item" data-keywords="table format separator">
-            <div class="cli-args"><code>--table-format</code></div>
-            <div class="cli-desc" data-en="Replace standard separator comma (,) with pipe symbol (|) in CSV." data-ru="Заменить стандартный разделитель запятую (,) на символ вертикальной черты (|) в CSV.">Replace standard separator comma (,) with pipe symbol (|) in CSV.</div>
-          </div>
-          <div class="cli-item" data-keywords="headmark header footer">
-            <div class="cli-args"><code>--headmark</code></div>
-            <div class="cli-desc" data-en="Include header and footer rows in the CSV output." data-ru="Включить строки заголовка и подвала в выходной CSV.">Include header and footer rows in the CSV output.</div>
-          </div>
-          <div class="cli-item" data-keywords="autoexit">
-            <div class="cli-args"><code>--autoexit</code></div>
-            <div class="cli-desc" data-en="Automatically exit after all processes complete." data-ru="Автоматически выйти после завершения всех процессов.">Automatically exit after all processes complete.</div>
-          </div>
-          <div class="cli-item" data-keywords="invalid">
-            <div class="cli-args"><code>--invalid</code></div>
-            <div class="cli-desc" data-en="Include invalid data in the output CSV." data-ru="Включить недействительные данные в выходной CSV.">Include invalid data in the output CSV.</div>
-          </div>
-          <div class="cli-item" data-keywords="qmarks quotes">
-            <div class="cli-args"><code>--qmarks</code></div>
-            <div class="cli-desc" data-en="Forcibly add quotation marks between text strings in CSV." data-ru="Принудительно добавлять кавычки между текстовыми строками в CSV.">Forcibly add quotation marks between text strings in CSV.</div>
-          </div>
-          <div class="cli-item" data-keywords="hash">
-            <div class="cli-args"><code>--hash</code></div>
-            <div class="cli-desc" data-en="Include hash of string for locres (format: [key][hash],[string])." data-ru="Включить хэш строки для locres (формат: [key][hash],[string]).">Include hash of string for locres (format: [key][hash],[string]).</div>
-          </div>
-          <div class="cli-item" data-keywords="picky verbose">
-            <div class="cli-args"><code>--picky</code></div>
-            <div class="cli-desc" data-en="Picky mode: displays more detailed information." data-ru="Придирчивый режим: отображает более подробную информацию.">Picky mode: displays more detailed information.</div>
-          </div>
-          <div class="cli-item" data-keywords="url path">
-            <div class="cli-args"><code>--url</code></div>
-            <div class="cli-desc" data-en="Include path to source file (format: [url][key],[string])." data-ru="Включить путь к исходному файлу (формат: [url][key],[string]).">Include path to source file (format: [url][key],[string]).</div>
-          </div>
-          <div class="cli-item" data-keywords="api">
-            <div class="cli-args"><code>--api</code></div>
-            <div class="cli-desc" data-en="Set API key for OpenRouter (e.g., --api=api.txt or --api=sk-or-v1...).<br>Translation always occurs before writing .locres." data-ru="Устанавливает ключ API для OpenRouter (например, --api=api.txt или--api=sk-or-v1...). Перевод всегда происходит до записи .locres файла."></div>
-          </div>
-          <div class="cli-item" data-keywords="api model">
-            <div class="cli-args"><code>--api:model</code></div>
-            <div class="cli-desc" data-en="Set model for OpenRouter. (e.g., --api=chimera:free)" data-ru="Устанавливает модель для OpenRouter. (--api=chimera:free)"></div>
-          </div>
-          <div class="cli-item" data-keywords="api translator">
-            <div class="cli-args"><code>--lang:from</code></div>
-            <div class="cli-desc" data-en="Set the source language for translation (e.g., --lang:from=en)." data-ru="Указывает исходный язык для перевода (например, --lang:from=en)."></div>
-          </div>
-          <div class="cli-item" data-keywords="api translator">
-            <div class="cli-args"><code>--lang:to</code></div>
-            <div class="cli-desc" data-en="Set the target language for translation (e.g., --lang:to=ru)." data-ru="Указывает целевой язык для перевода (например, --lang:to=ru)."></div>
-          </div>
-          <div class="cli-item" data-keywords="help">
-            <div class="cli-args"><code>--help</code></div>
-            <div class="cli-desc" data-en="Show help information with all available arguments." data-ru="Показать справочную информацию со всеми доступными аргументами.">Show help information with all available arguments.</div>
-          </div>
-        </div>
+<section class="cli-reference" id="cli">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title" data-en="CLI Reference" data-ru="Справочник CLI">CLI Reference</h2>
+      <p class="section-subtitle" data-en="Searchable argument list" data-ru="Список аргументов с поиском">Searchable argument list</p>
+    </div>
+    <div class="cli-search">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="cliSearch" placeholder="Search arguments..." data-en-placeholder="Search arguments..." data-ru-placeholder="Поиск аргументов..." />
+    </div>
+    <div class="cli-grid" id="cliGrid">
+      <div class="cli-item" data-keywords="version ue engine">
+        <div class="cli-args"><code>-v=[ver]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--version=[ver]</code></div>
+        <div class="cli-desc" data-en="Set the engine version or game name. Auto-detected when omitted. Examples: <code>-v=UE5_6</code>, <code>-v=Stalker2</code>." data-ru="Укажите версию движка или имя игры. Автоматически определяется, если не указано. Примеры: <code>-v=UE5_6</code>, <code>-v=Stalker2</code>."></div>
       </div>
-    </section>
+      <div class="cli-item" data-keywords="aes encryption key">
+        <div class="cli-args"><code>-a=[key]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--aes=[key]</code></div>
+        <div class="cli-desc" data-en="32-character hex AES key (must start with <code>0x</code>)." data-ru="32-символьный hex AES ключ (должен начинаться с <code>0x</code>)."></div>
+      </div>
+      <div class="cli-item" data-keywords="aes auto automatic key extraction">
+        <div class="cli-args"><code>-a:auto</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--aes:auto</code></div>
+        <div class="cli-desc" data-en="Automatic extraction of AES key into <code>aes.txt</code> at the root of the game (for directories only)." data-ru="Автоматически находит AES ключ и записывает в <code>aes.txt</code> в главной папке игры (только для директорий)."></div>
+      </div>
+      <div class="cli-item" data-keywords="path restrict virtual path">
+        <div class="cli-args"><code>-p=[virtual_path]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--path=[virtual_path]</code></div>
+        <div class="cli-desc" data-en="Restrict processing to assets under a specific internal path (e.g. <code>--path=HT/Content/Localization</code>)." data-ru="Ограничить обработку активами по указанному внутреннему пути (например, <code>--path=HT/Content/Localization</code>)."></div>
+      </div>
+      <div class="cli-item" data-keywords="verbose diagnostic per-file">
+        <div class="cli-args"><code>-vb</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--verbose</code></div>
+        <div class="cli-desc" data-en="Show per-file processing details and diagnostic info instead of the progress bar." data-ru="Показывать детальный вывод по каждому файлу и диагностику вместо полосы прогресса."></div>
+      </div>
+      <div class="cli-item" data-keywords="skip uexp">
+        <div class="cli-args"><code>-s:xp</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--skip-uexp</code></div>
+        <div class="cli-desc" data-en="Skip .uexp files during the extraction process." data-ru="Пропустить файлы .uexp во время процесса извлечения."></div>
+      </div>
+      <div class="cli-item" data-keywords="skip uasset">
+        <div class="cli-args"><code>-s:et</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--skip-uasset</code></div>
+        <div class="cli-desc" data-en="Skip .uasset files during the extraction process." data-ru="Пропустить файлы .uasset во время процесса извлечения."></div>
+      </div>
+      <div class="cli-item" data-keywords="locres output write">
+        <div class="cli-args"><code>-l</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--locres</code></div>
+        <div class="cli-desc" data-en="Write a .locres file after parsing." data-ru="Записать файл .locres после анализа."></div>
+      </div>
+      <div class="cli-item" data-keywords="extract locres dump raw binary">
+        <div class="cli-args"><code>--extract-locres</code></div>
+        <div class="cli-desc" data-en="Dump the raw .locres binaries from the pak to the output directory (useful for inspection or as patch template)." data-ru="Выгрузить сырые бинарные .locres из pak в выходную папку (полезно для изучения или как шаблон для патча)."></div>
+      </div>
+      <div class="cli-item" data-keywords="all folders effects meshes sounds">
+        <div class="cli-args"><code>-all</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--all</code></div>
+        <div class="cli-desc" data-en="Process all folders in the archive (including effects, meshes, sounds, etc.)." data-ru="Обрабатывать все папки в архиве (включая эффекты, меши, звуки и т.д.)."></div>
+      </div>
+      <div class="cli-item" data-keywords="underscore skip lines">
+        <div class="cli-args"><code>-n:un</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--no-underscore</code></div>
+        <div class="cli-desc" data-en="Skip lines with underscores (e.g., ex_string)." data-ru="Пропускать строки с подчёркиванием (например, ex_string)."></div>
+      </div>
+      <div class="cli-item" data-keywords="uppercase skip upper">
+        <div class="cli-args"><code>-n:up</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--no-uppercase</code></div>
+        <div class="cli-desc" data-en="Skip lines that are ALL UPPERCASE (e.g., EXAMPLE)." data-ru="Пропускать строки, написанные ЗАГЛАВНЫМИ буквами (например, EXAMPLE)."></div>
+      </div>
+      <div class="cli-item" data-keywords="parallel disable">
+        <div class="cli-args"><code>-n:p</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--no-parallel</code></div>
+        <div class="cli-desc" data-en="Disable parallel processing (slower; may surface additional data)." data-ru="Отключить параллельную обработку (медленнее; может вывести дополнительные данные)."></div>
+      </div>
+      <div class="cli-item" data-keywords="table format separator pipe">
+        <div class="cli-args"><code>-tf</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--table-format</code></div>
+        <div class="cli-desc" data-en="Replace the standard comma (,) separator with pipe (|) in CSV." data-ru="Заменить стандартный разделитель запятую (,) на вертикальную черту (|) в CSV."></div>
+      </div>
+      <div class="cli-item" data-keywords="headmark header footer">
+        <div class="cli-args"><code>-m</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--headmark</code></div>
+        <div class="cli-desc" data-en="Include header and footer rows in the CSV output." data-ru="Включить строки заголовка и подвала в выходной CSV."></div>
+      </div>
+      <div class="cli-item" data-keywords="autoexit auto exit">
+        <div class="cli-args"><code>-exit</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--auto-exit</code></div>
+        <div class="cli-desc" data-en="Automatically exit after all processes complete." data-ru="Автоматически выйти после завершения всех процессов."></div>
+      </div>
+      <div class="cli-item" data-keywords="invalid">
+        <div class="cli-args"><code>-i</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--invalid</code></div>
+        <div class="cli-desc" data-en="Include invalid data in the output CSV." data-ru="Включить недействительные данные в выходной CSV."></div>
+      </div>
+      <div class="cli-item" data-keywords="qmarks quotes">
+        <div class="cli-args"><code>-q</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--qmarks</code></div>
+        <div class="cli-desc" data-en="Forcibly add quotation marks around text strings." data-ru="Принудительно добавлять кавычки вокруг текстовых строк."></div>
+      </div>
+      <div class="cli-item" data-keywords="hash">
+        <div class="cli-args"><code>-h</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--hash</code></div>
+        <div class="cli-desc" data-en="Include hash in the key: <code>[key][hash],&lt;string&gt;</code>." data-ru="Включить хэш в ключ: <code>[key][hash],&lt;string&gt;</code>."></div>
+      </div>
+      <div class="cli-item" data-keywords="url path">
+        <div class="cli-args"><code>-url</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--url</code></div>
+        <div class="cli-desc" data-en="Include path to source file (format: <code>[url][key],&lt;string&gt;</code>)." data-ru="Включить путь к исходному файлу (формат: <code>[url][key],&lt;string&gt;</code>)."></div>
+      </div>
+      <div class="cli-item" data-keywords="picky verbose detailed">
+        <div class="cli-args"><code>--picky</code></div>
+        <div class="cli-desc" data-en="Picky mode: displays more detailed per-file information." data-ru="Придирчивый режим: отображает более подробную информацию по каждому файлу."></div>
+      </div>
+      <div class="cli-item" data-keywords="table only key filter">
+        <div class="cli-args"><code>-t:o:k=[name]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--table:only:key=[name]</code></div>
+        <div class="cli-desc" data-en="Include only entries whose key/name matches the given value." data-ru="Включать только записи, чей ключ/имя совпадает с указанным значением."></div>
+      </div>
+      <div class="cli-item" data-keywords="language from source">
+        <div class="cli-args"><code>-l:f=[code]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--lang:from=[code]</code></div>
+        <div class="cli-desc" data-en="Set the source language for translation (e.g., <code>en</code>)." data-ru="Указывает исходный язык для перевода (например, <code>en</code>)."></div>
+      </div>
+      <div class="cli-item" data-keywords="language to target">
+        <div class="cli-args"><code>-l:t=[code]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--lang:to=[code]</code></div>
+        <div class="cli-desc" data-en="Set the target language for translation (e.g., <code>ru</code>)." data-ru="Указывает целевой язык для перевода (например, <code>ru</code>)."></div>
+      </div>
+      <div class="cli-item" data-keywords="api key authentication">
+        <div class="cli-args"><code>-a:key=[key]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--api:key=[key]</code></div>
+        <div class="cli-desc" data-en="API key for OpenRouter or any server that requires authentication." data-ru="API ключ для OpenRouter или любого сервера, требующего аутентификацию."></div>
+      </div>
+      <div class="cli-item" data-keywords="api url local server endpoint">
+        <div class="cli-args"><code>-a:url=[url]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--api:url=[url]</code></div>
+        <div class="cli-desc" data-en="Custom OpenAI-compatible base URL for a local model (e.g., <code>http://localhost:11434/v1/</code> for Ollama)." data-ru="Кастомный OpenAI-совместимый базовый URL для локальной модели (например, <code>http://localhost:11434/v1/</code> для Ollama)."></div>
+      </div>
+      <div class="cli-item" data-keywords="api model translator neural">
+        <div class="cli-args"><code>-a:model=[model]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--api:model=[model]</code></div>
+        <div class="cli-desc" data-en="Model name to use (e.g., <code>tngtech/deepseek-r1t2-chimera:free</code> for OpenRouter or <code>llama3</code> for Ollama)." data-ru="Модель для перевода (например, <code>tngtech/deepseek-r1t2-chimera:free</code> для OpenRouter или <code>llama3</code> для Ollama)."></div>
+      </div>
+      <div class="cli-item" data-keywords="batch size translation request">
+        <div class="cli-args"><code>-bs=[n]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--batch-size=[n]</code></div>
+        <div class="cli-desc" data-en="Number of segments sent per translation request (default: 150). Lower for models with small context." data-ru="Количество сегментов, отправляемых за один запрос перевода (по умолчанию: 150). Уменьшите для моделей с малым контекстом."></div>
+      </div>
+      <div class="cli-item" data-keywords="parallel concurrent requests translation speed">
+        <div class="cli-args"><code>-par=[n]</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--parallel=[n]</code></div>
+        <div class="cli-desc" data-en="Number of concurrent translation requests (default: 1). Increase for faster translation with local models." data-ru="Количество одновременных запросов перевода (по умолчанию: 1). Увеличьте для ускорения перевода с локальными моделями."></div>
+      </div>
+      <div class="cli-item" data-keywords="translate only resume">
+        <div class="cli-args"><code>-t:o</code><span class="cli-or" data-en="or" data-ru="или">or</span><code>--translate-only</code></div>
+        <div class="cli-desc" data-en="Skip extraction entirely and translate the existing CSV file(s) from a previous run. Resumes from where translation stopped." data-ru="Пропустить извлечение и только перевести существующие CSV файлы из предыдущего запуска. Продолжит с места остановки перевода."></div>
+      </div>
+      <div class="cli-item" data-keywords="update check version">
+        <div class="cli-args"><code>--update</code></div>
+        <div class="cli-desc" data-en="Check for a new version on GitHub and update if available." data-ru="Проверить наличие новой версии на GitHub и обновиться при необходимости."></div>
+      </div>
+      <div class="cli-item" data-keywords="help">
+        <div class="cli-args"><code>--help</code></div>
+        <div class="cli-desc" data-en="Show help information with all available arguments." data-ru="Показать справочную информацию со всеми доступными аргументами."></div>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- Preparation -->
     <section class="preparation" id="preparation">

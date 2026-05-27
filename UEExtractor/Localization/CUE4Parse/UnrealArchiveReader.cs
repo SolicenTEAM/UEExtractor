@@ -3,6 +3,7 @@ using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
+using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,8 +21,6 @@ public class UnrealArchiveReader : IDisposable
     private bool _isEncrypted;
     private bool _isZenloader = false;
     public static bool EngineSpecified = false;
-
-    public static string ProcessOnlyWithName = string.Empty;
 
     public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
     {
@@ -50,13 +49,35 @@ public class UnrealArchiveReader : IDisposable
             _provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, new VersionContainer(UE));
 
             LoadCompression();
-            LoadAesKey(gameDirectory);
             LoadUsmapFiles(gameDirectory);
 
             _provider.Initialize();
+
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+            {
+                Console.WriteLine($"UnloadedVfs after Initialize: {_provider.UnloadedVfs.Count}");
+                Console.WriteLine($"RequiredKeys (encryption GUIDs needed): {_provider.RequiredKeys.Count}");
+                foreach (var guid in _provider.RequiredKeys)
+                    Console.WriteLine($"  GUID: {guid}");
+                Console.WriteLine("Reader details (first 10):");
+                foreach (var r in _provider.UnloadedVfs.Take(10))
+                    Console.WriteLine($"  [{r.GetType().Name}] {System.IO.Path.GetFileName(r.Name)} | Encrypted={r.IsEncrypted} | HasDirIdx={r.HasDirectoryIndex} | GUID={r.EncryptionKeyGuid}");
+            }
+
+            LoadAesKey(gameDirectory);  // must be after Initialize, before Mount
+
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+                Console.WriteLine($"UnloadedVfs after SubmitKey: {_provider.UnloadedVfs.Count}");
+
+            int mounted = _provider.Mount();
+
+            if (Solicen.Localization.UE4.UnrealLocres.VerboseOutput)
+            {
+                Console.WriteLine($"Mount() newly mounted: {mounted}");
+                Console.WriteLine($"UnloadedVfs after Mount: {_provider.UnloadedVfs.Count}");
+            }
+
             _provider.LoadVirtualPaths();
-            _provider.Mount();
-            _provider.PostMount();
 
             Console.WriteLine($"Provider initialized. Found {_provider.Files.Count} virtual files.");
             ValidateFiles();
@@ -85,6 +106,46 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
+    // Maps normalized folder/exe names to game-specific EGame values.
+    // These games require a specific EGame to handle custom pak formats, encryption, or offsets.
+    // CUE4Parse automatically configures CustomEncryption for games that need it (e.g. MarvelRivals, DeadByDaylight).
+    private static readonly Dictionary<string, EGame> _knownGames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // Neverness To Everness — custom pak index offset (FPakInfo -1)
+        ["NevernessToEverness"]    = EGame.GAME_NevernessToEverness,
+        ["NevernessToeEverness"]   = EGame.GAME_NevernessToEverness,
+        ["HT"]                     = EGame.GAME_NevernessToEverness, // internal name
+
+        // Ash Echoes — custom file provider
+        ["AshEchoes"]              = EGame.GAME_AshEchoes,
+
+        // Wuthering Waves — partial encryption pak format
+        ["WutheringWaves"]         = EGame.GAME_WutheringWaves,
+        ["KuroGames"]              = EGame.GAME_WutheringWaves,
+
+        // inZOI — custom FPakInfo offset
+        ["InZOI"]                  = EGame.GAME_InZOI,
+        ["inZOI"]                  = EGame.GAME_InZOI,
+
+        // Marvel Rivals — custom encryption (MarvelAes, auto-set by CUE4Parse)
+        ["MarvelRivals"]           = EGame.GAME_MarvelRivals,
+        ["MarvelsSRivals"]         = EGame.GAME_MarvelRivals,
+
+        // Dead by Daylight — custom encryption (DBDAes, auto-set by CUE4Parse)
+        ["DeadByDaylight"]         = EGame.GAME_DeadByDaylight,
+        ["DeadbyDaylight"]         = EGame.GAME_DeadByDaylight,
+
+        // FragPunk — custom global IoStore handling
+        ["FragPunk"]               = EGame.GAME_FragPunk,
+
+        // Infinity Nikki — custom encryption (InfinityNikkiAes, auto-set by CUE4Parse)
+        ["InfinityNikki"]          = EGame.GAME_InfinityNikki,
+
+        // Snowbreak: Containment Zone
+        ["Snowbreak"]              = EGame.GAME_Snowbreak,
+        ["SnowbreakContainmentZone"] = EGame.GAME_Snowbreak,
+    };
+
     private EGame ParseVersion(string UEVersion)
     {
         if (Enum.TryParse<EGame>(UEVersion, out EGame result))
@@ -96,6 +157,31 @@ public class UnrealArchiveReader : IDisposable
             return EGame.GAME_UE4_LATEST;
         }
 
+    }
+
+    private EGame DetectKnownGame(string dir, EGame fallback)
+    {
+        // 1. Check folder name (e.g. "Neverness To Everness" → "NevernessToEverness")
+        var folderName = Path.GetFileName(dir.TrimEnd(Path.DirectorySeparatorChar))
+                            ?.Replace(" ", "").Replace("-", "").Replace("_", "");
+        if (folderName != null && _knownGames.TryGetValue(folderName, out var byFolder))
+        {
+            Console.WriteLine($"GameType: detected '{folderName}' → {byFolder}");
+            return byFolder;
+        }
+
+        // 2. Check exe name in top-level directory
+        foreach (var exe in Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly))
+        {
+            var name = Path.GetFileNameWithoutExtension(exe).Replace("-", "").Replace("_", "");
+            if (_knownGames.TryGetValue(name, out var byExe))
+            {
+                Console.WriteLine($"GameType: detected '{name}.exe' → {byExe}");
+                return byExe;
+            }
+        }
+
+        return fallback;
     }
 
     private EGame LoadEngineVersion(string dir)
@@ -131,9 +217,9 @@ public class UnrealArchiveReader : IDisposable
 
             Console.WriteLine($"UE::File: {engineFile}");
             Console.WriteLine($"UE::Version: {version}");
-            return ParseVersion(version);
+            return DetectKnownGame(dir, ParseVersion(version));
         }
-        return EGame.GAME_UE5_LATEST;
+        return DetectKnownGame(dir, EGame.GAME_UE5_LATEST);
     }
 
     private void LoadAesKey(string gameDirectory)
@@ -149,19 +235,22 @@ public class UnrealArchiveReader : IDisposable
         }
         else if (File.Exists(aesKeyPath))
         {
-            var keyString = File.ReadAllText(aesKeyPath);
+            var keyString = File.ReadAllText(aesKeyPath).Trim();
             if (!string.IsNullOrEmpty(keyString))
             {
+                // Normalise: ensure "0x" prefix then check length
+                if (!keyString.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+                    keyString = "0x" + keyString;
                 if (keyString.Length == 66)
                 {
                     var key = new FAesKey(keyString);
                     _provider.SubmitKey(new Guid(), key);
                     _isEncrypted = true;
-                    Console.WriteLine("AES key loaded successfully");
+                    Console.WriteLine($"AES key loaded: {keyString[..8]}...{keyString[^4..]}");
                 }
                 else
                 {
-                    throw new FormatException("Invalid AES key format. Expected 32-character hex string");
+                    throw new FormatException($"Invalid AES key length: {keyString.Length} chars (expected 66). Check aes.txt.");
                 }
             }
         }
@@ -278,50 +367,335 @@ public class UnrealArchiveReader : IDisposable
         // Расширенный список расширений
         // UPD: Исключаем uexp, так как uasset и так ссылается на него при загрузке.
         var validExtensions = new[] { ".uasset", ".uexp", ".umap" };
+        var filterPath = Solicen.Localization.UE4.UnrealLocres.FilterPath;
         var assets = _provider.Files.Keys.Where(x => validExtensions
-        .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
-            .Where(x => !x.Contains("Engine/")) // Очищение: работаем только с файлами не из Engine папки.
+            .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            .Where(x => !x.Contains("Engine/"))
+            .Where(x => string.IsNullOrEmpty(filterPath) || x.Contains(filterPath, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
-        if (ProcessOnlyWithName != string.Empty)
-            assets = assets.Where(x => x.Contains(ProcessOnlyWithName) == true).ToList();
-
+        if (!string.IsNullOrEmpty(filterPath))
+            Console.WriteLine($"Path filter active: \"{filterPath}\"");
         Console.WriteLine($"Found {assets.Count} assets to process");
         if (assets.Count == 0)
         {
-            // Диагностика: какие вообще есть файлы
-            Console.WriteLine("Available file extensions:");
-            var extensions = _provider.Files.Keys
+            var allKeys = _provider.Files.Keys.ToList();
+            var extensions = allKeys
                 .Select(Path.GetExtension)
                 .Where(x => !string.IsNullOrEmpty(x))
                 .Distinct()
-                .Take(20);
+                .Take(20)
+                .ToList();
+
+            Console.WriteLine("Available file extensions:");
             foreach (var ext in extensions)
                 Console.WriteLine($"- {ext}");
+
+            Console.WriteLine("\nSample virtual paths (first 10):");
+            foreach (var path in allKeys.Take(10))
+                Console.WriteLine($"  {path}");
+
+            bool onlyBinIni = extensions.All(e => e == ".bin" || e == ".ini");
+            if (onlyBinIni)
+            {
+                Console.WriteLine(
+                    "\n[HINT] Only .bin/.ini files are visible. This usually means the IoStore (.ucas) " +
+                    "containers could not be mounted, likely due to a wrong UE version flag.\n" +
+                    "Try removing the -v flag to auto-detect the version, or use the correct version " +
+                    "(e.g. -v=UE5_6 for a UE 5.6 game).");
+            }
+
+            // When a path filter is active the folder may contain only .locres files (e.g.
+            // HT/Content/Localization). Don't abort — ProcessLocresFiles will handle them.
+            if (!string.IsNullOrEmpty(filterPath))
+            {
+                Console.WriteLine("No .uasset/.uexp files under the specified path. Will try .locres files.");
+                return;
+            }
 
             throw new InvalidOperationException("No valid assets found. See available extensions above.");
         }
 
-        int totalAssets = assets.Count; 
-        int currentIndex = 1;
+        int totalAssets = assets.Count;
+        int processed = 0;
+        int errors = 0;
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
 
-        Parallel.ForEach(assets, assetPath => 
+        void PrintProgress()
+        {
+            int done = Volatile.Read(ref processed);
+            int pct = totalAssets > 0 ? (int)((long)done * 100 / totalAssets) : 100;
+            int barWidth = 30;
+            int filled = barWidth * pct / 100;
+            var bar = new string('█', filled) + new string('░', barWidth - filled);
+            Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalAssets})   ");
+        }
+
+        Parallel.ForEach(assets, assetPath =>
         {
             try
             {
-                Console.WriteLine($"[{currentIndex}/{totalAssets}] ..{assetPath}");
                 using var stream = LoadAsset(assetPath);
-                currentIndex++;
                 processor(assetPath, stream);
+                Interlocked.Increment(ref processed);
+                if (!verbose) PrintProgress();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[{currentIndex}/{totalAssets}] Error processing {assetPath}: {ex.Message}");
-                if (ex is System.Security.SecurityException)
-                    Console.WriteLine(">> Possible encryption issue!");
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+                if (verbose)
+                {
+                    Console.WriteLine($"[{processed}/{totalAssets}] Error processing {assetPath}: {ex.Message}");
+                    if (ex is System.Security.SecurityException)
+                        Console.WriteLine(">> Possible encryption issue!");
+                }
+                else
+                {
+                    PrintProgress();
+                }
             }
         });
+
+        Console.WriteLine(); // newline after progress bar
+        if (errors > 0)
+            Console.WriteLine($"  Completed with {errors} error(s).");
     }
+
+    // Reads .locres files directly from the virtual filesystem and calls processor with
+    // (namespace, key, localizedString) triples. Handles game-specific encryption automatically
+    // (e.g. NTE's encrypted locres via FNTEFTextLocalizationResource inside CUE4Parse).
+    public void ProcessLocresFiles(
+        Action<string, string, string> processor,
+        string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+        var uniquePaths = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Expand to one entry per pak file per path
+        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
+        foreach (var path in uniquePaths)
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresFiles.Add((path, gf));
+
+        if (!string.IsNullOrEmpty(pathFilter))
+            Console.WriteLine($"Path filter active: \"{pathFilter}\"");
+        Console.WriteLine($"Found {locresFiles.Count} .locres file(s) to process ({uniquePaths.Count} unique path(s) across paks)");
+
+        if (locresFiles.Count == 0) return;
+
+        int processed = 0;
+        int errors = 0;
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
+        int totalFiles = locresFiles.Count;
+
+        void PrintProgress()
+        {
+            int done = Volatile.Read(ref processed);
+            int pct = totalFiles > 0 ? (int)((long)done * 100 / totalFiles) : 100;
+            int barWidth = 30;
+            int filled = barWidth * pct / 100;
+            var bar = new string('█', filled) + new string('░', barWidth - filled);
+            Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalFiles})   ");
+        }
+
+        foreach (var (locresPath, gameFile) in locresFiles)
+        {
+            try
+            {
+                if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
+                using var ar = gameFile.CreateReader();
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, entries) in locres.Entries)
+                {
+                    foreach (var (textKey, entry) in entries)
+                    {
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            processor(nsKey.Str, textKey.Str, entry.LocalizedString);
+                    }
+                }
+                Interlocked.Increment(ref processed);
+                if (!verbose) PrintProgress();
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+                if (verbose)
+                    Console.WriteLine($"Error reading {locresPath}: {ex.Message}");
+                else
+                    PrintProgress();
+            }
+        }
+
+        Console.WriteLine();
+        if (errors > 0)
+            Console.WriteLine($"  Completed with {errors} error(s).");
+    }
+
+    // Hash-aware variant: callback receives (ns, nsHash, key, keyHash, localizedString).
+    // Use this to preserve the original game-computed StrHash values for v3 locres round-trips.
+    public void ProcessLocresFilesWithHashes(
+        Action<string, uint, string, uint, string> processor,
+        string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+        var uniquePaths = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var locresFiles = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
+        foreach (var path in uniquePaths)
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresFiles.Add((path, gf));
+
+        if (locresFiles.Count == 0) return;
+
+        int processed = 0, errors = 0;
+        int totalFiles = locresFiles.Count;
+
+        // Where to save raw locres dumps (same dir as the skipped-lines CSV)
+        string? extractDir = Solicen.Localization.UE4.UnrealLocres.ExtractLocres
+            ? System.IO.Path.GetDirectoryName(Solicen.Localization.UE4.UnrealLocres.SkippedCSV?.FilePath)
+            : null;
+
+        foreach (var (locresPath, gameFile) in locresFiles)
+        {
+            try
+            {
+                // Dump raw bytes before parsing so we get the original encrypted file
+                if (extractDir != null)
+                {
+                    try
+                    {
+                        var rawBytes = _provider.SaveAsset(locresPath);
+                        var dest = System.IO.Path.Combine(extractDir, System.IO.Path.GetFileName(locresPath));
+                        System.IO.File.WriteAllBytes(dest, rawBytes);
+                        Console.WriteLine($"[Locres] Extracted: {dest}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Locres] Could not extract {locresPath}: {ex.Message}");
+                    }
+                }
+
+                using var ar = gameFile.CreateReader();
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, entries) in locres.Entries)
+                {
+                    foreach (var (textKey, entry) in entries)
+                    {
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            processor(nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString);
+                    }
+                }
+                Interlocked.Increment(ref processed);
+            }
+            catch
+            {
+                Interlocked.Increment(ref processed);
+                Interlocked.Increment(ref errors);
+            }
+        }
+        if (errors > 0)
+            Console.WriteLine($"  ProcessLocresFilesWithHashes completed with {errors} error(s).");
+    }
+
+    // Returns locres entries grouped by (csvBaseName, pakChunkName) so callers can write
+    // one CSV per locres file. When the same virtual path exists in multiple pak files
+    // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
+    // separately via TryGetValues + gameFile.CreateReader() so no entries are silently dropped.
+    public List<(string CsvBaseName, List<(string Ns, uint NsHash, string Key, uint KeyHash, string Value)> Entries)>
+        ReadLocresGrouped(string? pathFilter = null)
+    {
+        if (!_hasValidFiles)
+            throw new InvalidOperationException("No valid files available for processing");
+
+        var normalizedFilter = pathFilter?.Replace('\\', '/');
+
+        // Get unique virtual paths (Files.Keys may yield duplicates when the same path
+        // exists across multiple pak files — FileProviderDictionary enumerates all indices).
+        var uniquePaths = _provider.Files.Keys
+            .Where(x => x.EndsWith(".locres", StringComparison.OrdinalIgnoreCase))
+            .Where(x => string.IsNullOrEmpty(normalizedFilter) || x.Replace('\\', '/').Contains(normalizedFilter, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Expand each unique path to one entry per pak file that contains it.
+        // TryGetValues returns one GameFile per mounted VFS (pak) at that path.
+        var locresEntries = new List<(string Path, CUE4Parse.FileProvider.Objects.GameFile File)>();
+        foreach (var path in uniquePaths)
+        {
+            if (_provider.Files.TryGetValues(path, out var allFiles))
+                foreach (var gf in allFiles)
+                    locresEntries.Add((path, gf));
+        }
+
+        if (!string.IsNullOrEmpty(pathFilter))
+            Console.WriteLine($"Path filter active: \"{pathFilter}\"");
+        Console.WriteLine($"Found {locresEntries.Count} .locres file(s) to process ({uniquePaths.Count} unique path(s) across paks)");
+
+        // Detect duplicate basenames to decide when to append pak name
+        var baseNames = locresEntries.Select(e => Path.GetFileNameWithoutExtension(e.Path)).ToList();
+        var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
+
+        var result = new List<(string, List<(string, uint, string, uint, string)>)>();
+        bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
+
+        for (int i = 0; i < locresEntries.Count; i++)
+        {
+            var (locresPath, gameFile) = locresEntries[i];
+            var baseName = Path.GetFileNameWithoutExtension(locresPath);
+
+            if (hasDuplicateBase)
+            {
+                // Append pak chunk name (e.g. "pakchunk0-Windows") to disambiguate
+                var pakName = string.Empty;
+                if (gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry ve)
+                    pakName = Path.GetFileNameWithoutExtension(ve.Vfs.Name);
+
+                baseName = !string.IsNullOrEmpty(pakName) ? $"{baseName}_{pakName}" : $"{baseName}_{i}";
+            }
+
+            var entries = new List<(string, uint, string, uint, string)>();
+            try
+            {
+                if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
+                // Read directly from this specific GameFile so we get this pak's version,
+                // not the highest-priority one returned by _provider.CreateReader(path).
+                using var ar = gameFile.CreateReader();
+                var locres = new FTextLocalizationResource(ar);
+                foreach (var (nsKey, ents) in locres.Entries)
+                    foreach (var (textKey, entry) in ents)
+                        if (!string.IsNullOrEmpty(entry.LocalizedString))
+                            entries.Add((nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString));
+            }
+            catch (Exception ex)
+            {
+                if (verbose) Console.WriteLine($"Error reading {locresPath}: {ex.Message}");
+            }
+
+            if (entries.Count > 0)
+                result.Add((baseName, entries));
+        }
+
+        return result;
+    }
+
 
     public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
     {
@@ -340,6 +714,7 @@ public class UnrealArchiveReader : IDisposable
             }
         }
     }
+
 
     public void GetLocalizedStrings(string assetPath, Action<List<(string Namespace, string Key, string SourceString)>> processor)
     {

@@ -29,7 +29,7 @@ namespace UEExtractor
             MemoryManager.Stop();
 
             Solicen.CLI.Console.WriteLine($"Operation completed in: {timeTaken.TotalSeconds} seconds");
-            Solicen.CLI.Console.WriteLine("\nIf my program was useful to you, please put a star on its GitHub page, thank you!", ConsoleColor.Yellow);
+            Solicen.CLI.Console.WriteLine("\nIf this fork was useful to you, please put a star on its GitHub page, thank you!", ConsoleColor.Yellow);
             Solicen.CLI.Console.WriteLine("Toss a coin: https://boosty.to/denissolicen/donate", ConsoleColor.Yellow);
             Console.ReadLine();
         }

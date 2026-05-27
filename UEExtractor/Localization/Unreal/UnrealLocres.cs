@@ -1,6 +1,7 @@
 ﻿using Solicen.Translator;
 using System.Collections.Concurrent;
 using System.Text;
+using System.Text.Json;
 
 namespace Solicen.Localization.UE4
 {
@@ -47,6 +48,8 @@ namespace Solicen.Localization.UE4
         public static bool IncludeHashInKeyValue = false;
         public static string pDirectory = string.Empty;
         public static bool TableSeparator = false;
+        public static bool VerboseOutput = false;
+        public static string FilterPath = string.Empty;
         public static bool ContainsUpperUpper(string input)
         {
             var s = string.Join("", input.Where(x => x != ' '));
@@ -181,6 +184,22 @@ namespace Solicen.Localization.UE4
                 }
             });
 
+            // Also read .locres files directly (handles games like NTE whose localization
+            // is stored as pre-compiled .locres binaries rather than inside .uasset files).
+            // Use hash-aware variant to preserve game-computed StrHash values for v3 round-trips.
+            reader.ProcessLocresFilesWithHashes((ns, nsHash, key, keyHash, localizedString) =>
+            {
+                if (string.IsNullOrWhiteSpace(localizedString)) return;
+                var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
+                if (!allResults.ContainsKey(compositeKey))
+                {
+                    var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+                    r.NsHash  = nsHash;
+                    r.KeyHash = keyHash;
+                    allResults[compositeKey] = r;
+                }
+            }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+
             #region Zero Data All
             if (allResults.Count == 0) ZeroDataMessage();
             #endregion
@@ -191,6 +210,31 @@ namespace Solicen.Localization.UE4
 
             GC.Collect(2);
             return sortedConcurrentResults;
+        }
+
+        // Processes .locres files grouped by source file, returning one result dict per locres.
+        // Used when the output path is a directory so each locres gets its own CSV.
+        public static List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>
+            ProcessLocresGrouped(string directory)
+        {
+            pDirectory = directory;
+            using var reader = new UnrealArchiveReader(directory, UEVersion);
+            var groups = reader.ReadLocresGrouped(string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+
+            return groups.Select(g =>
+            {
+                var dict = new ConcurrentDictionary<string, LocresResult>();
+                foreach (var (ns, nsHash, key, keyHash, value) in g.Entries)
+                {
+                    if (string.IsNullOrEmpty(key)) continue; // skip malformed entries only
+                    var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
+                    var escaped = string.IsNullOrEmpty(value) ? string.Empty : LocresHelper.EscapeKey(value);
+                    var r = new LocresResult(compositeKey, escaped, Namespace: ns)
+                        { NsHash = nsHash, KeyHash = keyHash };
+                    dict.TryAdd(compositeKey, r);
+                }
+                return (g.CsvBaseName, dict);
+            }).Where(x => x.dict.Count > 0).ToList();
         }
 
         public static bool IsNotAllowedString(string value)
@@ -444,8 +488,9 @@ namespace Solicen.Localization.UE4
                 {
                     var _keyNamespace = row.Columns[0];
 
-                    var _Namespace = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[0] : string.Empty;
-                    var _Key = _keyNamespace.Contains("::") ? _keyNamespace.Split("::")[1] : _keyNamespace;
+                    var firstSep = _keyNamespace.IndexOf("::");
+                    var _Namespace = firstSep >= 0 ? _keyNamespace[..firstSep] : string.Empty;
+                    var _Key = _keyNamespace; // preserve full composite key for locres round-trip
 
                     var _Source = row.Columns[1];
                     var _Translation = row.Columns[2];
@@ -455,8 +500,48 @@ namespace Solicen.Localization.UE4
                 }
                 
 
-            });       
+            });
             return result.ToArray();
+        }
+
+        // Sidecar format: JSON object mapping compositeKey → [nsHash, keyHash]
+        public static string HashSidecarPath(string csvPath)
+            => Path.ChangeExtension(csvPath, ".locreshashes");
+
+        public static void SaveHashSidecar(string csvPath, IEnumerable<LocresResult> results)
+        {
+            var path = HashSidecarPath(csvPath);
+            var dict = new Dictionary<string, uint[]>();
+            foreach (var r in results)
+            {
+                if (r.NsHash == 0 && r.KeyHash == 0) continue;
+                // r.Key is already the full composite key (e.g. "Adler_SkillDes::adddes1")
+                dict[r.Key] = new[] { r.NsHash, r.KeyHash };
+            }
+            if (dict.Count == 0) return;
+            File.WriteAllText(path, JsonSerializer.Serialize(dict), Encoding.UTF8);
+            Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] Hash sidecar saved: {Path.GetFileName(path)} ({dict.Count} entries)");
+        }
+
+        public static Dictionary<string, (uint NsHash, uint KeyHash)> LoadHashSidecar(string csvPath)
+        {
+            var path = HashSidecarPath(csvPath);
+            var result = new Dictionary<string, (uint, uint)>(StringComparer.Ordinal);
+            if (!File.Exists(path)) return result;
+            try
+            {
+                var raw = JsonSerializer.Deserialize<Dictionary<string, uint[]>>(File.ReadAllText(path));
+                if (raw == null) return result;
+                foreach (var (k, v) in raw)
+                    if (v.Length >= 2)
+                        result[k] = (v[0], v[1]);
+                Solicen.CLI.Console.WriteLine($"[DarkGray][Locres] Hash sidecar loaded: {Path.GetFileName(path)} ({result.Count} entries)");
+            }
+            catch (Exception ex)
+            {
+                Solicen.CLI.Console.WriteLine($"[Yellow][Locres] Could not load hash sidecar: {ex.Message}");
+            }
+            return result;
         }
 
         public static byte[] Combine(byte[] remainder, byte[] buffer, int bytesRead)
@@ -479,17 +564,61 @@ namespace Solicen.Localization.UE4
             }
         }
 
-        public static void ProcessTranslator(ref LocresResult[] locres)
+        // journalPath: if set, completed batch pairs are appended to this file so a restart
+        // can skip already-translated strings without rewriting the full CSV each batch.
+        public static void ProcessTranslator(ref LocresResult[] locres,
+            Action<List<(string Source, string Translation)>>? onBatchComplete = null,
+            string? journalPath = null)
         {
+            // Pre-load journal so already-translated sources are skipped
+            if (journalPath != null && File.Exists(journalPath))
+            {
+                var cached = LoadJournal(journalPath);
+                foreach (var entry in locres)
+                    if (string.IsNullOrWhiteSpace(entry.Translation) && cached.TryGetValue(entry.Source, out var t))
+                        entry.Translation = t;
+            }
+
             var manager = new UberTranslator();
-            var allValues = locres.GetUnique().Where(x => string.IsNullOrWhiteSpace(x.Translation))
+            var allValues = locres.GetUnique()
+                .Where(x => !string.IsNullOrWhiteSpace(x.Source))
+                .Where(x => string.IsNullOrWhiteSpace(x.Translation))
                 .ToDictionary(x => x.Source, x => x.Translation);
 
-            if (allValues.Count() > 0)
+            if (allValues.Count > 0)
             {
-                manager.TranslateLines(ref allValues);
+                var locresRef = locres;
+                manager.TranslateLines(ref allValues, onBatchComplete: pairs =>
+                {
+                    // Apply to in-memory array
+                    var map = pairs.ToDictionary(p => p.Source, p => p.Translation);
+                    locresRef.ReplaceAll(map);
+                    // Append to journal (fast, no full-file rewrite)
+                    if (journalPath != null) AppendJournal(journalPath, pairs);
+                    onBatchComplete?.Invoke(pairs);
+                });
                 locres.ReplaceAll(allValues);
             }
+        }
+
+        private static Dictionary<string, string> LoadJournal(string path)
+        {
+            var dict = new Dictionary<string, string>();
+            foreach (var line in File.ReadLines(path))
+            {
+                var tab = line.IndexOf('\t');
+                if (tab > 0) dict[line[..tab]] = line[(tab + 1)..];
+            }
+            return dict;
+        }
+
+        private static readonly object _journalLock = new();
+        private static void AppendJournal(string path, List<(string Source, string Translation)> pairs)
+        {
+            lock (_journalLock)
+            using (var sw = new StreamWriter(path, append: true, System.Text.Encoding.UTF8))
+                foreach (var (src, tgt) in pairs)
+                    sw.WriteLine($"{src}\t{tgt}");
         }
 
         #region Output messages

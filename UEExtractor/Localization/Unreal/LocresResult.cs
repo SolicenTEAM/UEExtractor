@@ -30,7 +30,9 @@ namespace Solicen.Localization.UE4
             var dict = new ConcurrentDictionary<string, LocresResult>();
             foreach (var value in locres)
             {
-                dict.TryAdd(value.Key, new LocresResult(value.Key, value.Source, value.Translation, value.Namespace));
+                var r = new LocresResult(value.Key, value.Source, value.Translation, value.Namespace)
+                    { NsHash = value.NsHash, KeyHash = value.KeyHash };
+                dict.TryAdd(value.Key, r);
             }
             return dict;
         }
@@ -61,6 +63,11 @@ namespace Solicen.Localization.UE4
         public string Key { get; set; }
         public string Source { get; set; }
         public string Translation { get; set; } = string.Empty;
+
+        // Preserved from original game locres (v3 CityHash64 format).
+        // 0 = not loaded; writer will fall back to computed hash.
+        public uint NsHash  { get; set; } = 0;
+        public uint KeyHash { get; set; } = 0;
 
         public LocresResult() { }
         public LocresResult(string Key, string Source, string Translation = null, string Namespace = "")
