@@ -34,6 +34,7 @@ Find out if your game requires an **AES key** or not, as it may not be needed an
 
 1. You will **need to have an AES key** to view the archives and retrieve data from them.
    - You can find it online if you don't have it, or find it yourself from the resources.
+   - You can also get it using the `--aes:auto` argument if the game does not have special encryption.
 2. Place `aes.txt` in the main game directory with one line as 32-character hex string.
    - Or provide it with the argument `--aes=<key>`. Key must start with `0x`.
 

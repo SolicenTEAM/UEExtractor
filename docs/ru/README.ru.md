@@ -34,6 +34,7 @@ key,source,Translation
 
 1. Вам нужен **AES ключ** для просмотра архивов и получения данных из них.
    - Вы можете найти его в интернете, если у вас его нет, или извлечь самостоятельно из ресурсов игры.
+   - Также вы можете получить его при помощи аргумента `--aes:auto` если игра не имеет особого шифрования.
 2. Положите файл `aes.txt` в главную папку игры — он должен содержать одну строку с ключом в hex.
    - Или укажите его через аргумент `--aes=<key>`. Ключ всегда должен начинаться с `0x`.
 
@@ -44,7 +45,7 @@ key,source,Translation
 > Вам нужно получить файл `.usmap` для доступа к игровым архивам и ресурсам.
 > - Как и раньше, вы можете найти этот файл в интернете, если у вас его ещё нет.
 > - Посмотрите на [nexusmods](https://www.nexusmods.com/) и форумах, посвящённых модам.
-> - Или создайте дамп файл при помощи [UE4SS-Experimental](https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest), подробнее в [гайде по извлечению usmap](https://github.com/Dmgvol/UE_Modding/blob/main/TheBasics/Extractingusmap.md).
+> - Или создайте дамп файл при помощи [UE4SS-Experimental](https://github.com/UE4SS-RE/RE-UE4SS/releases/tag/experimental-latest), подробнее в [гайде по извлечению usmap (на английском)](https://github.com/Dmgvol/UE_Modding/blob/main/TheBasics/Extractingusmap.md).
 
 1. Положите файл `.usmap` в главную папку игры (или любую подпапку) — он будет найден автоматически.
 2. Подготовка к работе завершена.
@@ -152,4 +153,4 @@ UEExtractor.exe <путь_до_каталога> --path=HT/Content/Localization
 - [Ambi](https://github.com/JunkBeat) за код и идею для исследования.
 - [Saipan](https://github.com/Saipan0) за помощь в исследованиях создания locres файла.
 - [FabianFG](https://github.com/FabianFG) за библиотеку **CUE4Parse** и пример кода FModel.
-- [Nuked88](https://github.com/Nuked88) за прекрасную работу и изменения в своем форке.
+- [Nuked88](https://github.com/Nuked88) за прекрасную работу и изменения в своём форке.
