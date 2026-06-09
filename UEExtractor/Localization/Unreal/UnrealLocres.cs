@@ -451,12 +451,11 @@ namespace Solicen.Localization.UE4
 
                 // Write the data rows
                 var separator = TableSeparator ? "|" : ",";
-
                 int index = 0;
                 string[] lines = new string[results.Values.Count];
                 foreach (var result in results.Values)
                 {
-                    var line = result.Namespace != string.Empty ? $"{result.Namespace}::" : "";
+                    var line = string.Empty;
                     if (ForceQmarksOutput) line += ($"{CSV.EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
                     else line += ($"{CSV.EscapeCsvField(result.Key)}{separator}{CSV.EscapeCsvField(result.Source)}{separator}{CSV.EscapeCsvField(result.Translation)}");         
                     lines[index] = line; index++;
