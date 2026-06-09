@@ -12,6 +12,7 @@ namespace Solicen.Localization.UE4
         public static string UEVersion = "4_24";
         public static string AES = string.Empty;
         public static string SearchKeyName = string.Empty;
+        public static string SearchText = string.Empty;
 
         #region LocresCSV file Setup
         public static bool WriteSkippedCSV = false;
@@ -174,6 +175,14 @@ namespace Solicen.Localization.UE4
                     if (result == null) continue;
                     if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
+                    if (UnrealLocres.SearchText != string.Empty && result.Source.Contains(SearchText))
+                    {
+                        CLI.Console.Separator();
+                        CLI.Console.WriteLine($"[Green]\tText found: '{result.Source}'\n\t[Yellow][{path}]");
+                        CLI.Console.Separator();
+                        Console.ReadLine();
+                    }
+
                     //if (SearchKeyName != string.Empty && result.Key != SearchKeyName) continue;
 
                     var outputValue = result.Namespace != string.Empty ?
