@@ -1,4 +1,5 @@
-﻿using Solicen.Translator;
+﻿using CUE4Parse.UE4.CriWare.Readers;
+using Solicen.Translator;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
@@ -37,6 +38,13 @@ namespace Solicen.Localization.UE4
         /// </summary>
         public static bool ForceMark = false;
         public static bool WriteLocres = false;
+        #endregion
+
+        #region Duplicates Zone
+        /// <summary>
+        /// It is used to count the found duplicate keys with different source values, only for values without Namespace.
+        /// </summary>
+        private static List<LocresResult> DuplicatesCollection = new List<LocresResult>();
         #endregion
 
         public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass, Texture, Sound }
@@ -171,7 +179,6 @@ namespace Solicen.Localization.UE4
 
                 foreach (var result in fileResults)
                 {
-
                     if (result == null) continue;
                     if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
@@ -187,8 +194,19 @@ namespace Solicen.Localization.UE4
 
                     var outputValue = result.Namespace != string.Empty ?
                     $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
-
                     Console.WriteLine(outputValue);
+
+                    #region Checking duplicates
+                    if (fileResults.Find(x => x.Key == result.Key && x.Source != result.Source) != null)
+                    {
+                        DuplicatesCollection.Add(result);
+                        continue; // If we found duplicate then skip and write to collection of duplicates.
+                    }
+                    #endregion
+                    #region Checking UE Developer Strings
+                    if (result.Namespace == "UMG") continue;
+                    if (result.Namespace.StartsWith("UnrealEd")) continue;
+                    #endregion
                     allResults[result.Key] = result;
                 }
             });
@@ -209,8 +227,9 @@ namespace Solicen.Localization.UE4
                 }
             }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
 
-            #region Zero Data All
+            #region Warning Messages
             if (allResults.Count == 0) ZeroDataMessage();
+            if (DuplicatesCollection.Count > 0) DuplicatesFoundMessage();
             #endregion
 
             // Преобразуем отсортированный словарь обратно в ConcurrentDictionary
@@ -638,6 +657,28 @@ namespace Solicen.Localization.UE4
             "Contact me using my contacts here : (https://github.com/SolicenTEAM ) and I will try to solve your problem.\n" +
             "You can also open a 'Issue' here  : (https://github.com/SolicenTEAM/UEExtractor/issues) I'll notice it.\n" +
             "Thank you in advance, and thank you for your patience!\n");
+        }
+        private static void DuplicatesFoundMessage()
+        {
+            var dublicatesListMsg = new StringBuilder();
+            foreach (var d in DuplicatesCollection.OrderBy(x => x.Key).ToArray())
+            {
+                var lFormat = d.Namespace != string.Empty ?
+                    $" {d.Namespace}::{d.Key}     | {d.Source}\t" : $" {d.Key}     | {d.Source}\t";
+                if (lFormat == string.Empty) continue;
+                dublicatesListMsg.AppendLine(lFormat);
+            }
+            CLI.Console.WriteLine(
+                $"[DarkYellow][WRN][White] Found ({DuplicatesCollection.Count}) duplicate key(s).\n" +
+                " [Red]─[White] These lines will not be in the final result.\n" + 
+                " [Green]>[White] Tip: Use UAssetGUI or KissE to replace the strings directly in asset (uasset/uexp).\n" +
+                " [Green]>[White] It's the only choice for handling duplicate keys without developer changes.");
+            CLI.Console.Separator();
+            CLI.Console.WriteLine(" Duplicate Key                        | SourceString", ConsoleColor.DarkGray);
+            CLI.Console.Separator();
+            CLI.Console.WriteLine($"{dublicatesListMsg}", ConsoleColor.DarkGray);
+            CLI.Console.Separator();
+            CLI.Console.WriteLine();
         }
         #endregion
     }
