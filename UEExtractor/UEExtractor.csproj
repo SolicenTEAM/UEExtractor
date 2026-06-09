@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,7 +10,7 @@
     <Authors>Solicen;Nuked88</Authors>
     <Company>Solicen</Company>
     <Copyright>Solicen;Nuked88</Copyright>
-    <Version>1.0.8.0</Version>
+    <Version>1.0.8.3</Version>
     <RepositoryUrl>https://github.com/SolicenTEAM/UEExtractor</RepositoryUrl>
     <PackageIcon>unreal.ico</PackageIcon>
     <PackageIconUrl />
