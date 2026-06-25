@@ -42,7 +42,6 @@ namespace Solicen.Localization.UE4
 				new Argument("--invalid", "-i","Include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
 				new Argument("--qmarks", "-q", "Forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
 				new Argument("--table-format", "-tf", "Replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
-				new Argument("--auto-exit", "-exit", "Exit automatically after execution", () => ProgramAutoExit = true),
 				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true),
 				new Argument("--path", "-p", "Restrict processing to assets under a specific virtual path (e.g. --path=HT/Content/Localization).", (p) => UnrealLocres.FilterPath = p),
 				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
@@ -105,7 +104,6 @@ namespace Solicen.Localization.UE4
                     if (csvPath != null) CLI.Console.WriteLine($"[Yellow][Patch] Translations: {csvPath}");
                     else CLI.Console.WriteLine($"[Yellow][Patch] No CSV provided – output will be identical to template.");
                     LocresWriter.LocresCompactWriter.Patch(templateLocres, csvPath, outputPath);
-                    if (ProgramAutoExit) Environment.Exit(0);
                 }
                 else if (onlyArgs[0].Contains(".csv"))
 				{
@@ -186,7 +184,6 @@ namespace Solicen.Localization.UE4
 			csvPath =  Path.Combine(exePath + "\\", csvPath);
 
 			UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
-
 			ConcurrentDictionary<string, LocresResult> Result;
 			if (TranslateOnly)
 			{
