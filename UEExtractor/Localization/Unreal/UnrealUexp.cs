@@ -6,8 +6,8 @@ namespace Solicen.Localization.UE4
     public class UnrealUepx
     {
         #region Console Settings
-        public static bool SkipUppercase = false;
-        public static bool SkipUnderscore = false;
+        private static bool SkipUppercase  => UnrealLocres.SkipUppercase;
+        private static bool SkipUnderscore => UnrealLocres.SkipUnderscore;
         public static bool IncludeInvalidData = false;
         public static bool IncludeHashInKeyValue = false;
         public static bool IncludeUrlInKeyValue = false;

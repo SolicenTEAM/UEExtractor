@@ -29,6 +29,8 @@ namespace Solicen.Localization.UE4
         /// Skip all .uexp files.
         /// </summary>
         public static bool SkipUexpFile = false;
+        public static bool SkipUnderscore = false;
+        public static bool SkipUppercase = false;
         /// <summary>
         /// Enable force qmarks chars around strings in output.
         /// </summary>
@@ -59,28 +61,8 @@ namespace Solicen.Localization.UE4
         public static bool TableSeparator = false;
         public static bool VerboseOutput = false;
         public static string FilterPath = string.Empty;
-        public static bool ContainsUpperUpper(string input)
-        {
-            var s = string.Join("", input.Where(x => x != ' '));
-            return s.All(char.IsUpper);
-        }
-
-        static bool ContainsAsciiOrNumbers(string s)
-        {
-            foreach (char c in s)
-            {
-                if (c > 127 || !char.IsDigit(c))
-                {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        public static string GetUasset(string path)
-        {
-            return Path.ChangeExtension(path, ".uasset");
-        }
+        public static string GetUasset(string path) => Path.ChangeExtension(path, ".uasset");
+        
         public static ConcurrentDictionary<string, LocresResult> ProcessDirectory(string directory)
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
@@ -180,6 +162,10 @@ namespace Solicen.Localization.UE4
                 foreach (var result in fileResults)
                 {
                     if (result == null) continue;
+                    #region Skip if the conditions match
+                    if (UnrealLocres.SkipUnderscore && result.Source.Contains("_")) continue;
+                    if (UnrealLocres.SkipUppercase && result.Source.IsUpper()) continue;
+                    #endregion
                     if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
                     if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
                     if (UnrealLocres.SearchText != string.Empty && result.Source.Contains(SearchText))
