@@ -14,6 +14,7 @@
 
         private static CancellationTokenSource _progressCts;
         private static Task _progressTask;
+        public static bool Redirected => System.Console.IsOutputRedirected;
 
         public static async Task<int> ShowMenuAsync(string title, params string[] options)
         {
@@ -116,6 +117,10 @@
         /// <param name="delayMs">Задержка для эффекта "печатания". Установите 0 для мгновенного вывода.</param>
         public static async Task WriteLineAsync(string message, ConsoleColor color = ConsoleColor.White, int delayMs = 2, bool onLine = false)
         {
+            // Without an interactive TTY those throw IOException, which escapes the async Task as an
+            // unobserved exception. Fall back to a plain WriteLine. Fix by @Shayano.
+            if (Redirected){ System.Console.WriteLine(message); return; }
+
             // Останавливаем индикатор прогресса, чтобы он не мешал выводу
             StopProgress();
 
@@ -205,6 +210,10 @@
         /// <param name="message">Сообщение, отображаемое рядом с индикатором.</param>
         public static void StartProgress(string message)
         {
+            // Without an interactive TTY those throw IOException, which escapes the async Task as an
+            // unobserved exception. Fall back to a plain WriteLine. Fix by @Shayano.
+            if (Redirected) { System.Console.WriteLine(message); return; }
+
             // Останавливаем предыдущий индикатор, если он был запущен
             StopProgress();
             System.Console.WriteLine();

@@ -83,6 +83,8 @@ namespace Solicen.Localization.UE4
 
         public static void ProcessProgram(string[] args)
 		{
+			if (CLI.Console.Redirected) UnrealLocres.VerboseOutput = true;
+
             // 1. Разбираем аргументы и настраиваем конфигурацию
             var originalArgs = Argumentor.SplitArgs(args);
             var onlyArgs = Argumentor.Process(originalArgs, arguments);
