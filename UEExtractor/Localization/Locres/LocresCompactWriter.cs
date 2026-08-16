@@ -328,13 +328,10 @@ namespace LocresWriter
                     // Use Translation if available, otherwise fall back to Source.
                     var text = !string.IsNullOrWhiteSpace(e.Translation) ? e.Translation : e.Source;
                     if (string.IsNullOrWhiteSpace(text)) continue;
-                    // Strip double namespace prefix that WriteToCsv adds.
-                    // After stripping, bare is already "ns::key" (or just "key" for empty ns).
-                    var bare = e.Key;
-                    if (!string.IsNullOrEmpty(e.Namespace) && bare.StartsWith(e.Namespace + "::"))
-                        bare = bare[(e.Namespace.Length + 2)..];
-                    translations[bare] =
-                        Solicen.Localization.UE4.LocresHelper.UnEscapeKey(text);
+                    // LoadFromCSV already preserves the full composite key ("ns::key").
+                    // Patch lookup below uses the same format, so the namespace must not be stripped.
+                    var compositeKey = e.Key;
+                    translations[compositeKey] = Solicen.Localization.UE4.LocresHelper.UnEscapeKey(text);
                 }
                 int withTranslation = translations.Count;
                 Solicen.CLI.Console.WriteLine(

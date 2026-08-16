@@ -620,7 +620,7 @@ public class UnrealArchiveReader : IDisposable
     // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
     // separately via TryGetValues + gameFile.CreateReader() so no entries are silently dropped.
     public List<(string CsvBaseName, List<(string Ns, uint NsHash, string Key, uint KeyHash, string Value)> Entries)>
-        ReadLocresGrouped(string? pathFilter = null)
+        ReadLocresGrouped(string? pathFilter = null, string? extractDirectory = null)
     {
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
@@ -674,6 +674,15 @@ public class UnrealArchiveReader : IDisposable
             var entries = new List<(string, uint, string, uint, string)>();
             try
             {
+                if (!string.IsNullOrWhiteSpace(extractDirectory))
+                {
+                    Directory.CreateDirectory(extractDirectory);
+                    var rawBytes = gameFile.Read();
+                    var destination = Path.Combine(extractDirectory, $"{baseName}.locres");
+                    File.WriteAllBytes(destination, rawBytes);
+                    Console.WriteLine($"[Locres] Extracted; {destination}");
+                }
+
                 if (verbose) Console.WriteLine($"Reading: {locresPath} (from {(gameFile is CUE4Parse.UE4.VirtualFileSystem.VfsEntry _ve ? _ve.Vfs.Name : "unknown")})");
                 // Read directly from this specific GameFile so we get this pak's version,
                 // not the highest-priority one returned by _provider.CreateReader(path).

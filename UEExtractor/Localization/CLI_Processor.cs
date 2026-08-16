@@ -267,11 +267,12 @@ namespace Solicen.Localization.UE4
 			}
 			else
 			{
-				groups = UnrealLocres.ProcessLocresGrouped(folderPath);
+				var extractDirectory = UnrealLocres.ExtractLocres ? outputDir : null;
+				groups = UnrealLocres.ProcessLocresGrouped(folderPath, extractDirectory);
 				if (groups.Count == 0)
 				{
                     CLI.Console.WriteLine("[Yellow]No locres found on first attempt, retrying...");
-					groups = UnrealLocres.ProcessLocresGrouped(folderPath);
+					groups = UnrealLocres.ProcessLocresGrouped(folderPath, extractDirectory);
 				}
 				if (groups.Count == 0)
 				{

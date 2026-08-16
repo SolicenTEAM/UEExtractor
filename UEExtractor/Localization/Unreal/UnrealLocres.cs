@@ -229,11 +229,11 @@ namespace Solicen.Localization.UE4
         // Processes .locres files grouped by source file, returning one result dict per locres.
         // Used when the output path is a directory so each locres gets its own CSV.
         public static List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>
-            ProcessLocresGrouped(string directory)
+            ProcessLocresGrouped(string directory, string? extractDirectory = null)
         {
             pDirectory = directory;
             using var reader = new UnrealArchiveReader(directory, UEVersion);
-            var groups = reader.ReadLocresGrouped(string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+            var groups = reader.ReadLocresGrouped(string.IsNullOrEmpty(FilterPath) ? null : FilterPath, extractDirectory);
 
             return groups.Select(g =>
             {
