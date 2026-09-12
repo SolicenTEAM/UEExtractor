@@ -168,9 +168,6 @@ namespace Solicen.Localization.UE4
                     {
                         SearchedText.Add(path, result.Source);
                     }
-                    
-
-                    //if (SearchKeyName != string.Empty && result.Key != SearchKeyName) continue;
 
                     var outputValue = result.Namespace != string.Empty ?
                     $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
@@ -187,6 +184,9 @@ namespace Solicen.Localization.UE4
                     if (result.Namespace == "UMG") continue;
                     if (result.Namespace.StartsWith("UnrealEd")) continue;
                     #endregion
+
+                    if (!string.IsNullOrWhiteSpace(result.Namespace))
+                        result.Key = $"{result.Namespace}::{result.Key}";
                     allResults[result.Key] = result;
                 }
             });
