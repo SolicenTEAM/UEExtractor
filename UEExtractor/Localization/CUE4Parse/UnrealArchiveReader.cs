@@ -2,6 +2,7 @@
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
+using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Versions;
@@ -22,6 +23,10 @@ public class UnrealArchiveReader : IDisposable
     private bool _isZenloader = false;
     public static bool EngineSpecified = false;
 
+    // Max concurrent asset workers. Each holds a fully decompressed asset (LOH array),
+    // so this value directly bounds peak RAM and prevents GC fatal aborts
+    // ("Releasing the double mapped memory failed") under memory pressure.
+    public static int MaxParallelAssets = Math.Min(4, Environment.ProcessorCount);
     public UnrealArchiveReader(string gameDirectory, string VER = "4_24", string AES = "")
     {
         UE_VER = VER;
@@ -209,12 +214,13 @@ public class UnrealArchiveReader : IDisposable
             {
                 engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories)
                     .FirstOrDefault(x => x.Contains("Binaries\\Win64\\") && !x.Contains("CrashReportClient.exe"));
-
-                Console.WriteLine(engineFile);
-                versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
-                version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
+                if (!string.IsNullOrEmpty(engineFile))
+                {
+                    Console.WriteLine(engineFile);
+                    versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
+                    version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
+                }
             }
-
             Console.WriteLine($"UE::File: {engineFile}");
             Console.WriteLine($"UE::Version: {version}");
             return DetectKnownGame(dir, ParseVersion(version));
@@ -354,10 +360,8 @@ public class UnrealArchiveReader : IDisposable
         }
     }
 
-
-
     public void ProcessAllAssets(
-        Action<string, Stream> processor,
+        Action<string, MemoryStream> processor,
         IEnumerable<string>? searchStrings = null,
         bool deepParse = true)
     {
@@ -431,14 +435,16 @@ public class UnrealArchiveReader : IDisposable
             Console.Write($"\r  [{bar}] {pct,3}%  ({done}/{totalAssets})   ");
         }
 
-        Parallel.ForEach(assets, assetPath =>
+        Parallel.ForEach(assets, 
+           new ParallelOptions { MaxDegreeOfParallelism = MaxParallelAssets }, assetPath =>
         {
             try
             {
                 using var stream = LoadAsset(assetPath);
                 processor(assetPath, stream);
                 Interlocked.Increment(ref processed);
-                if (!verbose) PrintProgress();
+                if (verbose) Console.WriteLine($"[{processed}/{totalAssets}] ..{assetPath}");
+                else PrintProgress();
             }
             catch (Exception ex)
             {
@@ -577,14 +583,16 @@ public class UnrealArchiveReader : IDisposable
         {
             try
             {
-                // Dump raw bytes before parsing so we get the original encrypted file
+                // Dump raw bytes before parsing so we get the original encrypted file.
+                // Streamed in chunks to avoid buffering the whole locres in memory.
                 if (extractDir != null)
                 {
                     try
                     {
-                        var rawBytes = _provider.SaveAsset(locresPath);
                         var dest = System.IO.Path.Combine(extractDir, System.IO.Path.GetFileName(locresPath));
-                        System.IO.File.WriteAllBytes(dest, rawBytes);
+                        using (var src = gameFile.CreateReader())
+                        using (var dst = System.IO.File.Create(dest))
+                            src.CopyTo(dst, 81920);
                         Console.WriteLine($"[Locres] Extracted: {dest}");
                     }
                     catch (Exception ex)
@@ -615,12 +623,18 @@ public class UnrealArchiveReader : IDisposable
             Console.WriteLine($"  ProcessLocresFilesWithHashes completed with {errors} error(s).");
     }
 
-    // Returns locres entries grouped by (csvBaseName, pakChunkName) so callers can write
+    // Streams locres entries grouped by (csvBaseName, pakChunkName) so callers can write
     // one CSV per locres file. When the same virtual path exists in multiple pak files
     // (e.g. a base pak + a patch pak both shipping Game.locres), each pak's copy is read
     // separately via TryGetValues + gameFile.CreateReader() so no entries are silently dropped.
-    public List<(string CsvBaseName, List<(string Ns, uint NsHash, string Key, uint KeyHash, string Value)> Entries)>
-        ReadLocresGrouped(string? pathFilter = null, string? extractDirectory = null)
+    // Entries are streamed to the caller callback as they are parsed — nothing is buffered
+    // beyond the current locres, keeping peak memory proportional to a single locres file.
+    public void ReadLocresGrouped(
+        Action<string> beginGroup,
+        Action<string, uint, string, uint, string> addEntry,
+        Action? endGroup = null,
+        string? pathFilter = null,
+        string? extractDirectory = null)
     {
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
@@ -653,7 +667,6 @@ public class UnrealArchiveReader : IDisposable
         var baseNames = locresEntries.Select(e => Path.GetFileNameWithoutExtension(e.Path)).ToList();
         var hasDuplicateBase = baseNames.GroupBy(x => x, StringComparer.OrdinalIgnoreCase).Any(g => g.Count() > 1);
 
-        var result = new List<(string, List<(string, uint, string, uint, string)>)>();
         bool verbose = Solicen.Localization.UE4.UnrealLocres.VerboseOutput;
 
         for (int i = 0; i < locresEntries.Count; i++)
@@ -671,15 +684,18 @@ public class UnrealArchiveReader : IDisposable
                 baseName = !string.IsNullOrEmpty(pakName) ? $"{baseName}_{pakName}" : $"{baseName}_{i}";
             }
 
-            var entries = new List<(string, uint, string, uint, string)>();
+            beginGroup(baseName);
             try
             {
                 if (!string.IsNullOrWhiteSpace(extractDirectory))
                 {
+                    // Stream the locres to disk in chunks instead of buffering the whole
+                    // file in a byte[] (avoids holding raw copy + parsed copy in memory).
                     Directory.CreateDirectory(extractDirectory);
-                    var rawBytes = gameFile.Read();
                     var destination = Path.Combine(extractDirectory, $"{baseName}.locres");
-                    File.WriteAllBytes(destination, rawBytes);
+                    using (var src = gameFile.CreateReader())
+                    using (var dst = File.Create(destination))
+                        src.CopyTo(dst, 81920);
                     Console.WriteLine($"[Locres] Extracted; {destination}");
                 }
 
@@ -691,18 +707,15 @@ public class UnrealArchiveReader : IDisposable
                 foreach (var (nsKey, ents) in locres.Entries)
                     foreach (var (textKey, entry) in ents)
                         if (!string.IsNullOrEmpty(entry.LocalizedString))
-                            entries.Add((nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString));
+                            addEntry(nsKey.Str, nsKey.StrHash, textKey.Str, textKey.StrHash, entry.LocalizedString);
             }
             catch (Exception ex)
             {
                 if (verbose) Console.WriteLine($"Error reading {locresPath}: {ex.Message}");
             }
 
-            if (entries.Count > 0)
-                result.Add((baseName, entries));
+            endGroup?.Invoke();
         }
-
-        return result;
     }
 
 

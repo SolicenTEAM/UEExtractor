@@ -42,6 +42,8 @@ namespace Solicen.Localization.UE4
         public static bool WriteLocres = false;
         #endregion
 
+        private static Dictionary<string, string> SearchedText = new Dictionary<string, string>();
+
         #region Duplicates Zone
         /// <summary>
         /// It is used to count the found duplicate keys with different source values, only for values without Namespace.
@@ -49,10 +51,13 @@ namespace Solicen.Localization.UE4
         private static List<LocresResult> DuplicatesCollection = new List<LocresResult>();
         #endregion
 
-        public enum ExportType  { None, TextProperty, StringTable, DataTable, Table, BlueprintClass, Texture, Sound }
-        public static string[] ExcludePath = { "/sound/", "/effects/", "/fx/", "/vfx/", "/meshes/", "/mesh/", "/textures/", "/megascans/", "/music/" };
+        public enum ExportType  { 
+            None, TextProperty, StringTable, DataTable, AnyTable, BlueprintGeneratedClass
+        }
+        public static string[] ExcludePath = { "/sound/", "/effects/", "/fx/", "/vfx/", "/meshes/", "/mesh/", "/textures/", "/megascans/", "/music/"};
         public static bool EngineSpecified = false;
         public static bool ExtractLocres = false;
+        public static bool ReadAllLocres = false;
         public static bool AllFolders = false;
         public static bool PickyMode = false;
         public static bool IncludeUrlInKeyValue  = false;
@@ -66,36 +71,22 @@ namespace Solicen.Localization.UE4
         public static ConcurrentDictionary<string, LocresResult> ProcessDirectory(string directory)
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
-            var excludeTypes = new[] { "Texture2D", "SoundWave", "StaticMesh", "Material", "MaterialInstanceConstant",
-                                       "Skeleton", "AnimSequence", "PhysicsAsset", "Font", "CurveTable", "SoundCue" };
             pDirectory = directory;
 
             using var reader = new UnrealArchiveReader(directory, UEVersion);
             reader.ProcessAllAssets((path, stream) =>
             {
-                if (ExtractLocres && path.Contains("/Localization/") && path.EndsWith("Game.locres"))
-                {
-                    var _fileName = Path.GetFileName(path);
-                    var _saveDirectory = Path.GetDirectoryName(SkippedCSV.FilePath);
-                    File.WriteAllBytes($"{_saveDirectory}\\{_fileName}", reader.LoadAsset(path).GetBuffer());
-                }
                 if (!AllFolders && ExcludePath.Any(x => path.ToLower().Contains(x))) return;
                 if (SkipUassetFile && path.EndsWith(".uasset")) return;
                 if (SkipUexpFile && path.EndsWith(".uexp")) return;
 
                 List<LocresResult> fileResults = new List<LocresResult>();
-                var eType = path.EndsWith(".uasset") ? GetExportType(stream) : ExportType.None;
-
-                eType = path.Contains("/Blueprints/") ? ExportType.BlueprintClass : eType;
-                eType = path.Contains("/DataTables/") ? ExportType.Table : eType;
-                eType = path.Contains("BP_") ? ExportType.BlueprintClass : eType;
-                eType = path.Contains("/DT_") || path.Contains("/DA_") ? ExportType.Table : eType;
-
+                var eType = GetExportType(stream);
                 try
                 {
                     switch (eType)
                     {
-                        case ExportType.Table:
+                        case ExportType.AnyTable:
                             {
                                 var newResult = new LocresResult[0];
 
@@ -117,9 +108,7 @@ namespace Solicen.Localization.UE4
                                 }
                             }
                             break;
-                        case ExportType.Sound:   break;
-                        case ExportType.Texture: break;
-                        case ExportType.BlueprintClass:
+                        case ExportType.TextProperty:
                             {
                                 // Содержит BlueprintGeneratedClass (Kismet String)
                                 // Может содержать TextProperty (для locres)
@@ -133,14 +122,7 @@ namespace Solicen.Localization.UE4
                             }
                         default:
                             {
-                                fileResults = UnrealUepx.ExtractDataFromStream(stream);
-                                var newResult = UnrealUasset.ExtractDataFromStream(stream, path);
-                                if (fileResults.Count > 0)
-                                {
-                                    newResult = newResult.Where
-                                    (x => fileResults.Any(q => q.Key != x.Key)).ToList();
-                                }
-                                fileResults.AddRange(newResult);
+                                fileResults = UnrealParser.Parse(stream.ToArray());
                                 break;
                             }
                     }
@@ -159,6 +141,21 @@ namespace Solicen.Localization.UE4
                 if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
                 #endregion
 
+                // Pre-apply key decorations and build an O(1) duplicate index
+                // (replaces per-entry List.Find which was O(n²) per file).
+                foreach (var r in fileResults)
+                {
+                    if (r == null) continue;
+                    if (UnrealLocres.IncludeHashInKeyValue) r.Key = $"[{r.Key}][{r.Hash}]";
+                    if (UnrealLocres.IncludeUrlInKeyValue) r.Key = $"[{r.Url}]{r.Key}";
+                }
+                var keyFirstSource = new Dictionary<string, string>(fileResults.Count);
+                foreach (var r in fileResults)
+                {
+                    if (r == null || keyFirstSource.ContainsKey(r.Key)) continue;
+                    keyFirstSource[r.Key] = r.Source;
+                }
+
                 foreach (var result in fileResults)
                 {
                     if (result == null) continue;
@@ -166,24 +163,21 @@ namespace Solicen.Localization.UE4
                     if (UnrealLocres.SkipUnderscore && result.Source.Contains("_")) continue;
                     if (UnrealLocres.SkipUppercase && result.Source.IsUpper()) continue;
                     #endregion
-                    if (UnrealLocres.IncludeHashInKeyValue) result.Key = $"[{result.Key}][{result.Hash}]";
-                    if (UnrealLocres.IncludeUrlInKeyValue) result.Key = $"[{result.Url}]{result.Key}";
+                    
                     if (UnrealLocres.SearchText != string.Empty && result.Source.Contains(SearchText))
                     {
-                        CLI.Console.Separator();
-                        CLI.Console.WriteLine($"[Green]\tText found: '{result.Source}'\n\t[Yellow][{path}]");
-                        CLI.Console.Separator();
-                        Console.ReadLine();
+                        SearchedText.Add(path, result.Source);
                     }
+                    
 
                     //if (SearchKeyName != string.Empty && result.Key != SearchKeyName) continue;
 
                     var outputValue = result.Namespace != string.Empty ?
                     $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
-                    Console.WriteLine(outputValue);
+                    if (VerboseOutput) Console.WriteLine(outputValue);
 
                     #region Checking duplicates
-                    if (fileResults.Find(x => x.Key == result.Key && x.Source != result.Source) != null)
+                    if (keyFirstSource.TryGetValue(result.Key, out var firstSource) && firstSource != result.Source)
                     {
                         DuplicatesCollection.Add(result);
                         continue; // If we found duplicate then skip and write to collection of duplicates.
@@ -197,58 +191,107 @@ namespace Solicen.Localization.UE4
                 }
             });
 
-            // Also read .locres files directly (handles games like NTE whose localization
-            // is stored as pre-compiled .locres binaries rather than inside .uasset files).
-            // Use hash-aware variant to preserve game-computed StrHash values for v3 round-trips.
-            reader.ProcessLocresFilesWithHashes((ns, nsHash, key, keyHash, localizedString) =>
-            {
-                if (string.IsNullOrWhiteSpace(localizedString)) return;
-                var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
-                if (!allResults.ContainsKey(compositeKey))
-                {
-                    var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
-                    r.NsHash  = nsHash;
-                    r.KeyHash = keyHash;
-                    allResults[compositeKey] = r;
-                }
-            }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
 
+            if (ReadAllLocres)
+            {
+                // Also read .locres files directly (handles games like NTE whose localization
+                // is stored as pre-compiled .locres binaries rather than inside .uasset files).
+                // Use hash-aware variant to preserve game-computed StrHash values for v3 round-trips.
+
+
+
+                reader.ProcessLocresFilesWithHashes((ns, nsHash, key, keyHash, localizedString) =>
+                {
+                    if (string.IsNullOrWhiteSpace(localizedString)) return;
+                    var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
+                    if (!allResults.ContainsKey(compositeKey))
+                    {
+                        var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+                        r.NsHash = nsHash;
+                        r.KeyHash = keyHash;
+                        allResults[compositeKey] = r;
+                    }
+                }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+            }
+            
             #region Warning Messages
             if (allResults.Count == 0) ZeroDataMessage();
             if (DuplicatesCollection.Count > 0) DuplicatesFoundMessage();
             #endregion
 
-            // Преобразуем отсортированный словарь обратно в ConcurrentDictionary
-            var sortedConcurrentResults = new ConcurrentDictionary<string, 
-                LocresResult>(allResults.Where(x => !IsNotAllowedString(x.Value.Source)));
+            // Filter in-place to avoid materializing a second full copy of all results.
+            foreach (var kv in allResults)
+            {
+                if (IsNotAllowedString(kv.Value.Source))
+                    allResults.TryRemove(kv.Key, out _);
+            }
 
             GC.Collect(2);
-            return sortedConcurrentResults;
+            if (SearchedText.Count > 0)
+            {
+                CLI.Console.Separator();
+                foreach (var key in SearchedText)
+                {
+                    CLI.Console.WriteLine($"[Green]\tText found: '{key.Value}'\n\t[Yellow][{key.Key}]");
+                }
+                CLI.Console.Separator();
+            }
+
+            return allResults;
         }
 
-        // Processes .locres files grouped by source file, returning one result dict per locres.
-        // Used when the output path is a directory so each locres gets its own CSV.
-        public static List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>
-            ProcessLocresGrouped(string directory, string? extractDirectory = null)
+        // Callback-based: delivers each locres group to the consumer as soon as it is
+        // fully parsed, then drops its references — the consumer must persist (write CSV)
+        // inside the callback so peak memory stays at one locres.
+        public static bool ProcessLocresGroupedStreamed(string directory,
+            Action<string, ConcurrentDictionary<string, LocresResult>> onGroup,
+            string? extractDirectory = null)
         {
             pDirectory = directory;
-            using var reader = new UnrealArchiveReader(directory, UEVersion);
-            var groups = reader.ReadLocresGrouped(string.IsNullOrEmpty(FilterPath) ? null : FilterPath, extractDirectory);
+            bool produced = false;
+            ConcurrentDictionary<string, LocresResult>? current = null;
+            string baseNameNow = string.Empty;
 
-            return groups.Select(g =>
-            {
-                var dict = new ConcurrentDictionary<string, LocresResult>();
-                foreach (var (ns, nsHash, key, keyHash, value) in g.Entries)
+            using var reader = new UnrealArchiveReader(directory, UEVersion);
+            reader.ReadLocresGrouped(
+                beginGroup: baseName =>
                 {
-                    if (string.IsNullOrEmpty(key)) continue; // skip malformed entries only
+                    current = new ConcurrentDictionary<string, LocresResult>();
+                    baseNameNow = baseName;
+                },
+                addEntry: (ns, nsHash, key, keyHash, value) =>
+                {
+                    if (string.IsNullOrEmpty(key)) return; // skip malformed entries only
                     var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
                     var escaped = string.IsNullOrEmpty(value) ? string.Empty : LocresHelper.EscapeKey(value);
                     var r = new LocresResult(compositeKey, escaped, Namespace: ns)
                         { NsHash = nsHash, KeyHash = keyHash };
-                    dict.TryAdd(compositeKey, r);
-                }
-                return (g.CsvBaseName, dict);
-            }).Where(x => x.dict.Count > 0).ToList();
+                    current!.TryAdd(compositeKey, r);
+                },
+                endGroup: () =>
+                {
+                    var dict = current!;
+                    if (dict.Count == 0) return;
+                    onGroup(baseNameNow, dict);
+                    produced = true;
+                },
+                pathFilter: string.IsNullOrEmpty(FilterPath) ? null : FilterPath,
+                extractDirectory: extractDirectory);
+
+            return produced;
+        }
+
+        // Processes .locres files grouped by source file, returning one result dict per locres.
+        // Used when the output path is a directory so each locres gets its own CSV.
+        // Entries are streamed from the reader and accumulated directly into per-locres
+        // dictionaries — no intermediate entry lists, so peak memory stays low.
+        public static List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>
+            ProcessLocresGrouped(string directory, string? extractDirectory = null)
+        {
+            var groups = new List<(string CsvBaseName, ConcurrentDictionary<string, LocresResult> Results)>();
+            ProcessLocresGroupedStreamed(directory,
+                (baseName, dict) => groups.Add((baseName, dict)), extractDirectory);
+            return groups;
         }
 
         public static bool IsNotAllowedString(string value)
@@ -388,20 +431,14 @@ namespace Solicen.Localization.UE4
             try
             {
                 // Выделяем буфер на стеке. Это очень быстро и не создает мусора в куче.
-                Span<byte> buffer = stackalloc byte[bufferSize];              
+                Span<byte> buffer = stackalloc byte[bufferSize];
                 stream.Read(buffer);
 
-                if (IsSound(buffer))
-                    return ExportType.Sound;
-
-                if (IsTexture(buffer))
-                    return ExportType.Texture;
-
-                if (IsBlueprintGeneratedClass(buffer) || IsTextProperty(buffer))
-                    return ExportType.BlueprintClass;
+                if (IsTextProperty(buffer))
+                    return ExportType.TextProperty;
 
                 if (IsTable(buffer))
-                    return ExportType.Table;
+                    return ExportType.AnyTable;
 
                 return ExportType.None;
             }
@@ -410,6 +447,7 @@ namespace Solicen.Localization.UE4
                 stream.Position = originalPosition; // Всегда восстанавливаем исходную позицию потока
             }
         }
+
 
         public static byte[] StreamToByte(Stream stream)
         {

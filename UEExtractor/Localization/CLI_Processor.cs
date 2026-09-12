@@ -1,4 +1,4 @@
-﻿﻿using Solicen.CLI;
+﻿using Solicen.CLI;
 using Solicen.GitHub.Updater;
 using Solicen.Translator;
 using System.Collections.Concurrent;
@@ -28,18 +28,18 @@ namespace Solicen.Localization.UE4
 				new Argument("--url", "-url", "Include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
 				new Argument("--headmark", "-m", "Include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
 				new Argument("--hash", "-h","Include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
-				new Argument("--search", "-s", "(WIP) stops the process when it finds the desired line and outputs all the information about it", (text) => UnrealLocres.SearchText = text),
+				new Argument("--search", "-s", "At the end, if the string was found, it outputs information about all its occurrences.", (text) => UnrealLocres.SearchText = text),
 
 				new Argument("--locres", "-l", "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
 				new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
+				new Argument("--read-locres", "-rl", "Read all .locres files directly.", () => UnrealLocres.ReadAllLocres = true),
 
 				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessVersion),
 				new Argument("--skip-uexp", "-s:xp","Skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 				new Argument("--skip-uasset", "-s:et","Skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 				new Argument("--no-underscore", "-n:un","Skip lines with underscores.", () => UnrealLocres.SkipUnderscore = true),
 				new Argument("--no-uppercase", "-n:up","Skip lines with ALL UPPERCASE.", () => UnrealLocres.SkipUppercase = true),
-				new Argument("--no-parallel", "-n:p","Disable parallel processing, slower, may output additional data.", () => UnrealUasset.parallelProcessing = false),
-				new Argument("--invalid", "-i","Include invalid data in the output.", () => UnrealUepx.IncludeInvalidData = false),
+				new Argument("--ram", null, $"Skip assets larger than this uncompressed size in MB (default: {UnrealArchiveReader.RAMCapacity}; 0 = no limit). Textures/maps rarely contain text.", (v) => { if (int.TryParse(v, out int n) && n >= 0) UnrealArchiveReader.RAMCapacity = n; }),
 				new Argument("--qmarks", "-q", "Forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
 				new Argument("--table-format", "-tf", "Replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true),
@@ -244,11 +244,41 @@ namespace Solicen.Localization.UE4
 		}
 
 		// Writes one CSV per locres file into outputDir, merging with any existing CSV.
+		// Groups are handled one-by-one (extract → save → release) so peak RAM
+		// stays at a single locres + its translation buffers.
 		private static void ProcessFolderToDirectory(string folderPath, string outputDir, string? locresPath)
 		{
 			Directory.CreateDirectory(outputDir);
 
-			List<(string BaseName, ConcurrentDictionary<string, LocresResult> Result)> groups;
+			// Shared translation cache for all CSVs in this directory.
+			// Using one journal means translations done for pak0 are reused for pak1, etc.
+			var sharedJournalPath = Path.Combine(outputDir, "translation_cache.journal");
+
+			void HandleGroup(string baseName, ConcurrentDictionary<string, LocresResult> result)
+			{
+				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
+				UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
+
+				// Save hash sidecar for the locres so import can restore correct StrHash values
+				UnrealLocres.SaveHashSidecar(csvPath, result.Values);
+				MergeOldCsv(csvPath, result);
+
+				if (UberTranslator.IsConfigured)
+				{
+					if (!TranslateOnly)
+						UnrealLocres.WriteToCsv(result, csvPath);
+					var tempRes = result.Select(x => x.Value).ToArray();
+					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: sharedJournalPath);
+					var translated = tempRes.ToConcurrent();
+					UnrealLocres.WriteToCsv(translated, csvPath);
+                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({translated.Count} entries)");
+				}
+				else
+				{
+					UnrealLocres.WriteToCsv(result, csvPath);
+                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({result.Count} entries)");
+				}
+			}
 
 			if (TranslateOnly)
 			{
@@ -261,56 +291,53 @@ namespace Solicen.Localization.UE4
 					return;
 				}
                 CLI.Console.WriteLine($"[Yellow]--translate-only: found {existing.Count} CSV(s) in {outputDir}");
-				groups = existing
-					.Select(f => (Path.GetFileNameWithoutExtension(f), UnrealLocres.LoadFromCSV(f).ToConcurrent()))
-					.ToList();
+
+				// Load one CSV at a time so memory scales with a single file.
+				foreach (var f in existing)
+				{
+                    CLI.Console.WriteLine($"[Yellow]--translate-only: loading {Path.GetFileName(f)}...");
+					var baseName = Path.GetFileNameWithoutExtension(f);
+					var result = UnrealLocres.LoadFromCSV(f).ToConcurrent();
+					UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(Path.Combine(outputDir, $"{baseName}.csv"), "_skipped_lines.csv"));
+
+					if (UberTranslator.IsConfigured)
+					{
+						var tempRes = result.Select(x => x.Value).ToArray();
+						UnrealLocres.ProcessTranslator(ref tempRes, journalPath: sharedJournalPath);
+						var translated = tempRes.ToConcurrent();
+						UnrealLocres.WriteToCsv(translated, Path.Combine(outputDir, $"{baseName}.csv"));
+                        CLI.Console.WriteLine($"\n[Green]Saved: {Path.Combine(outputDir, baseName + ".csv")}  ({translated.Count} entries)");
+					}
+					else
+					{
+						UnrealLocres.WriteToCsv(result, Path.Combine(outputDir, $"{baseName}.csv"));
+                        CLI.Console.WriteLine($"\n[Green]Saved: {Path.Combine(outputDir, baseName + ".csv")}  ({result.Count} entries)");
+					}
+				}
 			}
 			else
 			{
 				var extractDirectory = UnrealLocres.ExtractLocres ? outputDir : null;
-				groups = UnrealLocres.ProcessLocresGrouped(folderPath, extractDirectory);
-				if (groups.Count == 0)
+
+				bool TryRun()
+				{
+					bool produced = false;
+					UnrealLocres.ProcessLocresGroupedStreamed(folderPath, (baseName, result) =>
+					{
+						produced = true;
+						HandleGroup(baseName, result);
+					}, extractDirectory);
+					return produced;
+				}
+
+				if (!TryRun())
 				{
                     CLI.Console.WriteLine("[Yellow]No locres found on first attempt, retrying...");
-					groups = UnrealLocres.ProcessLocresGrouped(folderPath, extractDirectory);
-				}
-				if (groups.Count == 0)
-				{
-                    CLI.Console.WriteLine("[Yellow]No locres data found.");
-					return;
-				}
-				// Save hash sidecar for each locres so import can restore correct StrHash values
-				foreach (var (baseName, result) in groups)
-				{
-					var hashCsvPath = Path.Combine(outputDir, $"{baseName}.csv");
-					UnrealLocres.SaveHashSidecar(hashCsvPath, result.Values);
-					MergeOldCsv(hashCsvPath, result);
-				}
-			}
-
-			// Shared translation cache for all CSVs in this directory.
-			// Using one journal means translations done for pak0 are reused for pak1, etc.
-			var sharedJournalPath = Path.Combine(outputDir, "translation_cache.journal");
-
-			foreach (var (baseName, finalResult) in groups)
-			{
-				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
-				UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
-
-				if (UberTranslator.IsConfigured)
-				{
-					if (!TranslateOnly)
-						UnrealLocres.WriteToCsv(finalResult, csvPath);
-					var tempRes = finalResult.Select(x => x.Value).ToArray();
-					UnrealLocres.ProcessTranslator(ref tempRes, journalPath: sharedJournalPath);
-					var translated = tempRes.ToConcurrent();
-					UnrealLocres.WriteToCsv(translated, csvPath);
-                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({translated.Count} entries)");
-				}
-				else
-				{
-					UnrealLocres.WriteToCsv(finalResult, csvPath);
-                    CLI.Console.WriteLine($"\n[Green]Saved: {csvPath}  ({finalResult.Count} entries)");
+					if (!TryRun())
+					{
+                        CLI.Console.WriteLine("[Yellow]No locres data found.");
+						return;
+					}
 				}
 			}
 
