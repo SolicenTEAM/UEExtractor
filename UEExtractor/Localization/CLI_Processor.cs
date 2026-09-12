@@ -39,7 +39,6 @@ namespace Solicen.Localization.UE4
 				new Argument("--skip-uasset", "-s:et","Skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 				new Argument("--no-underscore", "-n:un","Skip lines with underscores.", () => UnrealLocres.SkipUnderscore = true),
 				new Argument("--no-uppercase", "-n:up","Skip lines with ALL UPPERCASE.", () => UnrealLocres.SkipUppercase = true),
-				new Argument("--ram", null, $"Skip assets larger than this uncompressed size in MB (default: {UnrealArchiveReader.RAMCapacity}; 0 = no limit). Textures/maps rarely contain text.", (v) => { if (int.TryParse(v, out int n) && n >= 0) UnrealArchiveReader.RAMCapacity = n; }),
 				new Argument("--qmarks", "-q", "Forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
 				new Argument("--table-format", "-tf", "Replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
 				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true),
