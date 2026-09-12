@@ -16,6 +16,7 @@ public class UnrealArchiveReader : IDisposable
 
     public string UE_VER = string.Empty;
     public string AES_KEY = string.Empty;
+    public static string USMAP_PATH = string.Empty;
 
     private readonly DefaultFileProvider _provider;
     private bool _hasValidFiles;
@@ -54,7 +55,11 @@ public class UnrealArchiveReader : IDisposable
             _provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, new VersionContainer(UE));
 
             LoadCompression();
-            LoadUsmapFiles(gameDirectory);
+
+            if (string.IsNullOrEmpty(USMAP_PATH))
+                LoadUsmapFiles(gameDirectory);
+            else
+                LoadUsmapDirectly(USMAP_PATH);
 
             _provider.Initialize();
 
@@ -288,6 +293,19 @@ public class UnrealArchiveReader : IDisposable
         return zenLoaderFile.Length > 0 ? true : false;
     }
 
+    private void LoadUsmapDirectly(string usmapPath)
+    {
+        try
+        {
+            var mappings = new FileUsmapTypeMappingsProvider(usmapPath);
+            _provider.MappingsContainer = mappings;
+            Console.WriteLine($"Loaded usmap file: {Path.GetFileName(usmapPath)}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to load usmap file {usmapPath}: {ex.Message}");
+        }
+    }
     private void LoadUsmapFiles(string gameDirectory)
     {
         var usmapFiles = Directory.GetFiles(gameDirectory, "*.usmap", SearchOption.AllDirectories);
@@ -320,8 +338,6 @@ public class UnrealArchiveReader : IDisposable
             {
                 Console.WriteLine("Warning: No .usmap files found. Type information may be limited.");
             }
-
-
         }
     }
 

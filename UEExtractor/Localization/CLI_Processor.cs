@@ -22,6 +22,7 @@ namespace Solicen.Localization.UE4
 			{
 				new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
 				new Argument("--aes:auto", "-a:auto", "Automatic extraction AES key into aes.txt at the root of the game (for directories only)", () => ExtractAES = true),
+				new Argument("--mapping", "-map", "Loads the USMAP file directly from the specified path.", (usmap) => UnrealArchiveReader.USMAP_PATH = usmap),
 
 				new Argument("--all", "-all", "Processing all folders in archive", () => UnrealLocres.AllFolders = true),
 				new Argument("--picky", null, "Picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
