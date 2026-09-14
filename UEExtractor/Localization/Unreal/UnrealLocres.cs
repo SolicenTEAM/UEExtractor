@@ -1,5 +1,4 @@
-﻿using CUE4Parse.UE4.CriWare.Readers;
-using Solicen.Translator;
+﻿using Solicen.Translator;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
@@ -76,6 +75,7 @@ namespace Solicen.Localization.UE4
             using var reader = new UnrealArchiveReader(directory, UEVersion);
             reader.ProcessAllAssets((path, stream) =>
             {
+                if (path.EndsWith(".locres")) return; // Для локресов своя логика
                 if (!AllFolders && ExcludePath.Any(x => path.ToLower().Contains(x))) return;
                 if (SkipUassetFile && path.EndsWith(".uasset")) return;
                 if (SkipUexpFile && path.EndsWith(".uexp")) return;
@@ -198,15 +198,13 @@ namespace Solicen.Localization.UE4
                 // is stored as pre-compiled .locres binaries rather than inside .uasset files).
                 // Use hash-aware variant to preserve game-computed StrHash values for v3 round-trips.
 
-
-
                 reader.ProcessLocresFilesWithHashes((ns, nsHash, key, keyHash, localizedString) =>
                 {
                     if (string.IsNullOrWhiteSpace(localizedString)) return;
                     var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
                     if (!allResults.ContainsKey(compositeKey))
                     {
-                        var r = new LocresResult(compositeKey, LocresHelper.EscapeKey(localizedString), Namespace: ns);
+                        var r = new LocresResult(compositeKey, localizedString.Escape(), Namespace: ns);
                         r.NsHash = nsHash;
                         r.KeyHash = keyHash;
                         allResults[compositeKey] = r;
@@ -222,7 +220,8 @@ namespace Solicen.Localization.UE4
             // Filter in-place to avoid materializing a second full copy of all results.
             foreach (var kv in allResults)
             {
-                if (IsNotAllowedString(kv.Value.Source))
+                var isNotAllowed = IsNotAllowedString(kv.Value.Source);
+                if (isNotAllowed)
                     allResults.TryRemove(kv.Key, out _);
             }
 

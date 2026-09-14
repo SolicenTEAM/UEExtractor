@@ -2,6 +2,7 @@
 using CUE4Parse.Encryption.Aes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
+using CUE4Parse.MappingsProvider.Usmap;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Localization;
@@ -385,8 +386,7 @@ public class UnrealArchiveReader : IDisposable
             throw new InvalidOperationException("No valid files available for processing");
 
         // Расширенный список расширений
-        // UPD: Исключаем uexp, так как uasset и так ссылается на него при загрузке.
-        var validExtensions = new[] { ".uasset", ".uexp", ".umap" };
+        var validExtensions = new[] { ".uasset", ".uexp", ".umap", ".locres" };
         var filterPath = Solicen.Localization.UE4.UnrealLocres.FilterPath;
         var assets = _provider.Files.Keys.Where(x => validExtensions
             .Any(ext => x.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))

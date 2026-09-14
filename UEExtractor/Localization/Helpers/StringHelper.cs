@@ -63,7 +63,7 @@ static internal class StringHelper
     }
     public static bool IsPath(this string str)
     {
-        return Regex.Match(str, @"(.*[\\].*[\\])|(.*[\/].*[\/])").Success && !str.Contains("\"");
+        return Path.IsPathRooted(str);
     }
 
     public static bool IsStringDigit(this string str)
