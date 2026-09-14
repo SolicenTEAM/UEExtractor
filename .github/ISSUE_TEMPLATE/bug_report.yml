@@ -1,0 +1,158 @@
+name: Bug report
+description: What went wrong, or you got the wrong result, or an error occurred
+labels: ["bug"]
+assignees: ["DenisSolicen"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Fill in the sections below.
+        The more of this you fill in, the faster we can find the cause.
+
+  - type: checkboxes
+    id: pre-checks
+    attributes:
+      label: Before submitting
+      description: Please confirm the following.
+      options:
+        - label: I have searched existing issues and this is not a duplicate.
+          required: true
+        - label: I downloaded UEExtractor from this repository.
+          required: true
+        - label: I am using the latest version of UEExtractor.
+          required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of what is broken.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: What should have happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: What actually happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps so we can see it ourselves.
+      placeholder: |
+        1. Run UEExtractor with parameters: `UEExtractor "C:\Game\..." --path=...`
+        2. Open the generated CSV
+        3. Compare the extracted text with the original localization
+        4. Text is missing
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: "## Environment"
+
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      description: e.g. Windows 11 21H2
+      placeholder: "Windows 11 21H2"
+    validations:
+      required: true
+
+  - type: input
+    id: game
+    attributes:
+      label: Game
+      description: e.g. Neverness to Everness
+      placeholder: Neverness to Everness
+    validations:
+      required: true
+
+  - type: input
+    id: ue-version
+    attributes:
+      label: Unreal Engine
+      description: e.g. UE5.4.4 / UE4.27
+      placeholder: UE5.1
+    validations:
+      required: true
+
+  - type: input
+    id: ueextractor-version
+    attributes:
+      label: UEExtractor
+      description: The version is on the first line at launch.
+      placeholder: "v1.0.8.4"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: input-format
+    attributes:
+      label: Input
+      options:
+        - .pak
+        - .uasset
+        - .uexp
+        - .locres
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: output-format
+    attributes:
+      label: Output
+      options:
+        - CSV
+        - LocRes
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Any other details that might help us understand and resolve the issue.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-files
+    attributes:
+      label: Additional files
+      description: |
+        **Please always, if possible, attach additional files** with which you have an error, bug, or any other issue, so I can quickly reproduce your situation and solve the problem.
+
+        You can attach files by dragging them into the comment box below.
+      placeholder: |
+        Attach files here (drag & drop):
+        - .locres file
+        - .csv output
+        - Screenshots
+        - Log files
+        - Any other relevant files
+    validations:
+      required: false
+
+  - type: textarea
+    id: anything-else
+    attributes:
+      label: Anything else?
+      description: Some other useful information about the problem.
+    validations:
+      required: false
