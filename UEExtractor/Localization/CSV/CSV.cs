@@ -210,8 +210,7 @@ public class CSV
         public void WriteLine(string text)
         {
             if (FilePath == string.Empty) return;
-            text = LocresHelper.EscapeKey(text);
-            _Writer.WriteLine(text + "\r");
+            _Writer.WriteLine(text.Escape() + "\r");
         }
     }
 }

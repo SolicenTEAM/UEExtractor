@@ -213,7 +213,7 @@ namespace LocresWriter
                         w.Write(keyHash);
                     }
                     WriteKeyString(w, aKey);
-                    w.Write(LocresSharp.Crc.StrCrc32(LocresHelper.UnEscapeKey(entry.Source)));
+                    w.Write(LocresSharp.Crc.StrCrc32((entry.Source).Unescape()));
                     w.Write(strIdx++);
                 }
             }
@@ -235,7 +235,7 @@ namespace LocresWriter
                 {
                     string value = string.IsNullOrEmpty(entry.Translation)
                         ? entry.Source : entry.Translation;
-                    string plain = LocresHelper.UnEscapeKey(value);
+                    string plain = value.Unescape();
 
                     if (encrypted)
                     {
@@ -323,7 +323,7 @@ namespace LocresWriter
             var translations = new Dictionary<string, string>(StringComparer.Ordinal);
             if (!string.IsNullOrEmpty(csvPath) && File.Exists(csvPath))
             {
-                foreach (var e in Solicen.Localization.UE4.UnrealLocres.LoadFromCSV(csvPath))
+                foreach (var e in UnrealLocres.LoadFromCSV(csvPath))
                 {
                     // Use Translation if available, otherwise fall back to Source.
                     var text = !string.IsNullOrWhiteSpace(e.Translation) ? e.Translation : e.Source;
@@ -331,7 +331,7 @@ namespace LocresWriter
                     // LoadFromCSV already preserves the full composite key ("ns::key").
                     // Patch lookup below uses the same format, so the namespace must not be stripped.
                     var compositeKey = e.Key;
-                    translations[compositeKey] = Solicen.Localization.UE4.LocresHelper.UnEscapeKey(text);
+                    translations[compositeKey] = text.Unescape();
                 }
                 int withTranslation = translations.Count;
                 Solicen.CLI.Console.WriteLine(

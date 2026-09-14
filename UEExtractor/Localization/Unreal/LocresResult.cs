@@ -9,6 +9,11 @@ namespace Solicen.Localization.UE4
 {
     public static class LocresResultUtil
     {
+        public static bool IsContainsNameSpace(this LocresResult[] locres)
+        {
+            return locres.Any(x => x.Namespace != string.Empty) ? true : false;
+        }
+
         public static void ReplaceAll(this LocresResult[] locres, Dictionary<string, string> keys)
         {
             foreach (var key in keys)

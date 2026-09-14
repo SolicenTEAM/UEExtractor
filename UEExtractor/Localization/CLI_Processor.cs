@@ -2,6 +2,7 @@
 using Solicen.GitHub.Updater;
 using Solicen.Translator;
 using System.Collections.Concurrent;
+using CUE4Parse.UE4.Objects.Core.i18N;
 
 namespace Solicen.Localization.UE4
 {
@@ -10,7 +11,7 @@ namespace Solicen.Localization.UE4
         private static bool ProgramAutoExit = false;
         private static bool TranslateOnly = false;
 		private static bool ExtractAES = false;
-
+		private static ELocResVersion locresVersion = ELocResVersion.Compact;
         private static readonly List<Argument> arguments;
 
 		static CLI_Processor()
@@ -31,11 +32,11 @@ namespace Solicen.Localization.UE4
 				new Argument("--hash", "-h","Include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
 				new Argument("--search", "-s", "At the end, if the string was found, it outputs information about all its occurrences.", (text) => UnrealLocres.SearchText = text),
 
-				new Argument("--locres", "-l", "Write .locres file after process.", () => UnrealLocres.WriteLocres = true),
-				new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
+				new Argument("--locres", "-l", "Writes specified version of .locres file after process. (Default: 1 or Compact)", (ver) => { ProcessLocresVersion(ver); UnrealLocres.WriteLocres = true; }),
+                new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
 				new Argument("--read-locres", "-rl", "Read all .locres files directly.", () => UnrealLocres.ReadAllLocres = true),
 
-				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessVersion),
+				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessUnrealVersion),
 				new Argument("--skip-uexp", "-s:xp","Skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
 				new Argument("--skip-uasset", "-s:et","Skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
 				new Argument("--no-underscore", "-n:un","Skip lines with underscores.", () => UnrealLocres.SkipUnderscore = true),
@@ -60,8 +61,8 @@ namespace Solicen.Localization.UE4
 		}
 
 		static bool IsNTE(string str) => (str == "NTE" || str.Contains("NEVERNESS"));
-		static void ProcessVersion(string version)
-        {
+		static void ProcessUnrealVersion(string version)
+		{
 			if (string.IsNullOrWhiteSpace(version)) return;
 
 			// Detect NTE (Neverness to Everness) game name → enable NTE encrypted locres output.
@@ -69,16 +70,35 @@ namespace Solicen.Localization.UE4
 			var normalized = version.Replace("_", "").Replace("-", "").Replace(" ", "").ToUpperInvariant();
 			if (IsNTE(normalized))
 			{
-				LocresWriter.LocresCompactWriter.NTEFormat    = true;
+				LocresWriter.LocresCompactWriter.NTEFormat = true;
 				LocresWriter.LocresCompactWriter.NTEEncrypted = true;
 				return; // pak auto-detection handles the UE version for NTE
 			}
 
 			version = char.IsDigit(version[0]) ? "UE" + version : version;
 			UnrealLocres.UEVersion = version.Replace(".", "_");
-            UnrealLocres.EngineSpecified = true;
+			UnrealLocres.EngineSpecified = true;
 			UnrealArchiveReader.EngineSpecified = true;
 		}
+
+        public static void ProcessLocresVersion(string arg)
+        {
+            if (int.TryParse(arg, out var res))
+            {
+                locresVersion = (ELocResVersion)res;
+				return;
+            }
+            else
+            {
+                if (arg.Contains("Compact")||string.IsNullOrWhiteSpace(arg))
+                    locresVersion = ELocResVersion.Compact;
+                else if (arg.Contains("Optimized"))
+                    locresVersion = ELocResVersion.Optimized_CRC32;
+                else if (arg.Contains("Optimized_CityHash64"))
+                    locresVersion = ELocResVersion.Optimized_CityHash64_UTF16;
+                return;
+            }
+        }
 
         public static void ProcessProgram(string[] args)
 		{
@@ -139,10 +159,23 @@ namespace Solicen.Localization.UE4
                         CLI.Console.WriteLine($"[Green]Completed! Changes saved to: {LocresCSV}");
                     }
 
-                    LocresWriter.LocresCompactWriter.WriteToFile($"{Path.GetFileNameWithoutExtension(LocresCSV)}.locres", Result);
+
+					switch (locresVersion)
+					{
+						case ELocResVersion.Compact:
+							LocresWriter.LocresCompactWriter.WriteToFile
+								($"{Path.GetFileNameWithoutExtension(LocresCSV)}.locres",
+								Result); break;
+						case ELocResVersion.Optimized_CRC32:
+							LocresWriter.LocresOptimizedWriter.WriteToFile
+								($"{Path.GetFileNameWithoutExtension(LocresCSV)}.locres",
+								Result); break;
+						case ELocResVersion.Optimized_CityHash64_UTF16:
+							LocresWriter.LocresOptimizedWriter.WriteToFile
+								($"{Path.GetFileNameWithoutExtension(LocresCSV)}.locres",
+								Result, ELocResVersion.Optimized_CityHash64_UTF16); break;
+					}
                     CLI.Console.WriteLine($"[Green]Completed! File saved to: {Path.GetFileNameWithoutExtension(LocresCSV)}.locres");
-
-
                 }
 				else // Обычная обработка папки для получения LocresCSV
 				{
@@ -219,7 +252,23 @@ namespace Solicen.Localization.UE4
             CLI.Console.WriteLine($"\n[Green]Completed! File saved to: {csvPath}");
 
 			if (UnrealLocres.WriteLocres && locresPath != null)
-				LocresWriter.LocresCompactWriter.WriteToFile(locresPath,Result.FromConcurrent().ToList());
+			{
+                switch (locresVersion)
+                {
+                    case ELocResVersion.Compact:
+                        LocresWriter.LocresCompactWriter.WriteToFile
+                            ($"{Path.GetFileNameWithoutExtension(locresPath)}.locres",
+                            Result.FromConcurrent().ToList()); break;
+                    case ELocResVersion.Optimized_CRC32:
+                        LocresWriter.LocresOptimizedWriter.WriteToFile
+                            ($"{Path.GetFileNameWithoutExtension(locresPath)}.locres",
+                            Result.FromConcurrent().ToList()); break;
+                    case ELocResVersion.Optimized_CityHash64_UTF16:
+                        LocresWriter.LocresOptimizedWriter.WriteToFile
+                            ($"{Path.GetFileNameWithoutExtension(locresPath)}.locres",
+                            Result.FromConcurrent().ToList(), ELocResVersion.Optimized_CityHash64_UTF16); break;
+                }
+            };
 			if (ProgramAutoExit) Environment.Exit(0);
 		}
 

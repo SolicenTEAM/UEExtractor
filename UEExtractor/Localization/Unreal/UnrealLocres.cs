@@ -262,7 +262,7 @@ namespace Solicen.Localization.UE4
                 {
                     if (string.IsNullOrEmpty(key)) return; // skip malformed entries only
                     var compositeKey = ns != string.Empty ? $"{ns}::{key}" : key;
-                    var escaped = string.IsNullOrEmpty(value) ? string.Empty : LocresHelper.EscapeKey(value);
+                    var escaped = string.IsNullOrEmpty(value) ? string.Empty : value.Escape();
                     var r = new LocresResult(compositeKey, escaped, Namespace: ns)
                         { NsHash = nsHash, KeyHash = keyHash };
                     current!.TryAdd(compositeKey, r);
@@ -463,7 +463,7 @@ namespace Solicen.Localization.UE4
             List<LocresResult> result = new List<LocresResult>();
             foreach (var res in results)
             {
-                result.Add(new LocresResult($"{res.Key}", LocresHelper.EscapeKey(res.SourceString), Namespace: res.Namespace));
+                result.Add(new LocresResult($"{res.Key}", res.SourceString.Escape(), Namespace: res.Namespace));
             }
             return result.ToArray();
         }
@@ -473,7 +473,7 @@ namespace Solicen.Localization.UE4
             List<LocresResult> result = new List<LocresResult>();
             foreach (var key in keys)
             {
-                result.Add(new LocresResult($"{key.Key}", LocresHelper.EscapeKey(key.Value), Namespace: TableNamespace));
+                result.Add(new LocresResult($"{key.Key}", key.Value.Escape(), Namespace: TableNamespace));
             }
             return result.ToArray();
         }
