@@ -27,9 +27,9 @@ namespace Solicen.Localization.UE4
 
 				new Argument("--all", "-all", "Processing all folders in archive", () => UnrealLocres.AllFolders = true),
 				new Argument("--picky", null, "Picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
-				new Argument("--url", "-url", "Include path to file, ex: [url][key],<string>", () => UnrealLocres.IncludeUrlInKeyValue = true),
-				new Argument("--headmark", "-m", "Include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
-				new Argument("--hash", "-h","Include hash of string for locres ex: [key][hash],<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
+				new Argument("--url", "-url", "Include path to file (ex: path,key,<string>", () => UnrealLocres.IncludePathInKeyValue = true),
+                new Argument("--hash", "-h","Include hash of string for locres (ex: key,hash,<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
+                new Argument("--headmark", "-m", "Include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
 				new Argument("--search", "-s", "At the end, if the string was found, it outputs information about all its occurrences.", (text) => UnrealLocres.SearchText = text),
 
 				new Argument("--locres", "-l", "Writes specified version of .locres file after process. (Default: 1 or Compact)", (ver) => { ProcessLocresVersion(ver); UnrealLocres.WriteLocres = true; }),

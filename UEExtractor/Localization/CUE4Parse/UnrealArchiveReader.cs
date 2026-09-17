@@ -195,43 +195,44 @@ public class UnrealArchiveReader : IDisposable
         return fallback;
     }
 
-    private EGame LoadEngineVersion(string dir)
+    /// <summary>
+    /// This method performs a three‑stage attempt to find the engine version 
+    /// or determine it based on already known games.
+    /// </summary>
+    private EGame LoadEngineVersion(string gameDir)
     {
-        var engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Engine\\Binaries\\Win64\\")); //CrashReportClient.exe
-        var mainExecutable = Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly).FirstOrDefault(x => x.Contains(".exe"));
+        var FallbackEngineFile = Directory.GetFiles(gameDir, "*.exe", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Engine\\Binaries\\Win64\\")); // CrashReportClient.exe
+        var GameMainExecutable = Directory.GetFiles(gameDir, "*.exe", SearchOption.AllDirectories).FirstOrDefault(x => x.Contains("Shipping.exe")); // ...Binaries\Win64\...-Shipping.exe
 
+        // If the version is already set, we parse it and return.
         if (UE_VER != string.Empty && EngineSpecified)
-        {
-            var version = $"GAME_{UE_VER}";
-            return ParseVersion(version);
-        }
-        else if (engineFile != null || mainExecutable != null)
-        {
-            bool isEngineFile = mainExecutable != null ? false : true;
-            var file = isEngineFile ? engineFile : mainExecutable;
+            return ParseVersion($"GAME_{UE_VER}");
 
-            if (FileVersionInfo.GetVersionInfo(file).FileMajorPart < 4)
-                file = engineFile;
+        // If we find at least one of the required EXE
+        else if (FallbackEngineFile != null || GameMainExecutable != null)
+        {
+            bool isEngineFile = GameMainExecutable != null ? false : true;
+            var PE = isEngineFile ? FallbackEngineFile : GameMainExecutable;
 
-            var versionInfo = FileVersionInfo.GetVersionInfo(file);
+            if (FileVersionInfo.GetVersionInfo(PE).FileMajorPart < 4)
+                PE = FallbackEngineFile;
+
+            var versionInfo = FileVersionInfo.GetVersionInfo(PE);
             var version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
-
             if (version == "GAME_UE0_0")
             {
-                engineFile = Directory.GetFiles(dir, "*.exe", SearchOption.AllDirectories)
-                    .FirstOrDefault(x => x.Contains("Binaries\\Win64\\") && !x.Contains("CrashReportClient.exe"));
-                if (!string.IsNullOrEmpty(engineFile))
+                if (!string.IsNullOrEmpty(FallbackEngineFile))
                 {
-                    Console.WriteLine(engineFile);
-                    versionInfo = FileVersionInfo.GetVersionInfo(engineFile);
+                    Console.WriteLine(FallbackEngineFile);
+                    versionInfo = FileVersionInfo.GetVersionInfo(FallbackEngineFile);
                     version = $"GAME_UE{versionInfo.FileMajorPart}_{versionInfo.ProductMinorPart}";
                 }
             }
-            Console.WriteLine($"UE::File: {engineFile}");
+            Console.WriteLine($"UE::File: {PE}");
             Console.WriteLine($"UE::Version: {version}");
-            return DetectKnownGame(dir, ParseVersion(version));
+            return DetectKnownGame(gameDir, ParseVersion(version));
         }
-        return DetectKnownGame(dir, EGame.GAME_UE5_LATEST);
+        return DetectKnownGame(gameDir, EGame.GAME_UE5_LATEST);
     }
 
     private void LoadAesKey(string gameDirectory)

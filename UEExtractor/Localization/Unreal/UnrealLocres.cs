@@ -1,7 +1,9 @@
-﻿using Solicen.Translator;
+﻿using CUE4Parse.GameTypes.FF7.Assets.Exports;
+using Solicen.Translator;
 using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace Solicen.Localization.UE4
 {
@@ -168,16 +170,20 @@ namespace Solicen.Localization.UE4
 
                     if (UnrealLocres.SearchKeyName != string.Empty
                     && (!result.Key.Contains(SearchKeyName) || !result.Namespace.Contains(SearchKeyName)))
-                        continue;
+                        continue; // If we haven’t found the required Key or NameSpace, we skip this line.
 
                     if (UnrealLocres.SearchText != string.Empty && result.Source.Contains(SearchText))
-                    {
-                        SearchedText.Add(path, result.Source);
-                    }
+                        SearchedText.Add(path, result.Source); // If we find the string we were looking for,
+                                                               // we add it to the array of found strings.
 
-                    var outputValue = result.Namespace != string.Empty ?
-                    $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
-                    if (VerboseOutput) Console.WriteLine(outputValue);
+                    #region Console Output
+                    if (VerboseOutput)
+                    {
+                        var outputValue = result.Namespace != string.Empty ?
+                        $"\t{result.Namespace}::{result.Key}\t{result.Source}\t" : $"\t{result.Key}\t{result.Source}\t";
+                        Console.WriteLine(outputValue);
+                    }
+                    #endregion
 
                     #region Checking duplicates
                     if (keyFirstSource.TryGetValue(result.Key, out var firstSource) && firstSource != result.Source)
@@ -199,7 +205,6 @@ namespace Solicen.Localization.UE4
                     allResults[result.Key] = result;
                 }
             });
-
 
             if (ReadAllLocres)
             {
@@ -439,7 +444,7 @@ namespace Solicen.Localization.UE4
             {
                 // Выделяем буфер на стеке. Это очень быстро и не создает мусора в куче.
                 Span<byte> buffer = stackalloc byte[bufferSize];
-                stream.Read(buffer);
+                stream.ReadExactly(buffer);
 
                 if (IsTextProperty(buffer))
                     return ExportType.TextProperty;
@@ -460,7 +465,7 @@ namespace Solicen.Localization.UE4
         {
             long originalPosition = stream.Position; 
             Span<byte> buffer = stackalloc byte[(int)stream.Length];
-            stream.Read(buffer);
+            stream.ReadExactly(buffer);
             stream.Position = originalPosition; 
             return buffer.ToArray();
 
