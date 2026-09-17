@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LocresSharp;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,31 @@ namespace Solicen.Localization.UE4
 {
     public static class LocresResultUtil
     {
+        public static void SetHash(this IEnumerable<LocresResult> locres)
+        {
+            for (int i = 0; i < locres.Count(); i++)
+            {
+                var res = locres.ToArray()[i];
+                var spaceHash = res.Namespace != string.Empty ? Crc.StrCrc32(res.Namespace) : 0;
+                var sourceHash = Crc.StrCrc32(res.Source, spaceHash);
+
+                locres.ToArray()[i].Hash = sourceHash.ToString();
+                locres.ToArray()[i].NsHash = sourceHash;
+            }
+        }
+
+        public static void SetPath(this IEnumerable<LocresResult> locres, string filePath)
+        {
+            bool isVirtual = filePath.Contains("/");
+            for (int i = 0; i < locres.Count(); i++)
+            {
+                if (isVirtual)
+                    locres.ToArray()[i].Path = UnrealPath.VirtualFolderWithFileName(filePath);
+                else
+                    locres.ToArray()[i].Path = UnrealPath.FolderWithFileName(filePath);
+            }
+        }
+
         public static bool IsContainsNameSpace(this LocresResult[] locres)
         {
             return locres.Any(x => x.Namespace != string.Empty) ? true : false;
@@ -61,7 +87,7 @@ namespace Solicen.Localization.UE4
 
     public class LocresResult
     {
-        public string Url { get; set; } = string.Empty;
+        public string Path { get; set; } = string.Empty;
         public string Hash { get; set; } = string.Empty;
 
         public string Namespace { get; set; } = string.Empty;
