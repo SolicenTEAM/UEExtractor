@@ -31,7 +31,7 @@ namespace UEExtractor
 
             Solicen.CLI.Console.WriteLine($"Operation completed in: {timeTaken.TotalSeconds} seconds\n");
             Solicen.CLI.Console.WriteLine("If my program was useful to you, please put a star on its GitHub page, thank you!", ConsoleColor.Yellow);
-            Solicen.CLI.Console.WriteLine("Toss a coin: https://boosty.to/denissolicen/donate", ConsoleColor.Yellow);
+            Solicen.CLI.Console.WriteLine("If you want to support me with money: https://dalink.to/solicen", ConsoleColor.Yellow);
         }
     }
 }
