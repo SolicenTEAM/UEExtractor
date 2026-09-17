@@ -8,7 +8,7 @@ public class CSV
         if (field == null) return field;                      // Return empty string
         if (field.Contains("\"") && !field.Contains("\"\""))
             field = field.Replace("\"", "\"\"");
-        if (field.Contains(',') || field.Contains('\"'))      // Return QMarks between " string " if detect comma symbol in line. 
+        if (field.Contains(", ") || field.Contains('\"'))      // Return QMarks between " string " if detect comma symbol in line. 
             field = $"\"{field}\"";
         return field;
     }
