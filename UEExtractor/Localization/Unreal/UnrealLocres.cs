@@ -59,7 +59,7 @@ namespace Solicen.Localization.UE4
         public static bool ReadAllLocres = false;
         public static bool AllFolders = false;
         public static bool PickyMode = false;
-        public static bool IncludeUrlInKeyValue  = false;
+        public static bool IncludePathInKeyValue = false;
         public static bool IncludeHashInKeyValue = false;
         public static string pDirectory = string.Empty;
         public static bool TableSeparator = false;
@@ -141,13 +141,15 @@ namespace Solicen.Localization.UE4
                 if (fileResults.Count == 0 && PickyMode) ZeroDataMessage();
                 #endregion
 
+                if (IncludePathInKeyValue) fileResults.SetPath(path);
+                if (IncludeHashInKeyValue) fileResults.SetHash();
+
                 // Pre-apply key decorations and build an O(1) duplicate index
                 // (replaces per-entry List.Find which was O(n²) per file).
                 foreach (var r in fileResults)
                 {
                     if (r == null) continue;
-                    if (UnrealLocres.IncludeHashInKeyValue) r.Key = $"[{r.Key}][{r.Hash}]";
-                    if (UnrealLocres.IncludeUrlInKeyValue) r.Key = $"[{r.Url}]{r.Key}";
+                    if (UnrealLocres.IncludeHashInKeyValue) r.Key = $"{r.Key},{r.Hash}";
                 }
                 var keyFirstSource = new Dictionary<string, string>(fileResults.Count);
                 foreach (var r in fileResults)
@@ -163,7 +165,11 @@ namespace Solicen.Localization.UE4
                     if (UnrealLocres.SkipUnderscore && result.Source.Contains("_")) continue;
                     if (UnrealLocres.SkipUppercase && result.Source.IsUpper()) continue;
                     #endregion
-                    
+
+                    if (UnrealLocres.SearchKeyName != string.Empty
+                    && (!result.Key.Contains(SearchKeyName) || !result.Namespace.Contains(SearchKeyName)))
+                        continue;
+
                     if (UnrealLocres.SearchText != string.Empty && result.Source.Contains(SearchText))
                     {
                         SearchedText.Add(path, result.Source);
@@ -187,6 +193,9 @@ namespace Solicen.Localization.UE4
 
                     if (!string.IsNullOrWhiteSpace(result.Namespace))
                         result.Key = $"{result.Namespace}::{result.Key}";
+                    if (IncludePathInKeyValue)
+                        result.Key = $"{result.Path},{result.Key}";
+
                     allResults[result.Key] = result;
                 }
             });
@@ -220,8 +229,7 @@ namespace Solicen.Localization.UE4
             // Filter in-place to avoid materializing a second full copy of all results.
             foreach (var kv in allResults)
             {
-                var isNotAllowed = IsNotAllowedString(kv.Value.Source);
-                if (isNotAllowed)
+                if (IsNotAllowedString(kv.Value.Source))
                     allResults.TryRemove(kv.Key, out _);
             }
 
@@ -485,8 +493,8 @@ namespace Solicen.Localization.UE4
                 // Write the header comments
                 if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
 
-                var keyHeader = IncludeHashInKeyValue ? "[key][hash]" : "key";
-                keyHeader = IncludeUrlInKeyValue ? $"[url]{keyHeader}" : keyHeader;
+                var keyHeader = IncludeHashInKeyValue ? "key,hash" : "key";
+                keyHeader = IncludePathInKeyValue ? $"path,{keyHeader}" : keyHeader;
 
                 if (!TableSeparator) 
                     writer.WriteLine($"{keyHeader},source,Translation"); // Write the column headers
