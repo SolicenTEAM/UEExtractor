@@ -35,16 +35,6 @@ static internal class StringHelper
             .Replace("\\t", "\t")
             .Replace("\"\"", "\"");
     }
-    public static string UE_FolderWithFileName(this string unrealFile)
-    {
-        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
-        return string.IsNullOrWhiteSpace(match) ? unrealFile : match;
-    }
-    public static string UE_FolderWithoutFileName(this string unrealFile)
-    {
-        var match = new Regex(@"\\([^\\]+)\\Content(?!.*Paks)\\.+").Match(unrealFile).Value.TrimEnd('\"');
-        return string.IsNullOrWhiteSpace(match) ? unrealFile : match.Replace(Path.GetFileName(unrealFile), "");
-    }
 
     public static bool IsAllNumber(this string str)
     {
