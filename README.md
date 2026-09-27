@@ -166,6 +166,7 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--verbose` | `-vb` | Show per-file processing details and diagnostic info instead of the progress bar. |
 | `--skip-uexp` | `-s:xp` | Skip `.uexp` files during processing. |
 | `--skip-uasset` | `-s:et` | Skip `.uasset` files during processing. |
+| `--read-locres` | `-rl`| Read strings directly from .locres files.
 | `--locres` | `-l`| Writes specified version (up to `3`) of .locres file after process. ex `-l=2` (Default: `1` or `Compact`). |
 | `--extract-locres` | | Dump the raw `.locres` binaries from the pak to the output directory (useful for inspection or as patch template). |
 | `--all` | `-all` | Process all folders in the archive (including effects, meshes, sounds, etc.). |
