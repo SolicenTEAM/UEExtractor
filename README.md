@@ -4,7 +4,7 @@
 
 Made with ❤️ for **all** translators and translation developers.
 
-This a tool on **.NET 10.0** to extract text from any game on [Unreal Engine](https://www.unrealengine.com/) (4.0 - 5.8).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
+This a tool on **.NET 10.0** to extract text from any game on [Unreal Engine](https://www.unrealengine.com/) (4.0 - 6.0).<br>Using [CUE4Parse](https://github.com/FabianFG/CUE4Parse) to work with Unreal Engine archives **`.pak`** and **`.utoc`**.
 
 With it, you will receive a `locresCSV` file for localization of the game based on its resources.
 
@@ -160,23 +160,24 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--version=<ver>` | `-v` | Set the engine version or game name. Auto-detected when omitted. Use `-v=GAME_NevernessToEverness` (or `-v=NTE`) to enable NTE encrypted locres output. Examples: `-v=UE5_6`, `-v=Stalker2`. |
 | `--aes=<key>` | `-a` | 32-character hex AES key (must start with `0x`). |
 | `--aes:auto` | `-a:auto` | Automatic extraction AES key into aes.txt at the root of the game (for directories only) |
+| `--mapping` | `-map` | Loads the USMAP file directly from the specified path.|
+| `--search` | `-s`| At the end, if the string was found, it outputs information about all its occurrences. |
 | `--path=<virtual_path>` | `-p` | Restrict processing to assets under a specific internal path (e.g. `--path=HT/Content/Localization`). Case-insensitive substring match. |
 | `--verbose` | `-vb` | Show per-file processing details and diagnostic info instead of the progress bar. |
 | `--skip-uexp` | `-s:xp` | Skip `.uexp` files during processing. |
 | `--skip-uasset` | `-s:et` | Skip `.uasset` files during processing. |
-| `--locres` | `-l`| Write a `.locres` file after parsing. |
+| `--locres` | `-l`| Writes specified version (up to `3`) of .locres file after process. ex `-l=2` (Default: `1` or `Compact`). |
 | `--extract-locres` | | Dump the raw `.locres` binaries from the pak to the output directory (useful for inspection or as patch template). |
 | `--all` | `-all` | Process all folders in the archive (including effects, meshes, sounds, etc.). |
 | `--no-underscore` | `-n:un` | Skip lines with underscores: **ex_string** |
 | `--no-uppercase` | `-n:up` | Skip lines with ALL UPPERCASE: **EXAMPLE** |
-| `--no-parallel` | `-n:p` | Disable parallel processing (slower; may surface additional data). |
 | `--table-format` | `-tf` | Replace the standard `,` separator with `\|`. |
 | `--headmark` | `-m` | Include header and footer in the `.csv`. |
 | `--auto-exit` | `-exit` | Exit automatically after all processes complete. |
 | `--invalid` | `-i` | Include invalid data in the output. |
 | `--qmarks` | `-q` | Forcibly add quotation marks around text strings. |
-| `--hash` | `-h` | Include hash in the key: `[key][hash],<string>`. |
-| `--url` | `-url` | Include file path in the key: `[url][key],<string>`. |
+| `--hash` | `-h` | Include combined source hash: `key,hash,<string>` |
+| `--url` | `-url` |Include path to each file: `path,key,<string>` |
 | `--picky` |  | Picky mode — displays more detailed per-file information. |
 | `--table:only:key=<name>` | `-t:o:k` | Include only entries whose key/name matches the given value. |
 | `--lang:from=<code>` | `-l:f` | Source language for translation (e.g. `en`). |
@@ -187,7 +188,6 @@ If you already know where the localization lives (e.g. from FModel), use `--path
 | `--batch-size=<n>` | `-bs` | Number of segments sent per translation request (default: 150). Lower for models with small context. |
 | `--parallel=<n>` | `-par` | Number of concurrent translation requests (default: 1). Increase for faster translation with local models. |
 | `--translate-only` | `-t:o` | Skip extraction entirely and translate the existing CSV file(s) from a previous run. Resumes from where translation stopped. |
-| `--update` | | Check for a new version on GitHub and update if available. |
 | `--help` | | Show help information. |
 
 ## Contributions:
