@@ -568,7 +568,8 @@ public class UnrealArchiveReader : IDisposable
     // Use this to preserve the original game-computed StrHash values for v3 locres round-trips.
     public void ProcessLocresFilesWithHashes(
         Action<string, uint, string, uint, string> processor,
-        string? pathFilter = null)
+        string? pathFilter = null,
+        string? extractDirectory = null)
     {
         if (!_hasValidFiles)
             throw new InvalidOperationException("No valid files available for processing");
@@ -591,10 +592,7 @@ public class UnrealArchiveReader : IDisposable
         int processed = 0, errors = 0;
         int totalFiles = locresFiles.Count;
 
-        // Where to save raw locres dumps (same dir as the skipped-lines CSV)
-        string? extractDir = Solicen.Localization.UE4.UnrealLocres.ExtractLocres
-            ? System.IO.Path.GetDirectoryName(Solicen.Localization.UE4.UnrealLocres.SkippedCSV?.FilePath)
-            : null;
+        var extractDir = string.IsNullOrWhiteSpace(extractDirectory) ? null : extractDirectory;
 
         foreach (var (locresPath, gameFile) in locresFiles)
         {
@@ -606,6 +604,7 @@ public class UnrealArchiveReader : IDisposable
                 {
                     try
                     {
+                        Directory.CreateDirectory(extractDir);
                         var dest = System.IO.Path.Combine(extractDir, System.IO.Path.GetFileName(locresPath));
                         using (var src = gameFile.CreateReader())
                         using (var dst = System.IO.File.Create(dest))
@@ -738,19 +737,20 @@ public class UnrealArchiveReader : IDisposable
 
     public void LoadStringTable(string path, Action<string, Dictionary<string, string>> processor)
     {
-        if (path.EndsWith(".uasset"))
-        {
-            var packageid = Path.ChangeExtension(path, null);
-            if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var st))
-            {
-                Dictionary<string, string> keys = new Dictionary<string, string>();
-                foreach (var entry in st.StringTable.KeysToEntries)
-                {
-                    keys.Add(entry.Key, entry.Value);
-                }
+        if (!path.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase) &&
+            !path.EndsWith(".umap", StringComparison.OrdinalIgnoreCase))
+            return;
 
-                processor(st.StringTable.TableNamespace, keys);
+        var packageid = Path.ChangeExtension(path, null);
+        if (_provider.TryLoadPackageObject<UStringTable>(packageid, out var st))
+        {
+            Dictionary<string, string> keys = new Dictionary<string, string>();
+            foreach (var entry in st.StringTable.KeysToEntries)
+            {
+                keys.Add(entry.Key, entry.Value);
             }
+
+            processor(st.StringTable.TableNamespace, keys);
         }
     }
 

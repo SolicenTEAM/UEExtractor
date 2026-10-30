@@ -3,14 +3,13 @@ using System.Text;
 
 public class CSV
 {
-    public static string EscapeCsvField(string field)
+    public static string EscapeCsvField(string? field, char delimiter = ',', bool forceQuote = false)
     {
-        if (field == null) return field;                      // Return empty string
-        if (field.Contains("\"") && !field.Contains("\"\""))
-            field = field.Replace("\"", "\"\"");
-        if (field.Contains(", ") || field.Contains('\"'))      // Return QMarks between " string " if detect comma symbol in line. 
-            field = $"\"{field}\"";
-        return field;
+        field ??= string.Empty;
+        var escaped = field.Replace("\"", "\"\"");
+        return forceQuote || escaped.Contains(delimiter) || escaped.Contains('"') || escaped.Contains('\r') || escaped.Contains('\n')
+            ? $"\"{escaped}\""
+            : escaped;
     }
 
     public class Table
@@ -193,26 +192,6 @@ public class CSV
         return table;
     }
 
-    public class Writer
-    {
-        public StreamWriter _Writer;
-        public string FilePath { get; }
-        public Writer(string? filePath, bool append = false)
-        {
-            if (filePath == string.Empty) return;
-            if (!append && File.Exists(filePath))
-                File.Delete(filePath);
-
-            FilePath = filePath;
-            _Writer = new StreamWriter(FilePath, true);
-        }
-
-        public void WriteLine(string text)
-        {
-            if (FilePath == string.Empty) return;
-            _Writer.WriteLine(text.Escape() + "\r");
-        }
-    }
 }
 
 

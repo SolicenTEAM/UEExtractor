@@ -21,8 +21,7 @@ static internal class StringHelper
             .Replace("\n", "\\n")
             .Replace("\r", "\\r")
             .Replace("\t", "\\t")
-            .Replace("\\r\\n", "<cf>")
-            .Replace("\"", "\"\"");
+            .Replace("\\r\\n", "<cf>");
     }
 
     public static string Unescape(this string str)
@@ -32,8 +31,7 @@ static internal class StringHelper
             .Replace("\\n\\n", "\n\n")
             .Replace("\\n", "\n")
             .Replace("\\r", "\r")
-            .Replace("\\t", "\t")
-            .Replace("\"\"", "\"");
+            .Replace("\\t", "\t");
     }
 
     public static bool IsAllNumber(this string str)

@@ -17,11 +17,6 @@ namespace Solicen.Localization.UE4
         public static string SearchText = string.Empty;
 
         #region LocresCSV file Setup
-        public static bool WriteSkippedCSV = false;
-        /// <summary>
-        /// CSVWritter for skipped lines;
-        /// </summary>
-        public static CSV.Writer SkippedCSV = new CSV.Writer(string.Empty);
         /// <summary>
         /// Skip all .uasset files.
         /// </summary>
@@ -67,11 +62,21 @@ namespace Solicen.Localization.UE4
         public static bool TableSeparator = false;
         public static bool VerboseOutput = false;
         public static string FilterPath = string.Empty;
-        public static string GetUasset(string path) => Path.ChangeExtension(path, ".uasset");
+        private static string? GetPackagePath(string path)
+        {
+            var extension = Path.GetExtension(path);
+            if (extension.Equals(".uexp", StringComparison.OrdinalIgnoreCase))
+                return Path.ChangeExtension(path, ".uasset");
+            return extension.Equals(".uasset", StringComparison.OrdinalIgnoreCase) ||
+                   extension.Equals(".umap", StringComparison.OrdinalIgnoreCase)
+                ? path
+                : null;
+        }
         
-        public static ConcurrentDictionary<string, LocresResult> ProcessDirectory(string directory)
+        public static ConcurrentDictionary<string, LocresResult> ProcessDirectory(string directory, string? extractDirectory = null)
         {
             var allResults = new ConcurrentDictionary<string, LocresResult>();
+            var processedPackagePaths = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
             pDirectory = directory;
 
             using var reader = new UnrealArchiveReader(directory, UEVersion);
@@ -82,57 +87,50 @@ namespace Solicen.Localization.UE4
                 if (SkipUassetFile && path.EndsWith(".uasset")) return;
                 if (SkipUexpFile && path.EndsWith(".uexp")) return;
 
-                List<LocresResult> fileResults = new List<LocresResult>();
-                var eType = GetExportType(stream);
+                var fileResults = new List<LocresResult>();
+                var exportType = GetExportType(stream);
+                var packagePath = GetPackagePath(path);
+                var parsedPackage = exportType != ExportType.None &&
+                    packagePath != null &&
+                    !path.EndsWith(".uexp", StringComparison.OrdinalIgnoreCase) &&
+                    processedPackagePaths.TryAdd(packagePath, 0);
                 try
                 {
-                    switch (eType)
+                    if (parsedPackage)
                     {
-                        case ExportType.AnyTable:
-                            {
-                                var newResult = new LocresResult[0];
-
-                                // StringTable 
-                                reader.LoadStringTable(path, (TableNamespace, Keys) =>
+                        switch (exportType)
+                        {
+                            case ExportType.AnyTable:
+                                reader.LoadStringTable(packagePath!, (tableNamespace, keys) =>
                                 {
-                                    newResult = TableToLocres(TableNamespace, Keys);
-                                    fileResults.AddRange(newResult);
+                                    fileResults.AddRange(TableToLocres(tableNamespace, keys));
                                 });
 
-                                // DataTable
-                                if (newResult.Length == 0)
+                                if (fileResults.Count == 0)
                                 {
-                                    reader.GetLocalizedStrings(GetUasset(path), (Table) =>
+                                    reader.GetLocalizedStrings(packagePath!, table =>
                                     {
-                                        newResult = LocalizedToLocres(Table);
-                                        fileResults.AddRange(newResult);
+                                        fileResults.AddRange(LocalizedToLocres(table));
                                     });
                                 }
-                            }
-                            break;
-                        case ExportType.TextProperty:
-                            {
-                                // Содержит BlueprintGeneratedClass (Kismet String)
-                                // Может содержать TextProperty (для locres)
-                                var newResult = new LocresResult[0];
-                                reader.GetLocalizedStrings(GetUasset(path), (Table) =>
+                                break;
+
+                            case ExportType.TextProperty:
+                                reader.GetLocalizedStrings(packagePath!, table =>
                                 {
-                                    newResult = LocalizedToLocres(Table);
-                                    fileResults.AddRange(newResult);
+                                    fileResults.AddRange(LocalizedToLocres(table));
                                 });
                                 break;
-                            }
-                        default:
-                            {
-                                fileResults = UnrealParser.Parse(stream.ToArray());
-                                break;
-                            }
+                        }
                     }
+
+                    if (!parsedPackage || fileResults.Count == 0)
+                        fileResults = UnrealParser.Parse(stream.ToArray());
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"[ERR] Error while processing {path}: {ex.Message}");
-                    SkippedCSV.WriteLine($"[ERR] Error while processing {path}: {ex.Message}");
+                    fileResults = UnrealParser.Parse(stream.ToArray());
                 }
                 finally
                 {
@@ -223,7 +221,7 @@ namespace Solicen.Localization.UE4
                         r.KeyHash = keyHash;
                         allResults[compositeKey] = r;
                     }
-                }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath);
+                }, string.IsNullOrEmpty(FilterPath) ? null : FilterPath, extractDirectory);
             }
             
             #region Warning Messages
@@ -438,25 +436,42 @@ namespace Solicen.Localization.UE4
 
         public static ExportType GetExportType(Stream stream)
         {
-            const int bufferSize = 1024;
-            long originalPosition = stream.Position; // Сохраняем исходную позицию
+            const int bufferSize = 64 * 1024;
+            var longestSignature = new[]
+            {
+                UnrealFormat.Property.TextProperty.Length,
+                UnrealFormat.Table.AnyTable.Length,
+                UnrealFormat.Table.StringTable.Length,
+                UnrealFormat.Table.DataTable.Length
+            }.Max();
+            var overlapSize = longestSignature - 1;
+            var buffer = new byte[bufferSize + overlapSize];
+            var originalPosition = stream.Position;
+            var carriedBytes = 0;
+            var hasTableMarker = false;
+
             try
             {
-                // Выделяем буфер на стеке. Это очень быстро и не создает мусора в куче.
-                Span<byte> buffer = stackalloc byte[bufferSize];
-                stream.ReadExactly(buffer);
+                int read;
+                while ((read = stream.Read(buffer, carriedBytes, bufferSize)) > 0)
+                {
+                    var bytes = buffer.AsSpan(0, carriedBytes + read);
+                    if (bytes.IndexOf(UnrealFormat.Property.TextProperty) >= 0)
+                        return ExportType.TextProperty;
 
-                if (IsTextProperty(buffer))
-                    return ExportType.TextProperty;
+                    hasTableMarker |= bytes.IndexOf(UnrealFormat.Table.AnyTable) >= 0 ||
+                                      bytes.IndexOf(UnrealFormat.Table.StringTable) >= 0 ||
+                                      bytes.IndexOf(UnrealFormat.Table.DataTable) >= 0;
 
-                if (IsTable(buffer))
-                    return ExportType.AnyTable;
+                    carriedBytes = Math.Min(overlapSize, bytes.Length);
+                    bytes[^carriedBytes..].CopyTo(buffer);
+                }
 
-                return ExportType.None;
+                return hasTableMarker ? ExportType.AnyTable : ExportType.None;
             }
             finally
             {
-                stream.Position = originalPosition; // Всегда восстанавливаем исходную позицию потока
+                stream.Position = originalPosition;
             }
         }
 
@@ -493,78 +508,70 @@ namespace Solicen.Localization.UE4
 
         public static void WriteToCsv(ConcurrentDictionary<string, LocresResult> results, string outputCsv)
         {
-            using (var writer = new StreamWriter(outputCsv, false, Encoding.UTF8))
-            {
-                // Write the header comments
-                if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
+            var separator = TableSeparator ? '|' : ',';
+            using var writer = new StreamWriter(outputCsv, false, Encoding.UTF8);
 
-                var keyHeader = IncludeHashInKeyValue ? "key,hash" : "key";
-                keyHeader = IncludePathInKeyValue ? $"path,{keyHeader}" : keyHeader;
+            if (ForceMark) writer.WriteLine("# UnrealEngine .locres asset");
+            writer.WriteLine($"key{separator}source{separator}Translation");
 
-                if (!TableSeparator) 
-                    writer.WriteLine($"{keyHeader},source,Translation"); // Write the column headers
-
-                // Write the data rows
-                var separator = TableSeparator ? "|" : ",";
-                int index = 0;
-                string[] lines = new string[results.Values.Count];
-                foreach (var result in results.Values)
-                {
-                    var line = string.Empty;
-                    if (ForceQmarksOutput) line += ($"{CSV.EscapeCsvField(result.Key)}{separator}\"{result.Source}\"{separator}{result.Translation}");
-                    else line += ($"{CSV.EscapeCsvField(result.Key)}{separator}{CSV.EscapeCsvField(result.Source)}{separator}{CSV.EscapeCsvField(result.Translation)}");         
-                    lines[index] = line; index++;
-                }
-
-                lines = lines
+            var lines = results.Values
+                .Where(result => !string.IsNullOrEmpty(result.Source))
+                .Select(result => string.Join(separator,
+                    CSV.EscapeCsvField(result.Key, separator),
+                    CSV.EscapeCsvField(result.Source!.Escape(), separator, ForceQmarksOutput),
+                    CSV.EscapeCsvField(result.Translation?.Escape() ?? string.Empty, separator, ForceQmarksOutput)))
                 .OrderBy(line =>
                 {
-                    // Извлекаем префикс для сортировки
-                    int separatorIndex = line.IndexOf("::");
-                    if (separatorIndex >= 0)
-                    {
-                        return line.Substring(0, separatorIndex);
-                    }
-                    return line; // Если нет "::", сортируем по всей строке
+                    var separatorIndex = line.IndexOf("::", StringComparison.Ordinal);
+                    return separatorIndex >= 0 ? line[..separatorIndex] : line;
                 })
-                .ThenBy(line => line) // Вторичная сортировка по всей строке
+                .ThenBy(line => line)
                 .ToArray();
 
+            foreach (var line in lines)
+                writer.WriteLine(line);
 
-                foreach (var line in lines)
-                    writer.WriteLine(line);
-
-                // Write the footer comments
+            if (ForceMark)
+            {
                 var programName = typeof(UnrealLocres).Assembly.GetName().Name;
-                if (ForceMark) writer.WriteLine($"# Extracted with {programName} & Solicen");
+                writer.WriteLine($"# Extracted with {programName} & Solicen");
             }
         }
 
         public static LocresResult[] LoadFromCSV(string path)
         {
             var result = new List<LocresResult>();
-            var delimiter = TableSeparator ? "|" : ",";
-            CSV.Parse(path, (row) =>
+            var delimiter = DetectCsvDelimiter(path);
+            CSV.Parse(path, row =>
             {
-                if (row.TryGetColumn(2, out string value) && value == "Translation") { }
-                else
+                if (!row.TryGetColumn(0, out var keyNamespace) ||
+                    !row.TryGetColumn(1, out var source) ||
+                    !row.TryGetColumn(2, out var translation) ||
+                    string.IsNullOrWhiteSpace(keyNamespace) ||
+                    keyNamespace.StartsWith('#') ||
+                    (keyNamespace == "key" && source == "source" && translation == "Translation"))
                 {
-                    var _keyNamespace = row.Columns[0];
-
-                    var firstSep = _keyNamespace.IndexOf("::");
-                    var _Namespace = firstSep >= 0 ? _keyNamespace[..firstSep] : string.Empty;
-                    var _Key = _keyNamespace; // preserve full composite key for locres round-trip
-
-                    var _Source = row.Columns[1];
-                    var _Translation = row.Columns[2];
-
-                    var res = new LocresResult(_Key, _Source, _Translation, _Namespace);
-                    result.Add(res);
+                    return;
                 }
-                
 
-            });
+                var firstSep = keyNamespace.IndexOf("::", StringComparison.Ordinal);
+                var nameSpace = firstSep >= 0 ? keyNamespace[..firstSep] : string.Empty;
+                result.Add(new LocresResult(keyNamespace, source, translation, nameSpace));
+            }, delimiter);
             return result.ToArray();
+        }
+
+        private static char DetectCsvDelimiter(string path)
+        {
+            foreach (var line in File.ReadLines(path))
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#')) continue;
+                if (line == "key|source|Translation") return '|';
+                if (line == "key,source,Translation") return ',';
+                break;
+            }
+
+            return TableSeparator ? '|' : ',';
         }
 
         // Sidecar format: JSON object mapping compositeKey → [nsHash, keyHash]

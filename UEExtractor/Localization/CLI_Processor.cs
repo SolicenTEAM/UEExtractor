@@ -102,9 +102,9 @@ namespace Solicen.Localization.UE4
 
 		public static void SetExampleCommands()
 		{
-			Argumentor.ExampleCommands.Add("kisse \"steamapps\\common\\Wigmund\" Wigmund_locres.csv -v 4.27");
-            Argumentor.ExampleCommands.Add("kisse \"Neverness To Everness\\Client\\WindowsNoEditor\" NTE.csv -rl -v NTE");
-            Argumentor.ExampleCommands.Add("kisse \"Transience\" Game.csv -rl --aes:auto");
+			Argumentor.ExampleCommands.Add("UEExtractor \"steamapps\\common\\Wigmund\" Wigmund_locres.csv -v 4.27");
+            Argumentor.ExampleCommands.Add("UEExtractor \"Neverness To Everness\\Client\\WindowsNoEditor\" NTE.csv -rl -v NTE");
+            Argumentor.ExampleCommands.Add("UEExtractor \"Transience\" Game.csv -rl --aes:auto");
         }
         public static void ProcessProgram(string[] args)
 		{
@@ -223,7 +223,6 @@ namespace Solicen.Localization.UE4
 
 			csvPath =  Path.Combine(exePath + "\\", csvPath);
 
-			UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
 			ConcurrentDictionary<string, LocresResult> Result;
 			if (TranslateOnly)
 			{
@@ -237,7 +236,9 @@ namespace Solicen.Localization.UE4
 			}
 			else
 			{
-				Result = UnrealLocres.ProcessDirectory(folderPath);
+				Result = UnrealLocres.ProcessDirectory(
+					folderPath,
+					UnrealLocres.ExtractLocres ? Path.GetDirectoryName(csvPath) : null);
 				// Save game-computed StrHash values so import can produce a correct v3 locres.
 				UnrealLocres.SaveHashSidecar(csvPath, Result.Values);
 				MergeOldCsv(csvPath, Result);
@@ -313,7 +314,6 @@ namespace Solicen.Localization.UE4
 			void HandleGroup(string baseName, ConcurrentDictionary<string, LocresResult> result)
 			{
 				var csvPath = Path.Combine(outputDir, $"{baseName}.csv");
-				UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(csvPath, "_skipped_lines.csv"));
 
 				// Save hash sidecar for the locres so import can restore correct StrHash values
 				UnrealLocres.SaveHashSidecar(csvPath, result.Values);
@@ -339,7 +339,7 @@ namespace Solicen.Localization.UE4
 			if (TranslateOnly)
 			{
 				var existing = Directory.GetFiles(outputDir, "*.csv")
-					.Where(f => !f.EndsWith("_skipped_lines.csv"))
+					.Where(f => !f.EndsWith("_skipped_lines.csv", StringComparison.OrdinalIgnoreCase))
 					.ToList();
 				if (existing.Count == 0)
 				{
@@ -354,7 +354,6 @@ namespace Solicen.Localization.UE4
                     CLI.Console.WriteLine($"[Yellow]--translate-only: loading {Path.GetFileName(f)}...");
 					var baseName = Path.GetFileNameWithoutExtension(f);
 					var result = UnrealLocres.LoadFromCSV(f).ToConcurrent();
-					UnrealLocres.SkippedCSV = new CSV.Writer(Path.ChangeExtension(Path.Combine(outputDir, $"{baseName}.csv"), "_skipped_lines.csv"));
 
 					if (UberTranslator.IsConfigured)
 					{
