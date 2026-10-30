@@ -9,3 +9,6 @@ packages
 *Publish*
 *.tmp
 *.vscode
+/.claude
+get_last_commits.bat
+git_commits.py

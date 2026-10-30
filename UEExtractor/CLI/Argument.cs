@@ -7,26 +7,29 @@ namespace Solicen.CLI
         public string Key { get; }
         public string ShortKey { get; }
         public string Description { get; }
+        public string? Group { get; }
         public bool HasValue { get; }
         public Action ActionWithoutValue { get; }
         public Action<string> ActionWithValue { get; }
 
         // Конструктор для флагов (без значения)
-        public Argument(string key, string shortKey, string description, Action action)
+        public Argument(string key, string shortKey, string description, Action action, string? group = null)
         {
             Key = key;
             ShortKey = shortKey;
             Description = description;
+            Group = group;
             HasValue = false;
             ActionWithoutValue = action;
         }
 
         // Конструктор для аргументов со значением
-        public Argument(string key, string shortKey, string description, Action<string> action)
+        public Argument(string key, string shortKey, string description, Action<string> action, string? group = null)
         {
             Key = key;
             ShortKey = shortKey;
             Description = description;
+            Group = group;
             HasValue = true;
             ActionWithValue = action;
         }

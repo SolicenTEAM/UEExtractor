@@ -11,6 +11,7 @@ namespace Solicen.CLI
     /// </summary>
     public static class Argumentor
     {
+        public static List<string> ExampleCommands = new List<string>();
         #region Расширенное управление терминалом
         public static void RunTerminal(string command) => System.Diagnostics.Process.Start("CMD.exe", "/c " + command);
         public static string[] SplitArgs(string[] args)
@@ -92,16 +93,35 @@ namespace Solicen.CLI
             return remainingArgs.ToArray();
         }
 
+        public static void ShowExamples()
+        {
+            if (ExampleCommands?.Count > 0)
+            {
+                Console.WriteLine($"\n  Examples:");
+                foreach (var example in ExampleCommands)
+                {
+                    Console.WriteLine($"    [Cyan]{example}");
+                }
+            }
+        }
+
         /// <summary>
         /// Отображает справочную информацию по всем доступным аргументам.
         /// </summary>
         public static void ShowHelp(List<Argument> definedArguments)
         {
             System.Console.WriteLine("Available arguments:");
-            foreach (var argument in definedArguments)
+            string? curGroup = string.Empty;    
+            foreach (var argument in definedArguments.OrderBy(x => x.Group).ToList())
             {
-                Console.WriteLine($"  {argument.Key,-15} {argument.ShortKey,-7} {argument.Description}");
+                if (argument.Group != curGroup)
+                {
+                    curGroup = argument.Group;
+                    Console.WriteLine($"\n  [Yellow]{argument.Group}:");
+                }
+                Console.WriteLine($"    [Cyan]{argument.Key,-15} [Cyan]{argument.ShortKey,-7} [White]{argument.Description}");
             }
+            ShowExamples();
             System.Console.ReadLine();
         }
     }

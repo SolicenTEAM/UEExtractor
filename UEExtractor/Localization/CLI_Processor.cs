@@ -21,42 +21,42 @@ namespace Solicen.Localization.UE4
 
 			arguments = new List<Argument>
 			{
-				new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key),
-				new Argument("--aes:auto", "-a:auto", "Automatic extraction AES key into aes.txt at the root of the game (for directories only)", () => ExtractAES = true),
-				new Argument("--mapping", "-map", "Loads the USMAP file directly from the specified path.", (usmap) => UnrealArchiveReader.USMAP_PATH = usmap),
+				new Argument("--aes", "-a", "32-character hex string as AES key", (key) => UnrealLocres.AES = key, "Extraction"),
+				new Argument("--aes:auto", "-a:auto", "Automatic extraction AES key into aes.txt at the root of the game (for directories only)", () => ExtractAES = true, "Extraction"),
+				new Argument("--mapping", "-map", "Loads the USMAP file directly from the specified path.", (usmap) => UnrealArchiveReader.USMAP_PATH = usmap, "Extraction"),
 
-				new Argument("--all", "-all", "Processing all folders in archive", () => UnrealLocres.AllFolders = true),
-				new Argument("--picky", null, "Picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true),
-				new Argument("--url", "-url", "Include path to file (ex: path,key,<string>", () => UnrealLocres.IncludePathInKeyValue = true),
-                new Argument("--hash", "-h","Include hash of string for locres (ex: key,hash,<string>.", () => UnrealLocres.IncludeHashInKeyValue = true),
-                new Argument("--headmark", "-m", "Include header and footer of the csv.", () => UnrealLocres.ForceMark = true),
-				new Argument("--search", "-s", "At the end, if the string was found, it outputs information about all its occurrences.", (text) => UnrealLocres.SearchText = text),
+				new Argument("--all", "-all", "Processing all folders in archive", () => UnrealLocres.AllFolders = true, "Extraction"),
+				new Argument("--picky", null, "Picky mode, displays more annoying information", () => UnrealLocres.PickyMode = true, "Logging"),
+				new Argument("--url", "-url", "Include path to file (ex: path,key,<string>", () => UnrealLocres.IncludePathInKeyValue = true, "Debug"),
+                new Argument("--hash", "-h","Include hash of string for locres (ex: key,hash,<string>.", () => UnrealLocres.IncludeHashInKeyValue = true, "Debug"),
+                new Argument("--headmark", "-m", "Include header and footer of the csv.", () => UnrealLocres.ForceMark = true, "Other"),
+				new Argument("--search", "-s", "At the end, if the string was found, it outputs information about all its occurrences.", (text) => UnrealLocres.SearchText = text, "Advanced"),
 
-				new Argument("--locres", "-l", "Writes specified version of .locres file after process. (Default: 1 or Compact)", (ver) => { ProcessLocresVersion(ver); UnrealLocres.WriteLocres = true; }),
-                new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true),
-				new Argument("--read-locres", "-rl", "Read all .locres files directly.", () => UnrealLocres.ReadAllLocres = true),
+				new Argument("--locres", "-l", "Writes specified version of .locres file after process. (Default: 1 or Compact)", (ver) => { ProcessLocresVersion(ver); UnrealLocres.WriteLocres = true; }, "Extraction"),
+                new Argument("--extract-locres", null, "Dump raw .locres files from pak to the output directory (for hash inspection).", () => UnrealLocres.ExtractLocres = true, "Extraction"),
+				new Argument("--read-locres", "-rl", "Read all .locres files directly.", () => UnrealLocres.ReadAllLocres = true, "Extraction"),
 
-				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness). Use GAME_NevernessToEverness (or NTE) to enable NTE encrypted locres output.", ProcessUnrealVersion),
-				new Argument("--skip-uexp", "-s:xp","Skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true),
-				new Argument("--skip-uasset", "-s:et","Skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true),
-				new Argument("--no-underscore", "-n:un","Skip lines with underscores.", () => UnrealLocres.SkipUnderscore = true),
-				new Argument("--no-uppercase", "-n:up","Skip lines with ALL UPPERCASE.", () => UnrealLocres.SkipUppercase = true),
-				new Argument("--qmarks", "-q", "Forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true),
-				new Argument("--table-format", "-tf", "Replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true),
-				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true),
-				new Argument("--path", "-p", "Restrict processing to assets under a specific virtual path (e.g. --path=HT/Content/Localization).", (p) => UnrealLocres.FilterPath = p),
-				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments)),
-				new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync()),
-				new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key),
+				new Argument("--version", "-v", "Set the engine version or game name (e.g., -v=5.1, -v=GAME_NevernessToEverness).", ProcessUnrealVersion, "Extraction"),
+				new Argument("--skip-uexp", "-s:xp","Skip files with `.uexp` during the process", () => UnrealLocres.SkipUexpFile = true, "Filtering"),
+				new Argument("--skip-uasset", "-s:et","Skip files with `.uasset` during the process", () => UnrealLocres.SkipUassetFile = true, "Filtering"),
+				new Argument("--no-underscore", "-n:un","Skip lines with underscores.", () => UnrealLocres.SkipUnderscore = true, "Filtering"),
+				new Argument("--no-uppercase", "-n:up","Skip lines with ALL UPPERCASE.", () => UnrealLocres.SkipUppercase = true, "Filtering"),
+				new Argument("--qmarks", "-q", "Forcibly adds quotation marks between text strings.", () => UnrealLocres.ForceQmarksOutput = true, "Extraction"),
+				new Argument("--table-format", "-tf", "Replace standard separator , symbol to | ", () => UnrealLocres.TableSeparator = true, "Extraction"),
+				new Argument("--verbose", "-vb", "Enable verbose output: show per-file processing details and diagnostics.", () => UnrealLocres.VerboseOutput = true, "Logging"),
+				new Argument("--path", "-p", "Restrict processing to assets under a specific virtual path (e.g. --path=HT/Content/Localization).", (p) => UnrealLocres.FilterPath = p, "Advanced"),
+				new Argument("--help", "-h", "Show help information", () => Argumentor.ShowHelp(arguments), "Other"),
+				new Argument("--update", null, "Check for a new version on GitHub and update if available.", async () => await GitProvider.CheckForUpdatesAsync(), "Other"),
+				new Argument("--table:only:key", "-t:o:k", "If key/name matches then include only this value to output (e.g., --table:only:key=ENG).", (key) => UnrealLocres.SearchKeyName = key, "Translator"),
 
-				new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang),
-				new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang),
-				new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => UberTranslator.OpenRouterModel = model),
-				new Argument("--api:key", "-a:key", "Set API key for OpenRouter (or any server that requires authentication).", (key) => UberTranslator.OpenRouterApiKey = key),
-				new Argument("--api:url", "-a:url", "Set a custom OpenAI-compatible base URL (e.g. http://localhost:11434/v1/ for Ollama). Overrides OpenRouter.", (url) => UberTranslator.ApiBaseUrl = url),
-				new Argument("--batch-size", "-bs", $"Number of segments per translation request (default: {UberTranslator.BatchSize}).", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.BatchSize = n; }),
-				new Argument("--parallel", "-par", "Number of concurrent translation requests (default: 1). Increase for faster translation.", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.MaxParallel = n; }),
-				new Argument("--translate-only", "-t:o", "Skip extraction and translate existing CSV file(s) from previous run.", () => TranslateOnly = true),
+				new Argument("--lang:from", "-l:f", "Set the source language for translation (e.g., --lang:from=en).", (lang) => UberTranslator.LanguageFrom = lang, "Translator"),
+				new Argument("--lang:to", "-l:t", "Set the target language for translation (e.g., --lang:to=ru).", (lang) => UberTranslator.LanguageTo = lang, "Translator"),
+				new Argument("--api:model", "-a:model", "Set model for OpenRouter (e.g, -a:model=tngtech/deepseek-r1t2-chimera:free)", (model) => UberTranslator.OpenRouterModel = model, "Translator"),
+				new Argument("--api:key", "-a:key", "Set API key for OpenRouter (or any server that requires authentication).", (key) => UberTranslator.OpenRouterApiKey = key, "Translator"),
+				new Argument("--api:url", "-a:url", "Set a custom OpenAI-compatible base URL (e.g. http://localhost:11434/v1/ for Ollama). Overrides OpenRouter.", (url) => UberTranslator.ApiBaseUrl = url, "Translator"),
+				new Argument("--batch-size", "-bs", $"Number of segments per translation request (default: {UberTranslator.BatchSize}).", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.BatchSize = n; }, "Translator"),
+				new Argument("--parallel", "-par", "Number of concurrent translation requests (default: 1). Increase for faster translation.", (v) => { if (int.TryParse(v, out int n) && n > 0) UberTranslator.MaxParallel = n; }, "Translator"),
+				new Argument("--translate-only", "-t:o", "Skip extraction and translate existing CSV file(s) from previous run.", () => TranslateOnly = true, "Translator"),
 			};
 		}
 
@@ -100,9 +100,16 @@ namespace Solicen.Localization.UE4
             }
         }
 
+		public static void SetExampleCommands()
+		{
+			Argumentor.ExampleCommands.Add("kisse \"steamapps\\common\\Wigmund\" Wigmund_locres.csv -v 4.27");
+            Argumentor.ExampleCommands.Add("kisse \"Neverness To Everness\\Client\\WindowsNoEditor\" NTE.csv -rl -v NTE");
+            Argumentor.ExampleCommands.Add("kisse \"Transience\" Game.csv -rl --aes:auto");
+        }
         public static void ProcessProgram(string[] args)
 		{
 			if (CLI.Console.Redirected) UnrealLocres.VerboseOutput = true;
+			SetExampleCommands();
 
             // 1. Разбираем аргументы и настраиваем конфигурацию
             var originalArgs = Argumentor.SplitArgs(args);
